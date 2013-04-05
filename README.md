@@ -1,6 +1,6 @@
 sails
 =====
 
-app for draw pic
+rpc framework
 
 c++
