@@ -5,7 +5,12 @@
 
 namespace sails {
 	
-	http_parser *parser_http(char *buf);
+	class HttpConnection {
+	public:
+		http_parser *parser_http(char *buf);
+	};
+	
+
 }
 
 #endif /* _HTTP_H_ */

@@ -62,7 +62,8 @@ namespace sails {
 		if(n > 0) {
 			printf("%s", buf);
 			buf[n] = '\0';
-			http_parser *parser = parser_http(buf);
+			HttpConnection connection;
+			http_parser *parser = connection.parser_http(buf);
 			if(parser != NULL){
 				printf("http_major:%d\n", parser->http_major);
 				printf("http_method:%d\n", parser->method);

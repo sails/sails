@@ -6,7 +6,7 @@
 
 namespace sails {
 	
-	http_parser *parser_http(char *buf) {
+	http_parser* HttpConnection::parser_http(char *buf) {
 		static http_parser_settings settings_null;
 		settings_null.on_message_begin = 0;
 		settings_null.on_header_field = 0;
