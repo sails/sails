@@ -8,9 +8,10 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "http.h"
 
 namespace sails {
+
+HttpHandle Connection::http_handle;
 
 void Connection::accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
 	if(EV_ERROR & revents) {
@@ -55,16 +56,16 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revent
 	if(n > 0) {
 		printf("%s", buf);
 		buf[n] = '\0';
-		HttpConnection connection;
-		http_parser *parser = connection.parser_http(buf);
+		http_parser *parser = Connection::http_handle.parser_http(buf);
+		/*
 		if(parser != NULL){
 			printf("http_major:%d\n", parser->http_major);
 			printf("http_method:%d\n", parser->method);
-		}
+			}*/
 	}
 
-	printf("recv n:%d\n", n);
-	printf("end recv\n");
+//	printf("recv n:%d\n", n);
+//	printf("end recv\n");
 }
 
 } //namespace sails

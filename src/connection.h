@@ -2,6 +2,7 @@
 #define _CONNECTION_H_
 
 #include <ev.h>
+#include "http.h"
 
 namespace sails {
 
@@ -11,6 +12,8 @@ public:
 	
 	static void recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 	
+public:
+	static HttpHandle http_handle;
 };
 
 } //namespace sails
