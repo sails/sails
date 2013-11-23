@@ -8,10 +8,10 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "util.h"
 
 namespace sails {
 
-HttpHandle Connection::http_handle;
 
 void Connection::accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
 	if(EV_ERROR & revents) {
@@ -42,30 +42,32 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revent
 	int connfd = watcher->fd;
 	int len = 80 * 1024;
 	char buf[len];
+	char rbuf[1024];
 	int n = 0;
+
+	memset(buf, 0, len);
+	memset(rbuf, 0, 1024);
 	n = read(connfd, buf, len);
+
+	//read a http request
+	while(n == read(connfd, rbuf, len) > 0) {
+		strncat(buf, rbuf, n);
+		memset(rbuf, 0, 1024);
+	}
 	
 	if(n == -1) {
 		//error
 		ev_io_stop(loop, watcher);
 		free(watcher);
 	}
-	if(n == 0) {
+	
+	if(strlen(buf) == 0) {
 		return;
-	}
-	if(n > 0) {
+	}else {
 		printf("%s", buf);
-		buf[n] = '\0';
-		http_parser *parser = Connection::http_handle.parser_http(buf);
-		/*
-		if(parser != NULL){
-			printf("http_major:%d\n", parser->http_major);
-			printf("http_method:%d\n", parser->method);
-			}*/
+		HttpHandle http_handle;
+	        size_t size = http_handle.parser_http(buf);
 	}
-
-//	printf("recv n:%d\n", n);
-//	printf("end recv\n");
 }
 
 } //namespace sails

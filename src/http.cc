@@ -14,9 +14,10 @@ using namespace std;
 
 
 namespace sails {
-	
-http_parser* HttpHandle::parser_http(char *buf) {
-	static http_parser_settings settings;
+
+
+HttpHandle::HttpHandle() {
+
 	settings.on_message_begin = message_begin_cb;
 	settings.on_header_field = header_field_cb;
 	settings.on_header_value = header_value_cb;
@@ -29,9 +30,25 @@ http_parser* HttpHandle::parser_http(char *buf) {
 	http_parser_init(parser, HTTP_REQUEST);
 	parser->data = this;
 
+}
+
+HttpHandle::~HttpHandle() {
+	cout << "delete handle~~~~~~~~~" << endl;
+
+	if(this->parser != NULL) {
+		free(parser);
+		parser = NULL;
+	}
+}
+	
+size_t HttpHandle::parser_http(char *buf) {
+
+
 	size_t nparsed = http_parser_execute(parser, &settings, buf, strlen(buf));	
 
-	return parser;
+	cout << "parser exxecute end" << endl;
+	
+	return nparsed;
 }
 
 int
@@ -183,7 +200,6 @@ int HttpHandle::message_complete_cb (http_parser *p)
 	}
 	
 	handle->msg.message_complete_cb_called = TRUE;
-	
 
 	handle->handle_request(p);
 	

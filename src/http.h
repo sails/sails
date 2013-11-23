@@ -52,7 +52,11 @@ struct message {
 
 class HttpHandle{		
 public:
-	http_parser *parser_http(char *buf);
+
+	HttpHandle();
+	~HttpHandle();
+	
+	size_t parser_http(char *buf);
 
 	// http_parser call_back
 
@@ -75,9 +79,10 @@ public:
 
 private:
 	void parser_url(char *url);
-
-public:
 	http_parser *parser;
+	http_parser_settings settings;
+public:
+
 	struct message msg;
 };
 	

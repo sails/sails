@@ -11,9 +11,7 @@ public:
 	static void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 	
 	static void recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
-	
-public:
-	static HttpHandle http_handle;
+
 };
 
 } //namespace sails
