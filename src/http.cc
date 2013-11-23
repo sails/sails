@@ -45,36 +45,6 @@ HttpHandle::request_url_cb (http_parser *p, const char *buf, size_t len)
 		 buf,
 		 len);
 
-
-	struct http_parser_url u;
-	int url_result = 0;
-	if((url_result = http_parser_parse_url(buf, strlen(buf), 0, &u)) == 0)
-	{
-		cout << "u port:" << u.port << endl;
-		if(u.field_set & (1 << UF_PORT)) {
-		        handle->msg.port = u.port;
-		}else {
-			handle->msg.port = 80;
-		}
-		if(handle->msg.host) {
-			free(handle->msg.host);
-		}
-		if(u.field_set & (1 << UF_HOST)) {
-			handle->msg.host = (char*)malloc(u.field_data[UF_HOST].len+1);
-			strncpy(handle->msg.host, buf+u.field_data[UF_HOST].off, u.field_data[UF_HOST].len);  
-			handle->msg.host[u.field_data[UF_HOST].len] = 0;  
-		}
-		memset(handle->msg.request_path, 0, strlen(handle->msg.request_path));
-		if(u.field_set & (1 << UF_PATH))  
-		{  
-			strncpy(handle->msg.request_path, buf+u.field_data[UF_PATH].off, u.field_data[UF_PATH].len);  
-			handle->msg.request_path[u.field_data[UF_PATH].len] = 0;  
-		}
-
-	}else {
-		cout << "url parser error:" << url_result << endl;
-	}
-
 	return 0;
 }
 
@@ -223,33 +193,71 @@ int HttpHandle::message_complete_cb (http_parser *p)
 
 void HttpHandle::handle_request(http_parser* parser)
 {
-	printf("handle request start \n");
+	char url[200];
+	memset(url, 0, strlen(url));
+	strncat(url, "http://", strlen("http://"));
+	for(int i = 0; i < this->msg.num_headers; i++) {
+		if(strcmp("Host", this->msg.headers[i][0]) == 0) {
+			strncat(url, this->msg.headers[i][1], strlen(msg.headers[i][1]));
+		}
+	}
+	strncat(url, msg.request_url, strlen(msg.request_url));
+	
+	cout << "url:" << url << endl;
+	
+	parser_url(url);
+		
 	this->printfmsg();
 }	
+
+void HttpHandle::parser_url(char *url)
+{
+	struct http_parser_url u;
+	int url_result = 0;
+	if((url_result = http_parser_parse_url(url, strlen(url), 0, &u)) == 0)
+	{
+		cout << "u port:" << u.port << endl;
+		if(u.field_set & (1 << UF_PORT)) {
+		        this->msg.port = u.port;
+		}else {
+			this->msg.port = 80;
+		}
+		if(this->msg.host) {
+			free(this->msg.host);
+		}
+		if(u.field_set & (1 << UF_HOST)) {
+			this->msg.host = (char*)malloc(u.field_data[UF_HOST].len+1);
+			strncpy(this->msg.host, url+u.field_data[UF_HOST].off, u.field_data[UF_HOST].len);  
+			this->msg.host[u.field_data[UF_HOST].len] = 0;  
+		}
+		memset(this->msg.request_path, 0, strlen(this->msg.request_path));
+		if(u.field_set & (1 << UF_PATH))  
+		{  
+			strncpy(this->msg.request_path, url+u.field_data[UF_PATH].off, u.field_data[UF_PATH].len);  
+			this->msg.request_path[u.field_data[UF_PATH].len] = 0;  
+		}
+
+	}else {
+		cout << "url parser error:" << url_result << endl;
+	}
+	
+}
+
 
 void HttpHandle::printfmsg()
 {
 	printf("message:\n");
 	printf("name:%s\n", msg.name);
 	printf("raw:%s\n", msg.raw);
-//	printf("type:%\n", &msg.type);
 	printf("request_url:%s\n", msg.request_url);
 	printf("request_path:%s\n", msg.request_path);
 	printf("host:%s\n", msg.host);
 	printf("body:%s\n", msg.body);
-//	printf("port:%" PRIu16 "\n", msg.port);
 	cout << "port:" << msg.port << endl;
 	for(int i = 0;i < msg.num_headers; i++) {
 		cout << msg.headers[i][0] << ":" << msg.headers[i][1] <<  endl;
 	}
-//	cout << "message:";
-//	cout << "name:" << msg.name << endl;
-//	cout << "raw:" << msg.raw << endl;
-//	cout << "type:" << msg.type << endl;
-//	cout << "request url:" << msg.request_url << endl;
-//	cout << "request path" << msg.request_path << endl;
-//	cout << "host:" << msg.host << endl;
-//	cout << "port:" << msg.port << endl;
+
 	
 }
 

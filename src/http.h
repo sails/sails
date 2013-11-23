@@ -70,7 +70,11 @@ public:
 // end http_parser call_back
 
 	void handle_request(http_parser* parser);
+
 	void printfmsg();
+
+private:
+	void parser_url(char *url);
 
 public:
 	http_parser *parser;
