@@ -39,12 +39,11 @@ int main(int argc, char *argv[])
 	servaddr.sin_port = htons(8000);
 
 	 // ignore SIGPIPE
-/*
 	struct sigaction on_sigpipe;
 	on_sigpipe.sa_handler = SIG_IGN;
 	sigemptyset(&on_sigpipe.sa_mask);
 	sigaction(SIGPIPE, &on_sigpipe, NULL);
-*/
+
 	bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 	fcntl(listenfd, F_SETFL, O_NONBLOCK);
 
