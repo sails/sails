@@ -2,6 +2,7 @@
 #define _HTTP_H_
 
 #include <http_parser.h>
+#include <string>
 
 namespace sails {
 
@@ -56,7 +57,7 @@ public:
 	HttpHandle();
 	~HttpHandle();
 	
-	size_t parser_http(char *buf);
+	size_t parser_http(std::string message);
 
 	// http_parser call_back
 
@@ -82,7 +83,6 @@ private:
 	http_parser *parser;
 	http_parser_settings settings;
 public:
-
 	struct message msg;
 };
 	
