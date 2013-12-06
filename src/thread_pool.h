@@ -25,11 +25,20 @@ public:
 	ThreadPool(int thread_num, int queue_size);
 
 	~ThreadPool();
+
+	int get_thread_num();
+	
+	int get_task_queue_size();
+
+
 	
 	int add_task(ThreadPoolTask task);
-	
+
 private:
+	void start_run();
+
 	int thread_num;
+	int task_queue_available_size;
 	std::mutex lock; // for add task and threads to get task crital section
 	std::condition_variable notify; // wake up wait thread
 	int shutdown;
