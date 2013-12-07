@@ -52,15 +52,13 @@ int ThreadPool::get_task_queue_size()
 }
 
 int ThreadPool::add_task(sails::ThreadPoolTask task) {
-	int result = 0;
+	int result = -1;
 	this->lock.lock();
 	if(this->task_queue_available_size > 0) {
 		this->task_queue.push(task);
 		this->task_queue_available_size--;
-		this->notify.notify_one(); // because mutex, at the same time only a thread wait for condition variable
+		this->notify.notify_one();
 		result = 0;
-	}else {
-		result = -1;
 	}
 	this->lock.unlock();
 	return result;
@@ -77,13 +75,13 @@ void* ThreadPool::threadpool_thread(void *threadpool) {
 		// wait on condition variable, check for spurious wakeups.
 		// when returning from wait, we own the lock.
 
-		while(!pool->shutdown) {
+		while((pool->task_queue.size() == 0) && (!pool->shutdown)) {
 			pool->notify.wait(locker); // wait would release lock, and when return it can get lock
 		}
-
 		if((pool->shutdown == immediate_shutdown) ||
 		   ((pool->shutdown == graceful_shutdown) &&
 		    (pool->task_queue.size() == 0))) {
+			printf("shutdown\n");
 			   break;
 		}
 		

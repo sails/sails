@@ -30,8 +30,6 @@ public:
 	
 	int get_task_queue_size();
 
-
-	
 	int add_task(ThreadPoolTask task);
 
 private:
