@@ -41,11 +41,8 @@ HttpHandle::~HttpHandle() {
 	}
 }
 	
-size_t HttpHandle::parser_http(std::string message) {
+size_t HttpHandle::parser_http(char *msg_buf) {
 
-	char *msg_buf = (char *)malloc(message.length()+1);
-	memset(msg_buf, 0, strlen(msg_buf));
-	strcpy(msg_buf, message.c_str());
 	cout << "msg_buf" << msg_buf << endl;
 	size_t nparsed = http_parser_execute(parser, &settings, msg_buf, strlen(msg_buf));	
 

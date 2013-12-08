@@ -6,7 +6,6 @@
 #include <vector>
 #include <thread>
 #include "http.h"
-#include "thread_pool.h"
 
 namespace sails {
 
@@ -16,8 +15,7 @@ public:
 	
 	static void recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 
-	static void handle(const std::string message);
-
+	static void handle(void *message);
 };
 
 } //namespace sails

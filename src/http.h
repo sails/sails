@@ -57,7 +57,7 @@ public:
 	HttpHandle();
 	~HttpHandle();
 	
-	size_t parser_http(std::string message);
+	size_t parser_http(char *msg_buf);
 
 	// http_parser call_back
 

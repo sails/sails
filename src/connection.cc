@@ -11,8 +11,12 @@
 #include <iostream>
 #include "connection.h"
 #include "util.h"
+#include "thread_pool.h"
 
 namespace sails {
+
+
+
 
 void Connection::accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
 	if(EV_ERROR & revents) {
@@ -45,7 +49,7 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revent
 
 	int connfd = watcher->fd;
 	int len = 10 * 1024;
-	char buf[len];
+	char *buf = (char *)malloc(len);
 	int n = 0;
 
 	memset(buf, 0, len);
@@ -72,17 +76,19 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revent
 		return;
 	}else {
 		printf("read buf :%s", buf);
-		std::string message(buf);
-		handle(message);
+
+		static ThreadPool parser_http_pool(100);	
+		ThreadPoolTask task;
+		task.fun = Connection::handle;
+		task.argument = buf;
+		parser_http_pool.add_task(task);
 	}
 }
 
-void Connection::handle(const std::string message) {
-	
+void Connection::handle(void *message) {
 	HttpHandle http_handle;
 	std::cout << "message:" << message << std::endl;
-	size_t size = http_handle.parser_http(message);
-		
+	size_t size = http_handle.parser_http((char *)message);
 }
 	
 } //namespace sails
