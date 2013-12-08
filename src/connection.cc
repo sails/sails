@@ -94,6 +94,10 @@ void Connection::handle(void *message) {
 		HttpHandle http_handle;
 		size_t size = http_handle.parser_http((char *)message);
 	}
+	if(message != NULL) {
+		free(message);
+		message = NULL;
+	}
 }
 
 int Connection::get_message_type(char *message)
