@@ -16,6 +16,8 @@ public:
 	static void recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 
 	static void handle(void *message);
+
+	static int get_message_type(char *message);
 };
 
 } //namespace sails

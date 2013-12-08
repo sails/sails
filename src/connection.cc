@@ -77,18 +77,28 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revent
 	}else {
 		printf("read buf :%s", buf);
 
-		static ThreadPool parser_http_pool(100);	
+		// use thread pool to parser http from string buf
+		static ThreadPool parser_pool(100);	
 		ThreadPoolTask task;
 		task.fun = Connection::handle;
 		task.argument = buf;
-		parser_http_pool.add_task(task);
+		parser_pool.add_task(task);
 	}
 }
 
 void Connection::handle(void *message) {
-	HttpHandle http_handle;
-	std::cout << "message:" << message << std::endl;
-	size_t size = http_handle.parser_http((char *)message);
+
+	int message_type = Connection::get_message_type((char *)message);
+	if(message_type == 1) {
+		//http message
+		HttpHandle http_handle;
+		size_t size = http_handle.parser_http((char *)message);
+	}
+}
+
+int Connection::get_message_type(char *message)
+{
+	return 1;
 }
 	
 } //namespace sails
