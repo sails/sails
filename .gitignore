@@ -4,3 +4,4 @@ sails
 htmlget
 /test/test
 /test/thread_pool_test
+/test/filter_test
