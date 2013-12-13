@@ -1,6 +1,7 @@
 #ifndef _FILTER_H_
 #define _FILTER_H_
 
+#include <stdio.h>
 #include <vector>
 
 namespace sails {

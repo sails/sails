@@ -12,11 +12,12 @@
 #include "connection.h"
 #include "util.h"
 #include "thread_pool.h"
+#include "request.h"
+#include "response.h"
+#include "filter.h"
+#include "filter_default.h"
 
 namespace sails {
-
-
-
 
 void Connection::accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
 	if(EV_ERROR & revents) {
@@ -86,30 +87,34 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revent
 	}
 }
 
-void Connection::handle(void *message) {
+void Connection::handle(void *message) 
+{
+	HttpHandle http_handle;
+	size_t size = http_handle.parser_http((char *)message);
 
-	int message_type = Connection::get_message_type((char *)message);
+	Request *request = new Request(&http_handle.msg);
+	Response *response = new Response();
+	
+
+	FilterChain<Request*, Response*> chain;
+	FilterDefault *default_filter = new FilterDefault();
+	chain.add_filter(default_filter);
+
+	int message_type = request->get_protocol_type();
+	
 	if(message_type == 1) {
-		//http message
-		HttpHandle http_handle;
-		size_t size = http_handle.parser_http((char *)message);
+		// start handle filter
+		chain.do_filter(request, response);
+	}else {
+		// rpc protocol based on http
 	}
 	if(message != NULL) {
 		free(message);
 		message = NULL;
 	}
 }
-
-int Connection::get_message_type(char *message)
-{
-	return 1;
-}
 	
-} //namespace sails
-
-
-
-
+} // namespace sails
 
 
 
