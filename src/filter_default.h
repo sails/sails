@@ -9,7 +9,8 @@ namespace sails {
 
 class FilterDefault : public Filter<Request*, Response*>
 {
-	void do_filter(Request* request, Response* response, FilterChain<Request*, Response*> *chain);
+	void do_filter(Request* request, Response* response, 
+		       FilterChain<Request*, Response*> *chain);
 };
 
 } // namespace sails

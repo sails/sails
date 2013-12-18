@@ -43,8 +43,8 @@ HttpHandle::~HttpHandle() {
 	
 size_t HttpHandle::parser_http(char *msg_buf) {
 
-	cout << "msg_buf" << msg_buf << endl;
-	size_t nparsed = http_parser_execute(parser, &settings, msg_buf, strlen(msg_buf));	
+	size_t nparsed = http_parser_execute(parser, &settings, 
+					     msg_buf, strlen(msg_buf));	
 
 	cout << "parser exxecute end" << endl;
 	
@@ -66,7 +66,6 @@ HttpHandle::request_url_cb (http_parser *p, const char *buf, size_t len)
 }
 
 int HttpHandle::status_complete_cb (http_parser *p) {
-	cout << "status_complete_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 //	p->data++;
@@ -75,7 +74,6 @@ int HttpHandle::status_complete_cb (http_parser *p) {
 
 int HttpHandle::header_field_cb (http_parser *p, const char *buf, size_t len)
 {
-	cout << "header_field_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	struct message *m = &(handle->msg);
@@ -95,7 +93,6 @@ int HttpHandle::header_field_cb (http_parser *p, const char *buf, size_t len)
 
 int HttpHandle::header_value_cb (http_parser *p, const char *buf, size_t len)
 {
-	cout << "header_value_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	struct message *m = &(handle->msg);
@@ -112,7 +109,6 @@ int HttpHandle::header_value_cb (http_parser *p, const char *buf, size_t len)
 
 void HttpHandle::check_body_is_final (const http_parser *p)
 {
-	cout << "check-body_is_final" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	if (handle->msg.body_is_final) {
 		fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
@@ -126,7 +122,6 @@ void HttpHandle::check_body_is_final (const http_parser *p)
 
 int HttpHandle::body_cb (http_parser *p, const char *buf, size_t len)
 {
-	cout << "body_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	strlncat(handle->msg.body,
@@ -141,7 +136,6 @@ int HttpHandle::body_cb (http_parser *p, const char *buf, size_t len)
 
 int HttpHandle::count_body_cb (http_parser *p, const char *buf, size_t len)
 {
-	cout << "count_body_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	assert(buf);
@@ -152,7 +146,6 @@ int HttpHandle::count_body_cb (http_parser *p, const char *buf, size_t len)
 
 int HttpHandle::message_begin_cb (http_parser *p)
 {	
-	cout << "message_begin_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	handle->msg.message_begin_cb_called = TRUE;
@@ -161,7 +154,6 @@ int HttpHandle::message_begin_cb (http_parser *p)
 
 int HttpHandle::headers_complete_cb (http_parser *p)
 {
-	cout << "headers_complete_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 
 	assert(p == handle->parser);
@@ -176,7 +168,6 @@ int HttpHandle::headers_complete_cb (http_parser *p)
 
 int HttpHandle::message_complete_cb (http_parser *p)
 {
-	cout << "message_complete_cb" << endl;
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	if (handle->msg.should_keep_alive != http_should_keep_alive(handle->parser))
@@ -268,6 +259,7 @@ void HttpHandle::printfmsg()
 	printf("request_url:%s\n", msg.request_url);
 	printf("request_path:%s\n", msg.request_path);
 	printf("host:%s\n", msg.host);
+	printf("should_keep_alive:%d\n", msg.should_keep_alive);
 	printf("body:%s\n", msg.body);
 	cout << "port:" << msg.port << endl;
 	for(int i = 0;i < msg.num_headers; i++) {
@@ -278,20 +270,4 @@ void HttpHandle::printfmsg()
 }
 
  
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+} // namespace sails

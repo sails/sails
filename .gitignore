@@ -5,3 +5,7 @@ htmlget
 /test/test
 /test/thread_pool_test
 /test/filter_test
+/src/index.html
+/src/test
+/test/response
+/test/core

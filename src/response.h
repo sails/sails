@@ -8,8 +8,10 @@ namespace sails {
 class Response {
 public:
 	Response();
+	char* to_str();
 public:
 	struct message *raw_data;
+	int connfd;
 };
 
 } // namespace sails

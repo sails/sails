@@ -20,7 +20,7 @@ enum header_element { NONE=0, FIELD, VALUE };
 
 struct message {
 	const char *name; // for debugging purposes
-	const char *raw;
+	char *raw;
 	enum http_parser_type type;
 	int method;
 	int status_code;
@@ -90,11 +90,4 @@ public:
 }
 
 #endif /* _HTTP_H_ */
-
-
-
-
-
-
-
 

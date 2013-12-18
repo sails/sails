@@ -29,7 +29,8 @@ void ThreadPool::start_run()
 {
 	// start worker threads
 	for(int i = 0; i < thread_num; i++) {
-		thread_list.push_back(std::thread(ThreadPool::threadpool_thread,this));
+		thread_list.push_back(
+			std::thread(ThreadPool::threadpool_thread,this));
 	}
 }
 
@@ -75,7 +76,8 @@ void* ThreadPool::threadpool_thread(void *threadpool) {
 		// wait on condition variable, check for spurious wakeups.
 		// when returning from wait, we own the lock.
 
-		while((pool->task_queue.size() == 0) && (!pool->shutdown)) {
+		while((pool->task_queue.size() == 0) 
+		      && (!pool->shutdown)) {
 			pool->notify.wait(locker); // wait would release lock, and when return it can get lock
 		}
 		if((pool->shutdown == immediate_shutdown) ||
