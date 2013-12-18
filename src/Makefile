@@ -4,8 +4,10 @@ CFLAGS=-std=c++11 -g
 INCLUDE=-I$(EV_PATH) -I$(HTTP_PARSER_PATH)
 OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
 	 response.o filter_default.o handle_default.o
+
 sails:$(OBJECTS)
 	g++ $(CFLAGS) -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev
+
 %.o: %.cc %.h
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
 #sails.o:sails.cc sails.h

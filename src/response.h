@@ -8,7 +8,9 @@ namespace sails {
 class Response {
 public:
 	Response();
-	char* to_str();
+	int set_header(const char* key, const char *value);
+	int set_body(const char* body);
+	int to_str();
 public:
 	struct message *raw_data;
 	int connfd;
