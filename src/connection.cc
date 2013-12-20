@@ -109,6 +109,7 @@ void Connection::handle(void *message)
 
 	Request *request = new Request(&http_handle.msg);
 	Response *response = new Response();
+	printf("param->connfd:%d\n", param->connfd);
 	response->connfd = param->connfd;
 	
 
@@ -124,6 +125,18 @@ void Connection::handle(void *message)
 	HandleDefault *default_handle = new HandleDefault();
 	handle_chain.add_handle(default_handle);
 	handle_chain.do_handle(request, response);
+
+	// out put
+	response->to_str();
+	printf("response:%s\n", response->get_raw());
+	int n = write(response->connfd, response->get_raw(), 
+		      strlen(response->get_raw()));
+	if(request->raw_data->should_keep_alive != 1) {
+		close(response->connfd);
+	}else {
+		
+	}
+
 
 	if(param != NULL) {
 		free(param->message);

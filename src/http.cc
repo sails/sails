@@ -16,7 +16,6 @@ namespace sails {
 void message_init(message *msg)
 {
 	if(msg != NULL) {
-		msg->name = NULL;
 		msg->raw = NULL;
 		msg->method = 0;
 		msg->status_code = 0;

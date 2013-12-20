@@ -1,6 +1,7 @@
 #include "response.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include<time.h>
 #include <string.h>
 
 namespace sails {
@@ -8,6 +9,8 @@ namespace sails {
 Response::Response() {
 	this->raw_data = (struct message *)malloc(sizeof(struct message));
 	message_init(this->raw_data);
+	this->raw_data->type = HTTP_RESPONSE;
+	this->set_default_header();
 }
 
 Response::~Response() {
@@ -15,6 +18,15 @@ Response::~Response() {
 		free(this->raw_data);
 		this->raw_data = NULL;
 	}
+}
+
+void Response::set_http_proto(int http_major, int http_minor) {
+	this->raw_data->http_major = http_major;
+	this->raw_data->http_minor = http_minor;
+}
+
+void Response::set_response_status(int response_status) {
+	this->raw_data->status_code = response_status;
 }
 
 int Response::set_header(const char *key, const char *value) {
@@ -31,9 +43,9 @@ int Response::set_header(const char *key, const char *value) {
 		if(!exist) {
 			// add header
 			raw_data->num_headers++;
-			strcpy(raw_data->headers[raw_data->num_headers][0],
+			strcpy(raw_data->headers[raw_data->num_headers-1][0],
 				key);
-			strcpy(raw_data->headers[raw_data->num_headers][1],
+			strcpy(raw_data->headers[raw_data->num_headers-1][1],
 				value);
 						
 		}
@@ -95,6 +107,36 @@ int Response::to_str() {
 		return 0;
 	}
 	return 1;
+}
+
+char* Response::get_raw() {
+	return this->raw_data->raw;
+}
+
+void Response::set_default_header() {
+	this->set_http_proto(1, 1);
+	this->set_response_status(200);
+	time_t timep;
+	time (&timep);
+
+	char headers[MAX_HEADERS][2][MAX_ELEMENT_SIZE] = 
+		{{ "Location", "localhost/cust"},
+		 { "Content-Type", "text/html;charset=UTF-8"},
+		 { "Date", ""},
+		 { "Expires", "" },
+		 { "Connection", "keep-alive"},
+		 { "Cache-Control", "public, max-age=0" },
+		 { "Server", "sails server" },
+		 { "Content-Length", "0" }};
+	
+	for(int i = 0; i < MAX_HEADERS; i++) {
+		this->set_header(headers[i][0], headers[i][1]);
+	}
+	// local time
+	char *time_str = ctime(&timep);
+	time_str[strlen(time_str)-1] = 0;// delete '\n'
+	this->set_header("Date", time_str);
+	this->set_header("Expires", time_str);
 }
 
 } // namespace sails
