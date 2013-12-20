@@ -7,8 +7,7 @@ namespace sails {
 
 Response::Response() {
 	this->raw_data = (struct message *)malloc(sizeof(struct message));
-	memset(raw_data, 0, sizeof(struct message));
-	raw_data->raw = NULL;
+	message_init(this->raw_data);
 }
 
 Response::~Response() {
@@ -45,6 +44,7 @@ int Response::set_header(const char *key, const char *value) {
 int Response::set_body(const char *body) {
 	if(body != NULL && strlen(body) > 0) {
 		int body_size = strlen(body);
+		memset(raw_data->body, 0, MAX_ELEMENT_SIZE);
 		strncpy(raw_data->body, body, body_size);
 		char body_size_str[11];
 		sprintf(body_size_str, "%d", body_size);

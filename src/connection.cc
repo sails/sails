@@ -87,7 +87,7 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher,
 		param->connfd = watcher->fd;
 
 		// use thread pool to parser http from string buf
-		static ThreadPool parser_pool(1, 100);	
+		static ThreadPool parser_pool(2, 100);	
 		ThreadPoolTask task;
 		task.fun = Connection::handle;
 		task.argument = param;

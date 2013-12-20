@@ -1,16 +1,13 @@
 #include "http.h"
 #include <stdio.h>
 #include <inttypes.h>
-#include <iostream>
 #include <string.h>
-#include <string>
 #include <strings.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
 #include "util.h"
 
-using namespace std;
 
 
 namespace sails {
@@ -37,6 +34,7 @@ void message_init(message *msg)
 			memset(msg->headers[i][0], 0, MAX_ELEMENT_SIZE);
 			memset(msg->headers[i][1], 0, MAX_ELEMENT_SIZE);
 		}
+		msg->last_header_element = NONE;
 		msg->should_keep_alive = 1;
 		msg->upgrade = NULL;
 		msg->http_major = 1;
@@ -60,7 +58,6 @@ HttpHandle::HttpHandle() {
 	http_parser_init(parser, HTTP_REQUEST);
 	parser->data = this;
 
-	printf("new http handle ...........\n");
 }
 
 HttpHandle::~HttpHandle() {
@@ -69,7 +66,6 @@ HttpHandle::~HttpHandle() {
 			parser->data = NULL;
 		}
 		free(parser);
-		printf("free parser!\n");
 		parser = NULL;
 	}
 	if(this->msg.host != NULL) {
@@ -86,8 +82,6 @@ size_t HttpHandle::parser_http(char *msg_buf) {
 
 	size_t nparsed = http_parser_execute(parser, &settings, 
 					     msg_buf, strlen(msg_buf));	
-
-	cout << "parser execute end" << endl;
 	
 	return nparsed;
 }
@@ -103,7 +97,6 @@ HttpHandle::request_url_cb (http_parser *p, const char *buf, size_t len)
 		printf("handle parser != p\n");
 	}
 	assert(p == handle->parser);
-	printf("start strncat\n");
 	strlncat(handle->msg.request_url,
 		 sizeof(handle->msg.request_url),
 		 buf,
@@ -128,7 +121,6 @@ int HttpHandle::header_field_cb (http_parser *p, const char *buf, size_t len)
 	if (m->last_header_element != FIELD)
 		m->num_headers++;
 	
-	printf("num_headers:%d\n", m->num_headers);
 	strlncat(m->headers[m->num_headers-1][0],
 		 sizeof(m->headers[m->num_headers-1][0]),
 		 buf,
@@ -156,7 +148,6 @@ int HttpHandle::header_value_cb (http_parser *p, const char *buf, size_t len)
 
 void HttpHandle::check_body_is_final (const http_parser *p)
 {
-	printf("check_body_is_final\n");
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	if (handle->msg.body_is_final) {
 		fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
@@ -218,7 +209,6 @@ int HttpHandle::headers_complete_cb (http_parser *p)
 
 int HttpHandle::message_complete_cb (http_parser *p)
 {
-	printf("message_complete_cb\n");
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
 	assert(p == handle->parser);
 	if (handle->msg.should_keep_alive != http_should_keep_alive(handle->parser))
@@ -244,7 +234,6 @@ int HttpHandle::message_complete_cb (http_parser *p)
 	handle->msg.message_complete_cb_called = TRUE;
 
 	handle->handle_request(p);
-	printf("end message_complete_cb\n");
 	return 0;
 }
 
@@ -252,7 +241,6 @@ int HttpHandle::message_complete_cb (http_parser *p)
 void HttpHandle::handle_request(http_parser* parser)
 {
 	char url[200];
-	printf("start set request url\n");
 	memset(url, 0, 200);
 	strncat(url, "http://", strlen("http://"));
 	for(int i = 0; i < this->msg.num_headers; i++) {
@@ -263,8 +251,6 @@ void HttpHandle::handle_request(http_parser* parser)
 	}
 	strncat(url, msg.request_url, strlen(msg.request_url));
 	
-	cout << "url:" << url << endl;
-	
 	parser_url(url);
 		
 	this->printfmsg();
@@ -272,12 +258,10 @@ void HttpHandle::handle_request(http_parser* parser)
 
 void HttpHandle::parser_url(char *url)
 {
-	printf("parser_url\n");
 	struct http_parser_url u;
 	int url_result = 0;
 	if((url_result = http_parser_parse_url(url, strlen(url), 0, &u)) == 0)
 	{
-		cout << "u port:" << u.port << endl;
 		if(u.field_set & (1 << UF_PORT)) {
 		        this->msg.port = u.port;
 		}else {
@@ -299,9 +283,8 @@ void HttpHandle::parser_url(char *url)
 		}
 
 	}else {
-		cout << "url parser error:" << url_result << endl;
+		printf("url parser error:%d\n", url_result);
 	}
-	printf("end parser_url");
 	
 }
 
@@ -309,17 +292,18 @@ void HttpHandle::parser_url(char *url)
 void HttpHandle::printfmsg()
 {
 	printf("message:\n");
-	printf("name:%s\n", msg.name);
-	printf("raw:%s\n", msg.raw);
 	printf("request_url:%s\n", msg.request_url);
+	printf("port:%d\n", msg.port);
 	printf("request_path:%s\n", msg.request_path);
 	printf("host:%s\n", msg.host);
 	printf("should_keep_alive:%d\n", msg.should_keep_alive);
-	printf("body:%s\n", msg.body);
-	cout << "port:" << msg.port << endl;
+
 	for(int i = 0;i < msg.num_headers; i++) {
-		cout << msg.headers[i][0] << ":" << msg.headers[i][1] <<  endl;
+		printf("header %d:%s:%s\n", i, msg.headers[i][0], 
+		       msg.headers[i][1]);
 	}
+
+	printf("body:%s\n", msg.body);
 
 	
 }
