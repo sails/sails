@@ -1,4 +1,5 @@
 #include "util.h"
+#include <stdio.h>
 
 namespace sails {
 
@@ -18,6 +19,7 @@ strlncat(char *dst, size_t len, const char *src, size_t n)
     ncpy = slen < rlen ? slen : (rlen - 1);
     memcpy(dst + dlen, src, ncpy);
     dst[dlen + ncpy] = '\0';
+    
   }
 
   assert(len > slen + dlen);

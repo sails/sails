@@ -28,3 +28,5 @@ sails:$(OBJECTS)
 #	g++ $(CFLAGS) $(INCLUDE) -c handle_default.cc
 clean:
 	rm *.o
+install:sails
+	cp sails ../dist

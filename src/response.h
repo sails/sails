@@ -8,6 +8,7 @@ namespace sails {
 class Response {
 public:
 	Response();
+	~Response();
 	int set_header(const char* key, const char *value);
 	int set_body(const char* body);
 	int to_str();

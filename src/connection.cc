@@ -87,7 +87,7 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher,
 		param->connfd = watcher->fd;
 
 		// use thread pool to parser http from string buf
-		static ThreadPool parser_pool(100);	
+		static ThreadPool parser_pool(1, 100);	
 		ThreadPoolTask task;
 		task.fun = Connection::handle;
 		task.argument = param;
@@ -98,10 +98,13 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher,
 void Connection::handle(void *message) 
 {
 	HttpHandle http_handle;
-	ConnectionnHandleParam *param = (ConnectionnHandleParam *)message;
+	ConnectionnHandleParam *param = NULL;
+	param = (ConnectionnHandleParam *)message;
 	if(param == 0) {
 		return;
 	}
+
+	// http_parser
 	size_t size = http_handle.parser_http(param->message);
 
 	Request *request = new Request(&http_handle.msg);
@@ -122,10 +125,16 @@ void Connection::handle(void *message)
 	handle_chain.add_handle(default_handle);
 	handle_chain.do_handle(request, response);
 
-	if(message != NULL) {
-		free(message);
-		message = NULL;
+	if(param != NULL) {
+		free(param->message);
+		param->message = NULL;
+		free(param);
+		param = NULL;
 	}
+
+	delete request;
+	delete response;
+
 }
 	
 } // namespace sails

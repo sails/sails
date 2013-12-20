@@ -7,7 +7,7 @@
 
 namespace sails {
 
-
+// cat n byte of src to dst, len stand for the maxlen of dst
 size_t strlncat(char *dst, size_t len, const char *src, size_t n);
 
 size_t strlcat(char *dst, const char *src, size_t len);

@@ -11,6 +11,13 @@ Response::Response() {
 	raw_data->raw = NULL;
 }
 
+Response::~Response() {
+	if(this->raw_data != NULL) {
+		free(this->raw_data);
+		this->raw_data = NULL;
+	}
+}
+
 int Response::set_header(const char *key, const char *value) {
 	if(key != NULL && value != NULL && strlen(key) > 0) {
 		int exist = 0;

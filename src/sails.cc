@@ -27,6 +27,15 @@ void init_config(int argc, char *argv[]) {
 
 int main(int argc, char *argv[])
 {
+	if(argc != 2) {
+		printf("param error\n");
+		return 1;
+	}
+	int port = atoi(argv[1]);
+	if(port < 8000) {
+		printf("port must be more than 8000\n");
+		return 1;
+	}
 	int  listenfd = 0;
 	if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		printf("create sock error !");
@@ -36,7 +45,7 @@ int main(int argc, char *argv[])
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(8000);
+	servaddr.sin_port = htons(port);
 
 	 // ignore SIGPIPE
 	struct sigaction on_sigpipe;

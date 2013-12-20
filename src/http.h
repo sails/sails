@@ -19,7 +19,7 @@ enum header_element { NONE=0, FIELD, VALUE };
 #define FALSE 0
 
 struct message {
-	const char *name; // for debugging purposes
+	char *name; // for debugging purposes
 	char *raw;
 	enum http_parser_type type;
 	int method;
@@ -38,7 +38,7 @@ struct message {
 	char headers [MAX_HEADERS][2][MAX_ELEMENT_SIZE];
 	int should_keep_alive;
 	
-	const char *upgrade; // upgraded body
+	char *upgrade; // upgraded body
 	
 	unsigned short http_major;
 	unsigned short http_minor;
@@ -50,6 +50,8 @@ struct message {
 	int body_is_final;
 };
 
+
+void message_init(message *msg);
 
 class HttpHandle{		
 public:
