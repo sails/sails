@@ -19,7 +19,6 @@ enum header_element { NONE=0, FIELD, VALUE };
 #define FALSE 0
 
 struct message {
-	char *name; // for debugging purposes
 	char *raw;
 	enum http_parser_type type;
 	int method;
