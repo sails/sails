@@ -5,6 +5,8 @@ sails is a platform for network applications. sails uses an event-driven I/O mod
 
 c++
 
+server
+------
 
 because of multiqueue netcard, so sails will make network threads number is configurable, make data queue no lock.
 
@@ -44,3 +46,13 @@ because of multiqueue netcard, so sails will make network threads number is conf
 	|                                                                                                                |
 	+----------------------------------------------------------------------------------------------------------------+
 
+
+
+client
+------
+
+
+* sync: manager a struct{ticketid, condition_variable}, and interface wait for condition variable, when recv ticketid from server, and get this struct
+and notify condition variable.
+
+* async:manager a struct{ticketid, function(void *)}, when get ticketid from server, invoke function
