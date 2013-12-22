@@ -4,6 +4,9 @@ namespace sails {
 
 Request::Request(struct message *raw_data) {
 	this->raw_data = raw_data;
+	
+	// set request param
+	
 }
 
 int Request::get_protocol_type() {
@@ -12,6 +15,10 @@ int Request::get_protocol_type() {
 		return type;
 	}
 	return 0;
+}
+
+std::string Request::getparam(std::string) {
+	
 }
 
 } // namespace sails

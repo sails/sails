@@ -28,11 +28,11 @@ void HandleDefault::do_handle(sails::Request *request,
 				content+=line;
 			}
 			content+="\r\n";
-			
 			response->set_body(content.c_str());
 
 			file.close();
 		}
+		std::cout << "content:" << content << std::endl;
 	}
 }
 

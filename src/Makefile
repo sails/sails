@@ -2,14 +2,27 @@ HTTP_PARSER_PATH = ../deps/http-parser
 EV_PATH = ../deps/libev
 CFLAGS=-std=c++11 -g
 INCLUDE=-I$(EV_PATH) -I$(HTTP_PARSER_PATH)
+
+INSTALL_PATH=../dist
+
 OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
 	 response.o filter_default.o handle_default.o
 
 sails:$(OBJECTS)
 	g++ $(CFLAGS) -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev
 
-%.o: %.cc %.h
+%.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
+
+
+-include $(OBJECTS:.o=.d) # $(OBJECTS.o=.d)replace all *.o to *.d
+
+%.d: %.cc
+	set -e; rm -f $@; \
+	g++ -MM $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
 #sails.o:sails.cc sails.h
 #	g++ $(CFLAGS) $(INCLUDE) -c sails.cc
 #http.o:http.cc http.h
@@ -29,4 +42,5 @@ sails:$(OBJECTS)
 clean:
 	rm *.o
 install:sails
+	if [ ! -d ${INSTALL_PATH} ]; then  mkdir -p ${INSTALL_PATH}; fi
 	cp sails ../dist
