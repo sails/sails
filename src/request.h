@@ -19,6 +19,12 @@ public:
 private:
 	std::map<std::string, std::string> param;
 };
+
+
+// get protocol type 
+enum PROTOCOL { ERROR_PROTOCOL=-1, NORMAL_PROTOCOL=0, PROTOBUF_PROTOCOL };
+int get_request_protocol(Request *request);
+
 	
 } // namespace sails
 

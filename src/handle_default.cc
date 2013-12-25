@@ -13,6 +13,13 @@ void HandleDefault::do_handle(sails::Request *request,
 			      HandleChain<sails::Request *, sails::Response *> *chain)
 {
 	if(request != 0) {
+		int proto_type = get_request_protocol(request);
+		printf("proto_type:%d\n", proto_type);
+		if(proto_type != NORMAL_PROTOCOL) {
+			chain->do_handle(request, response);
+			return;
+		}
+		
 		// open file and send content to client
 		std::string request_path = strcmp(
 			request->raw_data->request_path, "/")>0
@@ -33,6 +40,8 @@ void HandleDefault::do_handle(sails::Request *request,
 			file.close();
 		}
 		std::cout << "content:" << content << std::endl;
+
+		return;
 	}
 }
 

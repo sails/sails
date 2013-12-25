@@ -6,7 +6,8 @@ INCLUDE=-I$(EV_PATH) -I$(HTTP_PARSER_PATH)
 INSTALL_PATH=../dist
 
 OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
-	 response.o filter_default.o handle_default.o
+	 response.o filter_default.o handle_default.o \
+	handle_proto_decode.o
 
 sails:$(OBJECTS)
 	g++ $(CFLAGS) -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev
@@ -40,7 +41,7 @@ sails:$(OBJECTS)
 #handle_default.o:handle_default.h handle_default.cc handle.h
 #	g++ $(CFLAGS) $(INCLUDE) -c handle_default.cc
 clean:
-	rm *.o
+	rm *.o *.d
 install:sails
 	if [ ! -d ${INSTALL_PATH} ]; then  mkdir -p ${INSTALL_PATH}; fi
 	cp sails ../dist

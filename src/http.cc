@@ -148,6 +148,7 @@ int HttpHandle::header_value_cb (http_parser *p, const char *buf, size_t len)
 void HttpHandle::check_body_is_final (const http_parser *p)
 {
 	HttpHandle *handle = static_cast<HttpHandle*>(p->data);
+	/*
 	if (handle->msg.body_is_final) {
 		fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
 			"on last on_body callback call "
@@ -155,6 +156,7 @@ void HttpHandle::check_body_is_final (const http_parser *p)
 		assert(0);
 		abort();
 	}
+	*/
 	handle->msg.body_is_final = http_body_is_final(p);
 }
 
@@ -167,7 +169,7 @@ int HttpHandle::body_cb (http_parser *p, const char *buf, size_t len)
 		 buf,
 		 len);
 	handle->msg.body_size += len;
-	check_body_is_final(p);
+	HttpHandle::check_body_is_final(p);
 
 	return 0;
 }
@@ -178,7 +180,7 @@ int HttpHandle::count_body_cb (http_parser *p, const char *buf, size_t len)
 	assert(p == handle->parser);
 	assert(buf);
 	handle->msg.body_size += len;
-	check_body_is_final(p);
+	HttpHandle::check_body_is_final(p);
 
 	return 0;
 }

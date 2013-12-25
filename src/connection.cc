@@ -18,6 +18,7 @@
 #include "filter_default.h"
 #include "handle.h"
 #include "handle_default.h"
+#include "handle_proto_decode.h"
 
 namespace sails {
 
@@ -124,6 +125,8 @@ void Connection::handle(void *message)
 	HandleChain<Request*, Response*> handle_chain;
 	HandleDefault *default_handle = new HandleDefault();
 	handle_chain.add_handle(default_handle);
+	HandleProtoDecode *proto_decode = new HandleProtoDecode();
+	handle_chain.add_handle(proto_decode);
 	handle_chain.do_handle(request, response);
 
 	// out put

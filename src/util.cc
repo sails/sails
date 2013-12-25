@@ -55,6 +55,5 @@ strlcpy(char *dst, const char *src, size_t len)
 {
   return strlncpy(dst, len, src, (size_t) -1);
 }
-
 	
 }
