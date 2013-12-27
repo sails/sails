@@ -5,8 +5,7 @@
 #include "client_rpc.h"
 #include "addressbook.pb.h"
 
-
-//using namespace sails;
+using namespace sails;
 using namespace google::protobuf;
 using namespace test;
 
@@ -17,8 +16,8 @@ void DoneCallback(AddressBook *response) {
 
 int main(int argc, char *argv[])
 {
-	sails::RpcChannelImp channel;
-	sails::RpcControllerImp controller;
+        RpcChannelImp channel("l127.0.0.1", 9000);
+	RpcControllerImp controller;
 
 	AddressBookService::Stub stub(&channel);
 

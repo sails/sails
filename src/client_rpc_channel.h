@@ -8,8 +8,7 @@ namespace sails {
 class RpcChannelImp : public ::google::protobuf::RpcChannel
 {
 public:
-
-	RpcChannelImp::RpcChannelImp(std::string ip, int port);
+	RpcChannelImp(std::string ip, int port);
 	
 	void CallMethod(const google::protobuf::MethodDescriptor* method,
 			google::protobuf::RpcController* controller,

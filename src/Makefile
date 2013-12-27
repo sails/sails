@@ -40,6 +40,16 @@ sails:$(OBJECTS)
 #	g++ $(CFLAGS) $(INCLUDE) -c filter_default.cc
 #handle_default.o:handle_default.h handle_default.cc handle.h
 #	g++ $(CFLAGS) $(INCLUDE) -c handle_default.cc
+
+
+########################client library###################################
+
+libclientrpc:client_rpc_channel.o client_rpc_controller.o client_rpc.o
+	ar rs libclientrpc.a client_rpc_channel.o client_rpc_controller.o client_rpc.o
+
+########################client library###################################
+
+
 clean:
 	rm *.o *.d
 install:sails

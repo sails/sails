@@ -19,7 +19,7 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		     google::protobuf::Message *response)
 {
 	RpcClientConnection connection("127.0.0.1", 8000);
-	int connectfd = connection.connectfd;
+	int connectfd = connection.get_available_con_fd();
 	
 	return 0;
 }
