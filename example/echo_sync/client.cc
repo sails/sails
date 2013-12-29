@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 	if(argc == 2) {
 		port = atoi(argv[1]);
 	}
-        RpcChannelImp channel("localhost", port);
+        RpcChannelImp channel("127.0.0.1", port);
 	RpcControllerImp controller;
 
 	AddressBookService::Stub stub(&channel);

@@ -19,10 +19,15 @@ private:
 
 class RpcClient {
 public:
+	RpcClient(std::string ip, int port);
 	int sync_call(const google::protobuf::MethodDescriptor *method,
 		      google::protobuf::RpcController* controller,
 		      const google::protobuf::Message* request,
 		      google::protobuf::Message* response);
+
+private:
+	std::string ip;
+	int port;
 };
 
 } // namespace sails

@@ -20,7 +20,7 @@ void RpcChannelImp::CallMethod(const MethodDescriptor* method,
 			       Closure *done) 
 {
 //	cout << "method:" << method->name() << endl;
-	RpcClient *client = new RpcClient();
+	RpcClient *client = new RpcClient(ip, port);
 	int ret = client->sync_call(method, controller, request, response);
 	if(ret == 0 && done != NULL) {
 		done->Run();		

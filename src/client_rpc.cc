@@ -16,13 +16,16 @@ using namespace google::protobuf;
 
 namespace sails {
 
+RpcClient::RpcClient(std::string ip, int port):ip(ip),port(port){
+	
+}
 
 int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method, 
 		     google::protobuf::RpcController *controller, 
 		     const google::protobuf::Message *request, 
 		     google::protobuf::Message *response)
 {
-	RpcClientConnection connection("127.0.0.1", 8000);
+	RpcClientConnection connection(ip, port);
 	int connectfd = connection.get_available_con_fd();
 	if(connectfd > 0) {
 		const string service_name = method->service()->name();
@@ -33,7 +36,9 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		struct message *raw_data = (struct message*)malloc(sizeof(struct message));
 		Request http_request(raw_data);
 		http_request.set_default_header();
-		http_request.set_header("Host", "localhost:8000");
+		stringstream port_str;
+		port_str << port;
+		http_request.set_header("Host", (ip+port_str.str()).c_str());
 		http_request.set_request_method(2);
 
 		content = "sails:protobuf"+content;
