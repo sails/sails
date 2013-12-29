@@ -44,8 +44,9 @@ sails:$(OBJECTS)
 
 ########################client library###################################
 
-libclientrpc:client_rpc_channel.o client_rpc_controller.o client_rpc.o
-	ar rs libclientrpc.a client_rpc_channel.o client_rpc_controller.o client_rpc.o
+ClientObjects=request.o client_rpc_channel.o client_rpc_controller.o client_rpc.o
+libclientrpc:$(ClientObjects)
+	ar rs libclientrpc.a $(ClientObjects)
 
 ########################client library###################################
 

@@ -10,10 +10,17 @@ namespace sails {
 class Request {
 public:
 	Request(struct message *raw_data);
-	int get_protocol_type();
 
 	std::string getparam(std::string);
-	
+
+	// new request for rpc client to send data 
+	void set_http_proto(int http_major, int http_minor);
+	void set_request_method(int method);
+	void set_default_header();
+	int set_header(const char* key, const char *value);
+	int set_body(const char* body);
+	int to_str();
+	char* get_raw();
 public:
 	struct message *raw_data;
 private:

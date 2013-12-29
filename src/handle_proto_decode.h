@@ -12,6 +12,10 @@ class HandleProtoDecode : public Handle<Request*, Response*>
 public:
 	void do_handle(Request* request, Response* response, 
 		       HandleChain<Request*, Response*> *chain);
+
+private:
+	void decode_protobuf(Request* request, Response* response, 
+		       HandleChain<Request*, Response*> *chain);
 };
 
 }

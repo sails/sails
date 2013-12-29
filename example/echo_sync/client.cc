@@ -16,13 +16,23 @@ void DoneCallback(AddressBook *response) {
 
 int main(int argc, char *argv[])
 {
-        RpcChannelImp channel("l127.0.0.1", 9000);
+	int port = 8000;
+	if(argc == 2) {
+		port = atoi(argv[1]);
+	}
+        RpcChannelImp channel("localhost", port);
 	RpcControllerImp controller;
 
 	AddressBookService::Stub stub(&channel);
 
         AddressBook request;
         AddressBook response;
+
+
+	Person *p1 = request.add_person();
+	p1->set_id(1);
+	p1->set_name("xu");
+	p1->set_email("sailsxu@gmail.com");
 
 	Closure* callback = NewCallback(&DoneCallback, &response);
 
@@ -31,3 +41,13 @@ int main(int argc, char *argv[])
 	return 0;
 
 }
+
+
+
+
+
+
+
+
+
+
