@@ -40,6 +40,11 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		port_str << port;
 		http_request.set_header("Host", (ip+port_str.str()).c_str());
 		http_request.set_request_method(2);
+		http_request.set_header("serviceName", method->service()->name().c_str());
+		http_request.set_header("methodName", method->name().c_str());
+		stringstream indexstr;
+		indexstr << method->index();
+		http_request.set_header("methodIndex", indexstr.str().c_str());
 
 		content = "sails:protobuf"+content;
 		http_request.set_body(content.c_str());

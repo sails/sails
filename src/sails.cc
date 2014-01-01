@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <ev.h>
 #include "connection.h"
+#include "module_load.h"
 
 namespace sails {
 
@@ -58,6 +59,12 @@ int main(int argc, char *argv[])
 	bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 	fcntl(listenfd, F_SETFL, O_NONBLOCK);
 
+	//regitster service
+	sails::ModuleLoad module_load;
+	module_load.load("./service_test.so");
+	
+
+
 	printf("listen\n");
 	if(listen(listenfd, 10) >= 0) {
 		struct ev_loop *loop = ev_default_loop(0);
@@ -69,3 +76,9 @@ int main(int argc, char *argv[])
 	}
 	return 0;
 }
+
+
+
+
+
+

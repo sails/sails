@@ -3,17 +3,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+using namespace std;
 namespace sails {
 
 Request::Request(struct message *raw_data) {
 	this->raw_data = raw_data;
-	
-	// set request param
-	
 }
 
-std::string Request::getparam(std::string) {
-	
+std::string Request::getparam(std::string param_name) {
+	map<string, string>::iterator iter = this->param.find(param_name);
+	if(iter == param.end()) {
+		if(param.empty() && this->raw_data != NULL) {
+			for(int i = 0; i < raw_data->num_headers; i++) {
+				string key(raw_data->headers[i][0]);
+				string value(raw_data->headers[i][1]);
+				param.insert(map<string,string>::value_type(key,value));
+			}
+			iter =  this->param.find(param_name);
+		}
+	}
+
+	if(iter == param.end()){
+		return "";
+	}else {
+		return iter->second;
+	}
 }
 
 void Request::set_default_header() {

@@ -11,7 +11,7 @@ class Request {
 public:
 	Request(struct message *raw_data);
 
-	std::string getparam(std::string);
+	std::string getparam(std::string param_name);
 
 	// new request for rpc client to send data 
 	void set_http_proto(int http_major, int http_minor);
