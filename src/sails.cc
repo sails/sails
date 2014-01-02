@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 
 	//regitster service
 	sails::ModuleLoad module_load;
-	module_load.load("./service_test.so");
+	module_load.load("../lib/service_test.so");
 	
 
 

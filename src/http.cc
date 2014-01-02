@@ -41,7 +41,7 @@ void message_init(message *msg)
 	}
 }
 
-HttpHandle::HttpHandle() {
+HttpHandle::HttpHandle(http_parser_type type) {
 
 	settings.on_message_begin = message_begin_cb;
 	settings.on_header_field = header_field_cb;
@@ -53,9 +53,12 @@ HttpHandle::HttpHandle() {
 	
 	message_init(&msg);
 
+	this->parser_type = type;
         parser = (http_parser *)malloc(sizeof(http_parser));
-	http_parser_init(parser, HTTP_REQUEST);
+	http_parser_init(parser, type);	
+
 	parser->data = this;
+
 
 }
 
@@ -233,8 +236,11 @@ int HttpHandle::message_complete_cb (http_parser *p)
 	}
 	
 	handle->msg.message_complete_cb_called = TRUE;
+	
+	if(handle->parser_type = HTTP_REQUEST) {
+		handle->handle_request(p);		
+	}
 
-	handle->handle_request(p);
 	return 0;
 }
 

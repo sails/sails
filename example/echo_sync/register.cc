@@ -11,6 +11,13 @@ class AddressBookServiceImp : public AddressBookService
                        ::test::AddressBook* response,
 			 ::google::protobuf::Closure* done) {
 		printf("add method call\n");
+		if(request != NULL && response != NULL) {
+			Person *resp_person = response->add_person();
+			const Person req_person = request->person(0);
+			resp_person->set_id(req_person.id());
+			resp_person->set_name(req_person.name());
+			resp_person->set_email(req_person.email());
+		}
 	}
 };
 
@@ -26,19 +33,6 @@ extern "C" {
 
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -55,11 +55,10 @@ void message_init(message *msg);
 class HttpHandle{		
 public:
 
-	HttpHandle();
+	HttpHandle(http_parser_type type);//HTTP_REQUEST, HTTP_RESPONSE
 	~HttpHandle();
 	
-	size_t parser_http(char *msg_buf);
-
+	size_t parser_http(char *msg_buf); 
 	// http_parser call_back
 
 	int static request_url_cb(http_parser *p, const char *buf, size_t len);
@@ -75,6 +74,7 @@ public:
 	
 // end http_parser call_back
 
+	// for request only
 	void handle_request(http_parser* parser);
 
 	void printfmsg();
@@ -83,6 +83,7 @@ private:
 	void parser_url(char *url);
 	http_parser *parser;
 	http_parser_settings settings;
+	int parser_type; // request response
 public:
 	struct message msg;
 };

@@ -1,5 +1,6 @@
 #include "client_rpc.h"
 #include <iostream>
+#include <stdio.h>
 #include <sstream>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
@@ -9,6 +10,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "request.h"
+#include "util.h"
+#include "http.h"
 
 using namespace std;
 using namespace google::protobuf;
@@ -58,6 +61,20 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		cout << data << endl;
 
 		write(connectfd, data, strlen(data));
+
+		int n = 0;
+		int len = 10 * 1024;
+		char *recv_buf = (char *)malloc(len);
+		n = read(connectfd, recv_buf, len);
+		printf("recv msg:%s\n", recv_buf);
+		HttpHandle http_handle(HTTP_RESPONSE);
+		http_handle.parser_http(recv_buf);
+		for(int i = 0;i <  http_handle.msg.num_headers; i++) {
+			printf("header %d:%s:%s\n", i,  http_handle.msg.headers[i][0],   http_handle.msg.headers[i][1]);
+		}
+
+		printf("response body:%s\n", http_handle.msg.body);
+		printf("\n");
 	}
 	
 	return 0;

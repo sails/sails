@@ -47,26 +47,16 @@ void HandleProtoDecode::decode_protobuf(sails::Request *request, sails::Response
 			string msgstr(request->raw_data->body+14);
 			request_msg->ParseFromString(msgstr);
 			service->CallMethod(method_desc,NULL, request_msg, response_mg, NULL);
+			string response_content = response_mg->SerializeAsString();
+		        response->set_header("serviceName", method_desc->service()->name().c_str());
+			response->set_header("methodName", method_desc->name().c_str());
+
+			response_content = "sails:protobuf"+response_content;
+			response->set_body(response_content.c_str());
 		}
 	}
 }
 
 
 } // namespace sails
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

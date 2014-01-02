@@ -98,7 +98,7 @@ void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher,
 
 void Connection::handle(void *message) 
 {
-	HttpHandle http_handle;
+	HttpHandle http_handle(HTTP_REQUEST);
 	ConnectionnHandleParam *param = NULL;
 	param = (ConnectionnHandleParam *)message;
 	if(param == 0) {
