@@ -45,6 +45,8 @@ void ModuleLoad::load(string modulepath) {
 				ServiceRegister::instance()->register_service(service);
 		
 			}
+			delete(service_list);
+			service_list = NULL;
 		}		
 		printf("register ok\n");
 //   		dlclose(handle);
