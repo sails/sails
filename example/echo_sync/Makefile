@@ -9,5 +9,5 @@ client: client.o addressbook.pb.o
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
 
 servicecc=register.cc addressbook.pb.cc
-service.so: $(servicecc)
-	g++ -shared $(INCLUDE) -fPIC -o service.so $(servicecc) -lprotobuf
+service_test.so: $(servicecc)
+	g++ -shared $(INCLUDE) -fPIC -o service_test.so $(servicecc) -lprotobuf

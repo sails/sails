@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <iostream>
+#include <list>
 #include "service_register.h"
 #include <google/protobuf/descriptor.h>
 
@@ -14,7 +15,7 @@ void ModuleLoad::load(string modulepath) {
 	   && access(modulepath.c_str(), R_OK) == 0) {
 		
 		void *handle;
-		typedef google::protobuf::Service* (*RegisterFun)();
+		typedef list<google::protobuf::Service*>* (*RegisterFun)();
 		char *error;
 		
 		handle = dlopen(modulepath.c_str(), RTLD_NOW);
@@ -34,9 +35,17 @@ void ModuleLoad::load(string modulepath) {
 		}
 		printf("load ok!\n");
 
-	        google::protobuf::Service* service = (*register_fun)();
-		printf("service name:%s\n", service->GetDescriptor()->name().c_str());
-		ServiceRegister::instance()->register_service(service);
+	        list<google::protobuf::Service*> *service_list = (*register_fun)();
+		if(service_list != NULL) {
+			list<google::protobuf::Service*>::iterator iter;
+			for(iter = service_list->begin(); iter != service_list->end(); ++iter) {
+
+				google::protobuf::Service* service = *iter;
+				printf("service name:%s\n", service->GetDescriptor()->name().c_str());
+				ServiceRegister::instance()->register_service(service);
+		
+			}
+		}		
 		printf("register ok\n");
 //   		dlclose(handle);
 
@@ -47,13 +56,3 @@ void ModuleLoad::load(string modulepath) {
 }
 
 } // namespace sails
-
-
-
-
-
-
-
-
-
-
