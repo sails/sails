@@ -1,9 +1,10 @@
 SRC=../../src
 CFLAGS=-std=c++11 -g
 INCLUDE=-I$(SRC)
+LIBPATH=../../lib
 
 client: client.o addressbook.pb.o
-	g++ $(CFLAGS) -Wl,-rpath,../../lib/ client.o addressbook.pb.o -o client -L$(SRC) -lclient -lprotobuf -lhttp_parser
+	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -lclient -lprotobuf
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
