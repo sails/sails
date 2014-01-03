@@ -49,7 +49,7 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		indexstr << method->index();
 		http_request.set_header("methodIndex", indexstr.str().c_str());
 
-		content = "sails:protobuf"+content;
+		content = string(PROTOBUF)+content;
 		http_request.set_body(content.c_str());
 		
 	        stringstream body_len_str;
@@ -69,11 +69,18 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		printf("recv msg:%s\n", recv_buf);
 		HttpHandle http_handle(HTTP_RESPONSE);
 		http_handle.parser_http(recv_buf);
-		for(int i = 0;i <  http_handle.msg.num_headers; i++) {
-			printf("header %d:%s:%s\n", i,  http_handle.msg.headers[i][0],   http_handle.msg.headers[i][1]);
-		}
 
 		printf("response body:%s\n", http_handle.msg.body);
+		
+		if(strlen(http_handle.msg.body) > 0) {
+			if(strncasecmp(http_handle.msg.body, 
+				       PROTOBUF, strlen(PROTOBUF)) == 0) {
+				// protobuf message
+				response->ParseFromString(string(http_handle.msg.body+14));
+				
+			}
+		}
+		
 		printf("\n");
 	}
 	

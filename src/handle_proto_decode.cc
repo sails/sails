@@ -51,7 +51,7 @@ void HandleProtoDecode::decode_protobuf(sails::Request *request, sails::Response
 		        response->set_header("serviceName", method_desc->service()->name().c_str());
 			response->set_header("methodName", method_desc->name().c_str());
 
-			response_content = "sails:protobuf"+response_content;
+			response_content = string(PROTOBUF)+response_content;
 			response->set_body(response_content.c_str());
 		}
 	}

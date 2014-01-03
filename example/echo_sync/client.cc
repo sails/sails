@@ -37,6 +37,9 @@ int main(int argc, char *argv[])
 	Closure* callback = NewCallback(&DoneCallback, &response);
 
 	stub.add(&controller, &request, &response, callback);
+	
+	printf("response:\n");
+	std::cout << response.DebugString() << std::endl;
 
 	return 0;
 

@@ -146,7 +146,7 @@ int get_request_protocol(Request* request)
 	if(request != NULL) {
 		char *body = request->raw_data->body;
 		if(strlen(body) > 0) {
-			if(strncasecmp(body, "sails:protobuf", 14) == 0) {
+			if(strncasecmp(body, PROTOBUF, strlen(PROTOBUF)) == 0) {
 				return PROTOBUF_PROTOCOL;	
 			}
 

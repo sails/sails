@@ -7,6 +7,9 @@
 
 namespace sails {
 
+
+const char* const PROTOBUF ="sails:protobuf";
+
 class Request {
 public:
 	Request(struct message *raw_data);
