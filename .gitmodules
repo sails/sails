@@ -4,3 +4,6 @@
 [submodule "deps/libev"]
 	path = deps/libev
 	url = https://github.com/michaelmior/libev.git
+[submodule "deps/json-cpp"]
+	path = deps/json-cpp
+	url = https://github.com/mrtazz/json-cpp.git
