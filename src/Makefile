@@ -7,10 +7,11 @@ INSTALL_PATH=../dist
 
 OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
 	 response.o filter_default.o handle_default.o \
-	handle_proto_decode.o module_load.o service_register.o
+	handle_proto_decode.o module_load.o service_register.o \
+	config.o
 
 sails:$(OBJECTS)
-	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev -lprotobuf -ldl
+	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev -lprotobuf -ldl -ljson
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

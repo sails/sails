@@ -22,3 +22,7 @@ response_test:response_test.o
 	g++ $(CFLAGS) -o response_test response_test.o ../src/response.o -lgtest -pthread
 response_test.o:response_test.cc ../src/response.h
 	g++ $(CFLAGS) $(INCLUDE) -c response_test.cc
+config_test:config_test.o
+	g++ $(CFLAGS) $(INCLUDE) -o config_test config_test.o ../src/config.o -ljson -lgtest -pthread
+config_test.o:config_test.cc ../src/config.h
+	g++ $(CFLAGS) $(INCLUDE) -c config_test.cc

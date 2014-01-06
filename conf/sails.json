@@ -1,0 +1,3 @@
+{
+    "modules":[{"name":"test", "path":"../lib/service_test.so"}]
+}

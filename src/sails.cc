@@ -9,16 +9,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ev.h>
+#include "config.h"
 #include "connection.h"
 #include "module_load.h"
 
+
 namespace sails {
+
+// global va
+Config config;
+std::map<std::string, std::string> modules;
+
+
 
 void sails_init() {
 	
 }
 
 void init_config(int argc, char *argv[]) {
+	modules = config.get_modules();
 	
 }
 
@@ -28,6 +37,9 @@ void init_config(int argc, char *argv[]) {
 
 int main(int argc, char *argv[])
 {
+	sails::sails_init();
+	sails::init_config(argc, argv);
+
 	if(argc != 2) {
 		printf("param error\n");
 		return 1;
@@ -59,9 +71,15 @@ int main(int argc, char *argv[])
 	bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 	fcntl(listenfd, F_SETFL, O_NONBLOCK);
 
+
+	
 	//regitster service
 	sails::ModuleLoad module_load;
-	module_load.load("../lib/service_test.so");
+	std::map<std::string, std::string>::iterator iter;
+	for(iter = sails::modules.begin(); iter != sails::modules.end(); iter++) {
+		module_load.load(iter->second);
+	}
+
 	
 
 
