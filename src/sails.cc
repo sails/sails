@@ -40,11 +40,7 @@ int main(int argc, char *argv[])
 	sails::sails_init();
 	sails::init_config(argc, argv);
 
-	if(argc != 2) {
-		printf("param error\n");
-		return 1;
-	}
-	int port = atoi(argv[1]);
+	int port = sails::config.get_listen_port();
 	if(port < 8000) {
 		printf("port must be more than 8000\n");
 		return 1;
