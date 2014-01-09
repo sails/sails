@@ -33,7 +33,6 @@ void ModuleLoad::load(string modulepath) {
 			fprintf(stderr, "%s\n", error);
 			exit(EXIT_FAILURE);
 		}
-		printf("load ok!\n");
 
 	        list<google::protobuf::Service*> *service_list = (*register_fun)();
 		if(service_list != NULL) {
@@ -48,7 +47,7 @@ void ModuleLoad::load(string modulepath) {
 			delete(service_list);
 			service_list = NULL;
 		}		
-		printf("register ok\n");
+
 //   		dlclose(handle);
 
 	}else {

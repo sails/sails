@@ -1,6 +1,6 @@
 HTTP_PARSER_PATH = ../deps/http-parser
 EV_PATH = ../deps/libev
-CFLAGS=-std=c++11 -g
+CFLAGS=-std=c++11 -g -fno-omit-frame-pointer -O0
 INCLUDE=-I$(EV_PATH) -I$(HTTP_PARSER_PATH)
 
 INSTALL_PATH=../dist
@@ -11,7 +11,7 @@ OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
 	config.o
 
 sails:$(OBJECTS)
-	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev -lprotobuf -ldl -ljson
+	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lev -lprotobuf -ldl -ljson -lprofiler
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

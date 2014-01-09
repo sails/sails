@@ -1,6 +1,7 @@
 #include "connection.h"
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <strings.h>
 #include <string.h>
@@ -22,79 +23,35 @@
 
 namespace sails {
 
-void Connection::accept_cb(struct ev_loop *loop, struct ev_io *watcher,
-			   int revents) {
-	if(EV_ERROR & revents) {
-		printf("accept error!\n");
-		return;
-	}
+void read_data(int connfd) {
+     int len = 10 * 1024;
+     char *buf = (char *)malloc(len);
+     int n = 0;
+     memset(buf, 0, len);
 
-	struct sockaddr_in clientaddr;
-	socklen_t len = sizeof(struct sockaddr);
-	int listenfd = watcher->fd;
-	struct ev_io *recv_w = (struct ev_io *)malloc(sizeof(struct ev_io));
-	int connfd = accept(listenfd, (struct sockaddr*)&clientaddr, &len);
-	printf("accept connection and connfd:%d\n", connfd);
-	fcntl(connfd, F_SETFL, O_NONBLOCK);
-	
-	ev_io_init(recv_w, sails::Connection::recv_cb, connfd, EV_READ);
-	ev_io_start(loop, recv_w);
-	
+     n = read(connfd, buf, len);
+     
+     if(n == 0 || n == -1) { // n=0: client close or shutdown send
+	                     // n=1: recv signal_pending before read data
+	  perror("read connfd");
+	  close(connfd); // will delete from epoll set auto
+	  return;
+     }
+     
+     printf("read buf :%s", buf);
+
+     ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+     param->message = buf;
+     param->connfd = connfd;
+
+     // use thread pool to parser http from string buf
+     static ThreadPool parser_pool(2, 100);	
+     ThreadPoolTask task;
+     task.fun = Connection::handle;
+     task.argument = param;
+     parser_pool.add_task(task);
 }
 
-void Connection::recv_cb(struct ev_loop *loop, struct ev_io *watcher, 
-			 int revents) {
-	if(EV_ERROR & revents) {
-		printf("recv error!\n");
-		return;
-	}
-	if(!EV_READ) {
-		printf("not readable \n");
-		return;
-	}
-
-	int connfd = watcher->fd;
-	int len = 10 * 1024;
-	char *buf = (char *)malloc(len);
-	int n = 0;
-
-	memset(buf, 0, len);
-	n = read(connfd, buf, len);
-
-	if(n == 0) {
-		//client close connection
-		ev_io_stop(loop, watcher);
-		free(watcher);
-		printf("n 0 and free watcher for connfd:%d\n", connfd);
-		return;
-	}
-
-	if(n == -1) {
-		//error
-		ev_io_stop(loop, watcher);
-		free(watcher);
-		printf("n -1 and free watcher for connfd:%d \n", connfd);
-		return;
-	}
-	
-	if(strlen(buf) == 0) {
-		printf("read 0 byte \n");
-		return;
-	}else {
-		printf("read buf :%s", buf);
-
-		ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
-		param->message = buf;
-		param->connfd = watcher->fd;
-
-		// use thread pool to parser http from string buf
-		static ThreadPool parser_pool(2, 100);	
-		ThreadPoolTask task;
-		task.fun = Connection::handle;
-		task.argument = param;
-		parser_pool.add_task(task);
-	}
-}
 
 void Connection::handle(void *message) 
 {

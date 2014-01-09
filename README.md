@@ -51,8 +51,8 @@ because of multiqueue netcard, so sails will make network threads number is conf
 client
 ------
 
-
-* sync: manager a struct{ticketid, condition_variable}, and interface wait for condition variable, when recv ticketid from server, and get this struct
+* sync(easy): each request must rebuild a new connect with server
+* sync(hard): reuse a connect for many request in multithread, manager a struct{ticketid, condition_variable}, and interface wait for condition variable, when recv ticketid from server, and get this struct
 and notify condition variable.
 
 * async:manager a struct{ticketid, function(void *)}, when get ticketid from server, invoke function

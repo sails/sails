@@ -1,9 +1,6 @@
 [submodule "deps/http-parser"]
 	path = deps/http-parser
 	url = https://github.com/joyent/http-parser.git
-[submodule "deps/libev"]
-	path = deps/libev
-	url = https://github.com/michaelmior/libev.git
 [submodule "deps/json-cpp"]
 	path = deps/json-cpp
 	url = https://github.com/mrtazz/json-cpp.git

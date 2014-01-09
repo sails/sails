@@ -35,6 +35,7 @@ map<string, string> Config::get_modules()
 			}
 		}
 	}
+	return retmap;
 }
 
 int Config::get_listen_port()
