@@ -78,7 +78,7 @@ struct message* get_message_by_connfd(int connfd) {
      }
 }
 void reset_message_by_connfd(int connfd) {
-     if(message_list == NULL) {
+     if(message_list != NULL) {
 	  if(connfd > 0 && connfd < max_connfd) {
 	       message_list[connfd] = NULL;
 	  }
