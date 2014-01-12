@@ -1,5 +1,6 @@
 #include "config.h"
 #include <fstream>
+#include <sys/sysinfo.h>
 
 using namespace std;
 
@@ -48,6 +49,24 @@ int Config::get_max_connfd()
 	  return 2000;
      }
      return root["max_connfd"].asInt();
+}
+
+int Config::get_handle_thread_pool() {
+     if(root["handle_thread_pool"].empty()) {
+	  int processor_num = get_nprocs();
+	  if(processor_num < 0) {
+	       return 2;
+	  }
+	  return processor_num;
+     }
+     return root["handle_thread_pool"].asInt();
+}
+
+int Config::get_handle_request_queue_size() {
+     if(root["handle_request_queue_size"].empty()) {
+	  return 1000;
+     }
+     return root["handle_request_queue_size"].asInt();
 }
 
 } // namespace sails

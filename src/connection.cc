@@ -20,10 +20,12 @@
 #include "handle.h"
 #include "handle_default.h"
 #include "handle_proto_decode.h"
+#include "config.h"
 
 namespace sails {
 
 
+extern Config config;
 
 void read_data(int connfd) {
      int len = 4 * 1024;
@@ -65,8 +67,9 @@ void read_data(int connfd) {
 
 //     Connection::handle(param);
 
-     // use thread pool to parser http from string buf
-     static ThreadPool parser_pool(2, 100);	
+     // use thread pool to handle request
+     static ThreadPool parser_pool(config.get_handle_thread_pool(),
+	  config.get_handle_request_queue_size());	
      ThreadPoolTask task;
      task.fun = Connection::handle;
      task.argument = param;
