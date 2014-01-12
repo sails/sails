@@ -12,8 +12,8 @@ namespace sails {
 void read_data(int connfd);
 
 typedef struct ConnectionnHandleParam {
-	char *message;
-	int connfd;
+     struct message* message;
+     int connfd;
 } ConnectionnHandleParam;
 
 class Connection {

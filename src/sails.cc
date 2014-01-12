@@ -14,7 +14,6 @@
 #include "connection.h"
 #include "module_load.h"
 #include <signal.h>
-#include <google/profiler.h>
 #define MAX_EVENTS 1000
 
 namespace sails {

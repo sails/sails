@@ -43,23 +43,35 @@ void read_data(int connfd) {
      printf("read buf :%s\n", buf);
 
 
+     // parser http 
+     size_t size = HttpHandle::instance()->parser_http(buf, connfd);
+     free(buf); 
+     buf = NULL;
+     if(size <= 0) {
+	  close(connfd);
+	  return;
+     }
+
+     struct message* msg = get_message_by_connfd(connfd);
+     if(!msg->body_is_final && !msg->message_complete_on_eof) {
+	  return; // http be made from mutil tcp message
+     }
+     reset_message_by_connfd(connfd);
+
+     
      ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
-     param->message = buf;
+     param->message = msg;
      param->connfd = connfd;
-     Connection::handle(param);
-/*
+
+//     Connection::handle(param);
+
      // use thread pool to parser http from string buf
      static ThreadPool parser_pool(2, 100);	
      ThreadPoolTask task;
      task.fun = Connection::handle;
      task.argument = param;
      parser_pool.add_task(task);
-*/
-}
 
-void Connection::set_max_connectfd(int max_connfd)
-{
-     set_max_connfd(max_connfd);
 }
 
 void Connection::handle(void *message) 
@@ -69,22 +81,8 @@ void Connection::handle(void *message)
 	if(param == 0) {
 		return;
 	}
-
-	// http_parser
-	size_t size = HttpHandle::instance()->parser_http(param->message, param->connfd);
 	
-	if(size <= 0) {
-	     close(param->connfd);
-	     return;
-	}
-
-	struct message* msg = get_message_by_connfd(param->connfd);
-	if(!msg->body_is_final && !msg->message_complete_on_eof) {
-//	     close(param->connfd);
-	     return; // http be made from mutil tcp message
-	}
-	reset_message_by_connfd(param->connfd);
-	Request *request = new Request(msg);
+	Request *request = new Request(param->message);
 	Response *response = new Response();
 	printf("param->connfd:%Xbd\n", param->connfd);
 	response->connfd = param->connfd;
@@ -118,17 +116,17 @@ void Connection::handle(void *message)
 	}
 
 
-	if(param != NULL) {
-		free(param->message);
-		param->message = NULL;
-		free(param);
-		param = NULL;
-	}
-
 	delete request;
 	delete response;
 
 }
 	
+
+
+void Connection::set_max_connectfd(int max_connfd)
+{
+     set_max_connfd(max_connfd);
+}
+
 } // namespace sails
 
