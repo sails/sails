@@ -42,6 +42,21 @@ void message_init(message *msg)
      }
 }
 
+void delete_message(message *msg) {
+     if(msg != NULL) {
+	  if (msg->host != NULL) {
+	       free(msg->host);
+	       msg->host = NULL;
+	  }
+	  if (msg->userinfo != NULL) {
+	       free(msg->userinfo);
+	       msg->userinfo = NULL;
+	  }
+	  free(msg);
+	  msg = NULL;
+     }
+}
+
 
 // max connnect fd for store request message and parser instance
 int max_connfd = 2000;

@@ -15,8 +15,7 @@ Response::Response() {
 
 Response::~Response() {
      if(this->raw_data != NULL) {
-	  free(this->raw_data);
-	  this->raw_data = NULL;
+	  delete_message(this->raw_data);
      }
 }
 

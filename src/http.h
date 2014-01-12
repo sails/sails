@@ -54,7 +54,7 @@ void reset_message_by_connfd(int connfd);
 struct message* get_message_by_connfd(int connfd);
 
 void message_init(message *msg);
-
+void delete_message(message *msg);
 
 
 
