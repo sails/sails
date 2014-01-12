@@ -18,6 +18,7 @@ typedef struct ConnectionnHandleParam {
 
 class Connection {
 public:
+     static void set_max_connectfd(int max_connfd);
      static void handle(void *message);
 };
 

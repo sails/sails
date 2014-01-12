@@ -41,7 +41,7 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		http_request.set_default_header();
 		stringstream port_str;
 		port_str << port;
-		http_request.set_header("Host", (ip+port_str.str()).c_str());
+		http_request.set_header("Host", (ip+":"+port_str.str()).c_str());
 		http_request.set_request_method(2);
 		http_request.set_header("serviceName", method->service()->name().c_str());
 		http_request.set_header("methodName", method->name().c_str());
@@ -61,22 +61,45 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 		cout << data << endl;
 
 		write(connectfd, data, strlen(data));
+		/*
+		  // test segments tcp send a request
+		int data_len = strlen(data);
+		int data_send = 0;
+		for(int i = 0; i <= data_len/10; i++) {
+		     int to_send = 10;
+		     if(i == data_len/10) {
+			  if(i == 0) {
+			       to_send = data_len;
+			  }else {
+			       to_send = data_len -(10*(i-1));
+			  }
+			  
+		     }
+		     char tmp[10];
+		     memset(tmp, '\0', 10);
+		     strncpy(tmp, data+data_send, to_send);
+		     printf("send:%s\n", tmp);
+		     write(connectfd, data+data_send, to_send);
+		     data_send = data_send+to_send;
+		}
+		*/
 
 		int n = 0;
-		int len = 10 * 1024;
+		int len = 100 * 1024;
 		char *recv_buf = (char *)malloc(len);
+		memset(recv_buf, '\0', len);
 		n = read(connectfd, recv_buf, len);
 		printf("recv msg:%s\n", recv_buf);
-		HttpHandle http_handle(HTTP_RESPONSE);
-		http_handle.parser_http(recv_buf);
-
-		printf("response body:%s\n", http_handle.msg.body);
+		HttpHandle::instance()->parser_http(recv_buf,connectfd);
+		printf("parser ok...............\n");
+		struct message* msg = get_message_by_connfd(connectfd);
+		printf("response body:%s\n", msg->body);
 		
-		if(strlen(http_handle.msg.body) > 0) {
-			if(strncasecmp(http_handle.msg.body, 
+		if(strlen(msg->body) > 0) {
+			if(strncasecmp(msg->body, 
 				       PROTOBUF, strlen(PROTOBUF)) == 0) {
 				// protobuf message
-				response->ParseFromString(string(http_handle.msg.body+14));
+				response->ParseFromString(string(msg->body+14));
 				
 			}
 		}

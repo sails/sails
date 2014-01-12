@@ -44,6 +44,7 @@ void sails_init(int argc, char *argv[]) {
 	  perror("register service");
 	  exit(EXIT_FAILURE);
      }
+     Connection::set_max_connectfd(config.get_max_connfd());
 }
 
 } //namespace sails
@@ -72,6 +73,12 @@ int main(int argc, char *argv[]) {
      servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
      servaddr.sin_port = htons(port);
 
+     int flag=1,len=sizeof(int); // for can restart right now
+     if( setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, len) == -1) 
+     {
+	  perror("setsockopt"); 
+	  exit(EXIT_FAILURE); 
+     }
      bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
      sails::setnonblocking(listenfd);
 

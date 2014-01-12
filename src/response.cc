@@ -104,13 +104,14 @@ int Response::to_str() {
 			
 		raw_data->raw[strlen(raw_data->raw)] = '\r';
 		raw_data->raw[strlen(raw_data->raw)] = '\n';
+
 		return 0;
 	}
 	return 1;
 }
 
 char* Response::get_raw() {
-	return this->raw_data->raw;
+     return this->raw_data->raw;
 }
 
 void Response::set_default_header() {

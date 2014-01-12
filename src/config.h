@@ -12,12 +12,13 @@ namespace sails {
 class Config
 {
 public:
-	Config();
-	std::map<std::string, std::string> get_modules();
-	int get_listen_port();
+     Config();
+     std::map<std::string, std::string> get_modules();
+     int get_listen_port();
+     int get_max_connfd();
 
 private:
-	Json::Value root;
+     Json::Value root;
 };
 
 } // namespace sails
