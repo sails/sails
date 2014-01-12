@@ -25,14 +25,8 @@ void message_init(message *msg)
 	  memset(msg->query_string, 0, MAX_ELEMENT_SIZE);
 	  memset(msg->body, 0, MAX_ELEMENT_SIZE);
 	  msg->body_size = 0;
-	  if(msg->host != NULL) {
-		free(msg->host);
-		msg->host = NULL;
-	  }
-	  if(msg->userinfo != NULL) {
-	       free(msg->userinfo);
-	       msg->userinfo = NULL;
-	  }
+	  msg->host = NULL;
+	  msg->userinfo = NULL;
 	  msg->port = 0;
 	  msg->num_headers = 0;
 	  for(int i = 0; i < MAX_HEADERS; i++) {
@@ -69,7 +63,7 @@ struct message* get_message_by_connfd(int connfd) {
 	  struct message* msg = message_list[connfd];
 	  if(msg == NULL) {
 	       msg = (struct message*)malloc(sizeof(struct message));
-	       message_init(msg);
+//	       message_init(msg);
 	       message_list[connfd] = msg;
 	  }
 	  return msg;
