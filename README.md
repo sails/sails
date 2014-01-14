@@ -56,3 +56,9 @@ client
 and notify condition variable.
 
 * async:manager a struct{ticketid, function(void *)}, when get ticketid from server, invoke function
+
+
+server status
+-------------
+
+with ctemplate, sails build-in status report display by html file
