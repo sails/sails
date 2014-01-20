@@ -32,7 +32,7 @@ void read_data(int connfd) {
      char *buf = (char *)malloc(len);	  
      int n = 0;
      memset(buf, 0, len);
-
+     
      n = read(connfd, buf, len);
      
      if(n == 0 || n == -1) { // n=0: client close or shutdown send

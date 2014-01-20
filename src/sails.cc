@@ -14,7 +14,7 @@
 #include "connection.h"
 #include "module_load.h"
 #include <signal.h>
-#define MAX_EVENTS 1000
+const int MAX_EVENTS = 1000;
 
 namespace sails {
 
@@ -128,5 +128,3 @@ int main(int argc, char *argv[]) {
      }
      return 0;
 }
-
-
