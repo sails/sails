@@ -106,15 +106,12 @@ void Logger::set_filename_by_savemode(char *filename) {
     if(this->filename != NULL && strlen(this->filename) > 0 
        && filename != NULL) {
 	size_t index = last_index_of(this->filename,'.');
-	printf("index:%d\n", index);
 	strncpy(filename, this->filename, index);
 	
 	char suffix[10];
 
 	memset(suffix, '\0', 10);
 	strcpy(suffix, this->filename+index+1);
-	
-	printf("suffix:%s\n", suffix);
 
 	char time[30];
         if(TimeT::time_with_millisecond(time, 30) <= 0) {
