@@ -8,16 +8,22 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
 #include <fcntl.h>
 
 namespace sails {
 namespace common {
 namespace log {
 
+
+char Logger::log_config_file[100] = "./log.conf";
+
 Logger::Logger(Logger::LogLevel level) {
     this->level = level;
     this->save_mode = Logger::SPLIT_NONE;
     memset(filename, '\0', MAX_FILENAME_LEN);
+    update_loginfo_time = 0;
 }
 
 Logger::Logger(LogLevel level, char *filename) {
@@ -26,6 +32,8 @@ Logger::Logger(LogLevel level, char *filename) {
     this->level = level;
     this->save_mode = Logger::SPLIT_NONE;
     memset(this->filename, '\0', MAX_FILENAME_LEN);
+    update_loginfo_time = 0;
+
     strncpy(this->filename, filename, strlen(filename));
 }
 
@@ -35,10 +43,13 @@ Logger::Logger(LogLevel level, char *filename, SAVEMODE mode) {
     this->level = level;
     this->save_mode = mode;
     memset(this->filename, '\0', MAX_FILENAME_LEN);
+    update_loginfo_time = 0;
+
     strncpy(this->filename, filename, strlen(filename));
 }
 
 void Logger::debug(char *format, ...) {
+    check_loginfo();
     if(DEBUG >= level) {
 	va_list ap;
 	va_start(ap, format);
@@ -48,6 +59,7 @@ void Logger::debug(char *format, ...) {
 }
 
 void Logger::info(char *format, ...) {
+    check_loginfo();
     if(INFO >= level) {
 	va_list ap;
 	va_start(ap, format);
@@ -57,6 +69,7 @@ void Logger::info(char *format, ...) {
 }
 
 void Logger::warn(char *format, ...) {
+    check_loginfo();
     if(WARN >= level) {
 	va_list ap;
 	va_start(ap, format);
@@ -66,6 +79,7 @@ void Logger::warn(char *format, ...) {
 }
 
 void Logger::error(char *format, ...) {
+    check_loginfo();
     if(ERROR >= level) {
 	va_list ap;
 	va_start(ap, format);
@@ -155,8 +169,43 @@ void Logger::set_msg_prefix(Logger::LogLevel level, char *msg) {
 }
 
 
+void Logger::check_loginfo() {
+    time_t current_time = time(NULL);
+    if(current_time - update_loginfo_time > 10) {
+	int fd = open(log_config_file, O_RDONLY);
+	if(fd > 0) {
+	    char conf[1000];
+	    memset(conf, '\0', 1000);
+	    if(read(fd, conf, 1000)){
+		if(first_index_of_substr(conf, "LogLevel=DEBUG") >= 0) {
+		    this->level = Logger::DEBUG;
+		}else if(first_index_of_substr(conf, "LogLevel=INFO") >=0 ) {
+		    this->level = Logger::INFO;
+		}else if(first_index_of_substr(conf, "LogLevel=WARN") >= 0) {
+		    this->level = Logger::WARN;
+		}else if(first_index_of_substr(conf, "LogLevel=ERROR") >= 0) {
+		    this->level = Logger::ERROR;
+		}
+	    }
+	    close(fd);
+	}
+	update_loginfo_time = current_time;
+    }
+}
+
+
 } // namespace log
 } // namespace common
 } // namespace sails
+
+
+
+
+
+
+
+
+
+
 
 

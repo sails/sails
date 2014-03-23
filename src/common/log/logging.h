@@ -2,6 +2,7 @@
 #define _LOGGING_H_
 
 #include <stdio.h>
+#include <sys/time.h>
 
 namespace sails {
 namespace common {
@@ -37,11 +38,13 @@ private:
     void output(Logger::LogLevel level, char* format, va_list ap);
     void set_msg_prefix(Logger::LogLevel level, char *msg);
     void set_filename_by_savemode(char* filename);
+    void check_loginfo();
 
     LogLevel level;
     char filename[MAX_FILENAME_LEN];    
     SAVEMODE save_mode;
-     
+    static char log_config_file[100];
+    time_t update_loginfo_time;
 };
 
 } // namespace log
@@ -49,5 +52,15 @@ private:
 } // namespace sails
 
 #endif /* _LOGGING_H_ */
+
+
+
+
+
+
+
+
+
+
 
 

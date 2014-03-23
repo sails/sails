@@ -61,10 +61,10 @@ strlcpy(char *dst, const char *src, size_t len)
   return strlncpy(dst, len, src, (size_t) -1);
 }
 
-size_t
+int
 last_index_of(const char* src, char c)
 {
-    size_t index = -1;
+    int index = -1;
     int len = 0;
     if ((len=strlen(src)) > 0) {
 	for (int i = len-1; i >= 0; i-- ) {
@@ -78,10 +78,10 @@ last_index_of(const char* src, char c)
     return index;
 }
 
-size_t
+int
 first_index_of(const char* src, char c) 
 {
-    size_t index = -1;
+    int index = -1;
     int len = 0;
     if ((len=strlen(src)) > 0) {
 	for (int i = 0; i < len; i++ ) {
@@ -92,6 +92,30 @@ first_index_of(const char* src, char c)
 	}
     }
     return index;
+}
+
+int 
+first_index_of_substr(const char* src, const char* substr)
+{
+    int src_len = strlen(src);
+    int substr_len = strlen(substr);
+
+    if(src_len < substr_len) {
+	return -1;
+    }
+
+    for(int i = 0; i < src_len; i++) {
+	for(int j = 0; j < substr_len; j++) {
+	    if(src[i+j] != substr[j]) {
+		break;
+	    }else {
+		if(j == substr_len - 1) {
+		    return i;
+		}
+	    }
+	}
+    }
+    return -1;
 }
 
 } // namespace common

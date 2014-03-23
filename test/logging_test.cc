@@ -21,11 +21,22 @@ TEST(logging_test, logger)
     log1.error("test %s", "error is ok");
 
     printf("init log with error mode, filename ./test.log !\n");
-    log::Logger log3(log::Logger::ERROR, "./test11.log", log::Logger::SPLIT_HOUR);
+    log::Logger log3(log::Logger::ERROR, "./test1.log", log::Logger::SPLIT_HOUR);
     log3.debug("test %s", "debug is ok");
     log3.info("test %s", "info is ok");
     log3.warn("test %s", "warn is ok");
     log3.error("test %s", "error is ok");
+
+
+    printf("start test update infor from log.conf");
+    	log::Logger log4(log::Logger::ERROR, "./test2.log", log::Logger::SPLIT_HOUR);
+    while(1) {	
+	log4.debug("test %s", "debug is ok");
+	log4.info("test %s", "info is ok");
+	log4.warn("test %s", "warn is ok");
+	log4.error("test %s", "error is ok");
+	sleep(1);
+    }
 }
 
 int main(int argc, char *argv[])

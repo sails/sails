@@ -3,7 +3,7 @@ TOPDIR:=../
 include ${TOPDIR}/common.mk
 
 TARGET := libcommon_log.a
-LOCAL_OBJ=time_t.o string.o logging.o
+LOCAL_OBJ= logging.o time_t.o string.o
 
 all : $(TARGET)
 

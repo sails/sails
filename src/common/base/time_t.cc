@@ -36,17 +36,3 @@ size_t TimeT::time_with_millisecond(char* s, size_t max)
 } // namespace common
 } // namespace sails
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
