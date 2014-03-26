@@ -9,6 +9,25 @@
 namespace sails {
 namespace common {
 
+
+size_t TimeT::time_str(char*s, size_t max)
+{
+    int need_len = 20;
+    if(max < need_len) {
+	return 0;
+    }
+    memset(s, '\0', need_len);
+    time_t temp;
+    temp = time(NULL);
+    struct tm *t;
+    t = localtime(&temp);
+    if(strftime(s, max, "%F %T", t)) {
+	return strlen(s);
+    }else {
+	return 0;
+    }
+}
+
 size_t TimeT::time_with_millisecond(char* s, size_t max)
 {
     int need_len = 24;

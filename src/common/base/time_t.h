@@ -8,6 +8,8 @@ namespace common {
 
 class TimeT {
 public:
+
+    static size_t time_str(char*s, size_t max);
      // returns  the  number  of  bytes
      // (excluding  the  terminating  null byte) placed in the array s.  
      // If the length of the result string (including the terminating null 
