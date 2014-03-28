@@ -23,7 +23,7 @@ size_t TimeT::time_str(char*s, size_t max)
     temp = time(NULL);
     struct tm *t;
     t = localtime(&temp);
-    if(strftime(s, max, "%F %T", t)) {
+    if(strftime(s, max, "%Y-%m-%d %H:%M:%S", t)) {
 	return strlen(s);
     }else {
 	return 0;
@@ -42,7 +42,7 @@ size_t TimeT::time_with_millisecond(char* s, size_t max)
     temp = time(NULL);
     struct tm *t;
     t = localtime(&temp);
-    if(strftime(s, max, "%F %T", t)) {
+    if(strftime(s, max, "%Y-%m-%d %H:%M:%S", t)) {
 #ifdef __linux__
 	struct timeval t2;
 	gettimeofday(&t2, NULL);
