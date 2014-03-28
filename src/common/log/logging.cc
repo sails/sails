@@ -48,40 +48,40 @@ Logger::Logger(LogLevel level, char *filename, SAVEMODE mode) {
 
 void Logger::debug(char *format, ...) {
     check_loginfo();
-    if(DEBUG >= level) {
+    if(LOG_LEVEL_DEBUG >= level) {
 	va_list ap;
 	va_start(ap, format);
-	this->output(Logger::DEBUG, format, ap);
+	this->output(Logger::LOG_LEVEL_DEBUG, format, ap);
 	va_end(ap);
     }
 }
 
 void Logger::info(char *format, ...) {
     check_loginfo();
-    if(INFO >= level) {
+    if(LOG_LEVEL_INFO >= level) {
 	va_list ap;
 	va_start(ap, format);
-	this->output(Logger::INFO, format, ap);
+	this->output(Logger::LOG_LEVEL_INFO, format, ap);
 	va_end(ap);
     }
 }
 
 void Logger::warn(char *format, ...) {
     check_loginfo();
-    if(WARN >= level) {
+    if(LOG_LEVEL_WARN >= level) {
 	va_list ap;
 	va_start(ap, format);
-	this->output(Logger::WARN, format, ap);
+	this->output(Logger::LOG_LEVEL_WARN, format, ap);
 	va_end(ap);
     }
 }
 
 void Logger::error(char *format, ...) {
     check_loginfo();
-    if(ERROR >= level) {
+    if(LOG_LEVEL_ERROR >= level) {
 	va_list ap;
 	va_start(ap, format);
-	this->output(Logger::ERROR, format, ap);
+	this->output(Logger::LOG_LEVEL_ERROR, format, ap);
 	va_end(ap);
     }
 }
@@ -170,13 +170,13 @@ void Logger::set_msg_prefix(Logger::LogLevel level, char *msg) {
 	return;
     }
     msg[strlen(msg)] = ' ';
-    if(level == DEBUG) {
+    if(level == LOG_LEVEL_DEBUG) {
 	strncpy(msg+strlen(msg), "[debug]", 7);
-    }else if(level == INFO) {
+    }else if(level == LOG_LEVEL_INFO) {
 	strncpy(msg+strlen(msg), "[info]", 6);
-    }else if(level == WARN) {
+    }else if(level == LOG_LEVEL_WARN) {
 	strncpy(msg+strlen(msg), "[warn]", 6);
-    }else if(level == ERROR) {
+    }else if(level == LOG_LEVEL_ERROR) {
 	strncpy(msg+strlen(msg), "[error]", 7);
     }
     msg[strlen(msg)] = ':';
@@ -192,13 +192,13 @@ void Logger::check_loginfo() {
 	    memset(conf, '\0', 1000);
 	    if(fread(conf, 1, 1000, file)) {
 		if(first_index_of_substr(conf, "LogLevel=DEBUG") >= 0) {
-		    this->level = Logger::DEBUG;
+		    this->level = Logger::LOG_LEVEL_DEBUG;
 		}else if(first_index_of_substr(conf, "LogLevel=INFO") >=0 ) {
-		    this->level = Logger::INFO;
+		    this->level = Logger::LOG_LEVEL_INFO;
 		}else if(first_index_of_substr(conf, "LogLevel=WARN") >= 0) {
-		    this->level = Logger::WARN;
+		    this->level = Logger::LOG_LEVEL_WARN;
 		}else if(first_index_of_substr(conf, "LogLevel=ERROR") >= 0) {
-		    this->level = Logger::ERROR;
+		    this->level = Logger::LOG_LEVEL_ERROR;
 		}
 	    }
 	    fclose(file);

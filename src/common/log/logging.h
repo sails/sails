@@ -13,10 +13,10 @@ namespace log {
 class Logger {
 public:
     enum LogLevel{
-	DEBUG,
-	INFO,
-	WARN,
-	ERROR
+	LOG_LEVEL_DEBUG = 1,
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_WARN,
+	LOG_LEVEL_ERROR
     };
 
     enum SAVEMODE{
