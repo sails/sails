@@ -109,13 +109,13 @@ void Logger::output(Logger::LogLevel level, char *format, va_list ap) {
 	    write(2, err_msg, strlen(err_msg));
 	}
 #else
-	FILE* file = fopen(filename, "rwa");
+	FILE* file = fopen(filename, "a");
 	if(file != NULL) {
 	    fwrite(msg, 1, strlen(msg), file);
 	    fclose(file);
 	    file = NULL;
 	}else {
-	    char err_msg[20];
+	    char err_msg[MAX_FILENAME_LEN+30];
 	    sprintf(err_msg, "can't open file %s to write\n", filename);
 	    fprintf(stderr, err_msg);
 	}
