@@ -5,7 +5,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#ifdef __linux__
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
 namespace sails {
@@ -96,19 +98,35 @@ void Logger::output(Logger::LogLevel level, char *format, va_list ap) {
     memset(filename, '\0', MAX_FILENAME_LEN);
     if(this->filename != NULL && strlen(this->filename) > 0) {
 	set_filename_by_savemode(filename);
+#ifdef __linux__
 	int write_fd = -1;
 	if((write_fd=open(filename, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) >= 3) {
 	    write(write_fd, msg, strlen(msg));
 	    close(write_fd);
-	    write_fd = -1;
 	}else {
 	    char err_msg[20];
 	    sprintf(err_msg, "can't open file %s to write\n", filename);
 	    write(2, err_msg, strlen(err_msg));
 	}
+#else
+	FILE* file = fopen(filename, "rwa");
+	if(file != NULL) {
+	    fwrite(msg, 1, strlen(msg), file);
+	    fclose(file);
+	    file = NULL;
+	}else {
+	    char err_msg[20];
+	    sprintf(err_msg, "can't open file %s to write\n", filename);
+	    fprintf(stderr, err_msg);
+	}
+#endif
 	
     }else {
+#ifdef __linux__
 	write(1, msg, strlen(msg));
+#else
+	printf("%s\n", msg);
+#endif
     }
 }
 
@@ -168,11 +186,11 @@ void Logger::set_msg_prefix(Logger::LogLevel level, char *msg) {
 void Logger::check_loginfo() {
     time_t current_time = time(NULL);
     if(current_time - update_loginfo_time > 10) {
-	int fd = open(log_config_file, O_RDONLY);
-	if(fd > 0) {
+	FILE* file = fopen(log_config_file, "r");
+	if(file != NULL) {
 	    char conf[1000];
 	    memset(conf, '\0', 1000);
-	    if(read(fd, conf, 1000)){
+	    if(fread(conf, 1, 1000, file)) {
 		if(first_index_of_substr(conf, "LogLevel=DEBUG") >= 0) {
 		    this->level = Logger::DEBUG;
 		}else if(first_index_of_substr(conf, "LogLevel=INFO") >=0 ) {
@@ -183,7 +201,7 @@ void Logger::check_loginfo() {
 		    this->level = Logger::ERROR;
 		}
 	    }
-	    close(fd);
+	    fclose(file);
 	}
 	update_loginfo_time = current_time;
     }
