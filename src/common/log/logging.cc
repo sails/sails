@@ -6,10 +6,6 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/timeb.h>
 #include <fcntl.h>
 
 namespace sails {

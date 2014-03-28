@@ -3,9 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#ifdef __linux__
 #include <sys/time.h>
 #include <sys/timeb.h>
-
+#endif
 namespace sails {
 namespace common {
 
@@ -41,10 +43,12 @@ size_t TimeT::time_with_millisecond(char* s, size_t max)
     struct tm *t;
     t = localtime(&temp);
     if(strftime(s, max, "%F %T", t)) {
+#ifdef __linux__
 	struct timeval t2;
 	gettimeofday(&t2, NULL);
 	s[strlen(s)] = ' ';
 	snprintf(s+strlen(s), 3, "%d", int(t2.tv_usec/1000));
+#endif
 	return strlen(s);
     }else {
 	return 0;
@@ -54,4 +58,10 @@ size_t TimeT::time_with_millisecond(char* s, size_t max)
 
 } // namespace common
 } // namespace sails
+
+
+
+
+
+
 

@@ -2,7 +2,7 @@
 #define _LOGGING_H_
 
 #include <stdio.h>
-#include <sys/time.h>
+#include <time.h>
 
 namespace sails {
 namespace common {
