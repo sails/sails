@@ -41,9 +41,12 @@ private:
     void set_msg_prefix(Logger::LogLevel level, char *msg);
     void set_filename_by_savemode(char* filename);
     void check_loginfo();
+    void set_file_path();
+    bool ensure_directory_exist();
 
     LogLevel level;
     char filename[MAX_FILENAME_LEN];    
+    char path[MAX_FILENAME_LEN];
     SAVEMODE save_mode;
     static char log_config_file[100];
     time_t update_loginfo_time;
@@ -52,10 +55,12 @@ private:
 
 class LoggerFactory {
 public:
+    
     static Logger* getLog(std::string log_name);
     static Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
 private:
     static std::map<std::string, Logger*> log_map;
+    static std::string path;
 };
 
 } // namespace log

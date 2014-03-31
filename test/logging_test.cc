@@ -47,11 +47,13 @@ TEST(logging_test, logger)
     log5->warn("test %s", "warn is ok");
     log5->error("test %s", "error is ok");
 
+//    printf("test factory\n");
     log::Logger* log6 = log::LoggerFactory::getLog(std::string("testfactory"));
     log6->debug("test %s", "debug is ok");
     log6->info("test %s", "info is ok");
     log6->warn("test %s", "warn is ok");
     log6->error("test %s", "error is ok");
+
 
 
 }

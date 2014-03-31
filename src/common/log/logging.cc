@@ -7,6 +7,11 @@
 #include <assert.h>
 #ifdef __linux__
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#elif WIN32
+#include <io.h>
+#include <windows.h>
 #endif
 #include <fcntl.h>
 
@@ -33,6 +38,8 @@ Logger::Logger(LogLevel level, const char *filename) {
     update_loginfo_time = 0;
 
     strncpy(this->filename, filename, strlen(filename));
+    set_file_path();
+    assert(ensure_directory_exist());
 }
 
 Logger::Logger(LogLevel level, const char *filename, SAVEMODE mode) {
@@ -44,6 +51,8 @@ Logger::Logger(LogLevel level, const char *filename, SAVEMODE mode) {
     update_loginfo_time = 0;
 
     strncpy(this->filename, filename, strlen(filename));
+    set_file_path();
+    assert(ensure_directory_exist());
 }
 
 void Logger::debug(char *format, ...) {
@@ -207,6 +216,44 @@ void Logger::check_loginfo() {
     }
 }
 
+void Logger::set_file_path()
+{
+    memset(this->path, '\0', MAX_FILENAME_LEN);
+    if(strlen(filename) > 0) {
+	int index = last_index_of(filename, '/');
+	if(index > 0) {
+	    strncpy(path, filename, index);
+	}else {
+	    strncpy(path, "./", 2);
+	}
+    }
+}
+
+bool Logger::ensure_directory_exist()
+{
+    
+#ifdef __linux__
+    if(access(path, R_OK|W_OK) != 0) {
+	if(mkdir(path, 0766) != 0) {
+	    return false;
+	}else {
+	    return true;
+	}
+    }else {
+	return true;
+    }
+#elif WIN32
+    if(_access(path, 0) != 0) {
+	if(_mkdir(path) != 0) {
+	    return false;
+	}else {
+	    return true;
+	}
+    }else {
+	return true;
+    }
+#endif
+}
 
 
 
@@ -215,6 +262,7 @@ void Logger::check_loginfo() {
 /////////////////////////////log facotry/////////////////////////////////
 
 std::map<std::string, Logger*> LoggerFactory::log_map;
+std::string LoggerFactory::path = "./log";
 
 Logger* LoggerFactory::getLog(std::string log_name)
 {
@@ -223,7 +271,7 @@ Logger* LoggerFactory::getLog(std::string log_name)
 	return it->second;
     }else {
 	Logger* logger = new Logger(Logger::LOG_LEVEL_INFO, 
-				    (log_name+".log").c_str());
+				    (path+"/"+log_name+".log").c_str());
 	log_map.insert(
 	    std::pair<std::string, Logger*>(
 		log_name, logger));
@@ -238,7 +286,7 @@ Logger* LoggerFactory::getLog(std::string log_name, Logger::SAVEMODE save_mode)
 	return it->second;
     }else {
 	Logger* logger = new Logger(Logger::LOG_LEVEL_INFO, 
-				    (log_name+".log").c_str(), save_mode);
+				    (path+"/"+log_name+".log").c_str(), save_mode);
 	log_map.insert(
 	    std::pair<std::string, Logger*>(log_name,logger));
 	return logger;
