@@ -24,7 +24,7 @@ Logger::Logger(Logger::LogLevel level) {
     update_loginfo_time = 0;
 }
 
-Logger::Logger(LogLevel level, char *filename) {
+Logger::Logger(LogLevel level, const char *filename) {
     assert(filename);
 
     this->level = level;
@@ -35,7 +35,7 @@ Logger::Logger(LogLevel level, char *filename) {
     strncpy(this->filename, filename, strlen(filename));
 }
 
-Logger::Logger(LogLevel level, char *filename, SAVEMODE mode) {
+Logger::Logger(LogLevel level, const char *filename, SAVEMODE mode) {
     assert(filename);
 
     this->level = level;
@@ -204,6 +204,44 @@ void Logger::check_loginfo() {
 	    fclose(file);
 	}
 	update_loginfo_time = current_time;
+    }
+}
+
+
+
+
+
+
+/////////////////////////////log facotry/////////////////////////////////
+
+std::map<std::string, Logger*> LoggerFactory::log_map;
+
+Logger* LoggerFactory::getLog(std::string log_name)
+{
+    std::map<std::string, Logger*>::iterator it;
+    if((it=log_map.find(log_name)) != log_map.end()) {
+	return it->second;
+    }else {
+	Logger* logger = new Logger(Logger::LOG_LEVEL_INFO, 
+				    (log_name+".log").c_str());
+	log_map.insert(
+	    std::pair<std::string, Logger*>(
+		log_name, logger));
+	return logger;
+    }
+}
+
+Logger* LoggerFactory::getLog(std::string log_name, Logger::SAVEMODE save_mode)
+{
+    std::map<std::string, Logger*>::iterator it;
+    if((it=log_map.find(log_name)) != log_map.end()) {
+	return it->second;
+    }else {
+	Logger* logger = new Logger(Logger::LOG_LEVEL_INFO, 
+				    (log_name+".log").c_str(), save_mode);
+	log_map.insert(
+	    std::pair<std::string, Logger*>(log_name,logger));
+	return logger;
     }
 }
 

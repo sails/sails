@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <string>
+#include <map>
 
 namespace sails {
 namespace common {
@@ -27,8 +29,8 @@ public:
     };
 
     Logger(LogLevel level);
-    Logger(LogLevel level, char *filename);
-    Logger(LogLevel level, char *filename, SAVEMODE mode);
+    Logger(LogLevel level, const char *filename);
+    Logger(LogLevel level, const char *filename, SAVEMODE mode);
     
     void debug(char* format, ...);
     void info (char* format, ...);
@@ -47,12 +49,20 @@ private:
     time_t update_loginfo_time;
 };
 
+
+class LoggerFactory {
+public:
+    static Logger* getLog(std::string log_name);
+    static Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
+private:
+    static std::map<std::string, Logger*> log_map;
+};
+
 } // namespace log
 } // namespace common
 } // namespace sails
 
 #endif /* _LOGGING_H_ */
-
 
 
 
