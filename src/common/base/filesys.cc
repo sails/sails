@@ -8,6 +8,7 @@
 #elif WIN32
 #include <io.h>
 #include <windows.h>
+#include <direct.h>
 #endif
 
 namespace sails {
