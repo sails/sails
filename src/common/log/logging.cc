@@ -1,6 +1,7 @@
 #include <common/log/logging.h>
 #include <common/base/time_t.h>
 #include <common/base/string.h>
+#include <common/base/filesys.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -9,11 +10,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#elif WIN32
-#include <io.h>
-#include <windows.h>
-#endif
 #include <fcntl.h>
+#endif
 
 namespace sails {
 namespace common {
@@ -231,28 +229,8 @@ void Logger::set_file_path()
 
 bool Logger::ensure_directory_exist()
 {
-    
-#ifdef __linux__
-    if(access(path, R_OK|W_OK) != 0) {
-	if(mkdir(path, 0766) != 0) {
-	    return false;
-	}else {
-	    return true;
-	}
-    }else {
-	return true;
-    }
-#elif WIN32
-    if(_access(path, 0) != 0) {
-	if(_mkdir(path) != 0) {
-	    return false;
-	}else {
-	    return true;
-	}
-    }else {
-	return true;
-    }
-#endif
+    printf("path:%s", this->path);
+    return make_directory(this->path);
 }
 
 

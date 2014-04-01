@@ -24,14 +24,14 @@ bool make_directory(const char* path) {
     if(path_name[len-1] != '/') {
 	strcat(path_name, "/");
     }
-    
+
     len = strlen(path_name);
     for(int i = 1; i < len; i++) {
 	if(path_name[i] == '/') {
 	    memset(dir_name, '\0', 1000);
 	    strncpy(dir_name, path, i+1);
 #ifdef __linux__
-	    if(access(dir_name, R_OK|W_OK) != 0) {
+	    if(access(dir_name, R_OK) != 0) {
 		if(mkdir(dir_name, 0766) != 0) {
 		    return false;
 		}

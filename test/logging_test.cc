@@ -20,8 +20,9 @@ TEST(logging_test, logger)
     log1.warn("test %s", "warn is ok");
     log1.error("test %s", "error is ok");
 
+
     printf("init log with error mode, filename ./test.log !\n");
-    log::Logger log3(log::Logger::LOG_LEVEL_ERROR, "./test1.log", log::Logger::SPLIT_HOUR);
+    log::Logger log3(log::Logger::LOG_LEVEL_ERROR, "./testlog/testlog/test1.log", log::Logger::SPLIT_HOUR);
     log3.debug("test %s", "debug is ok");
     log3.info("test %s", "info is ok");
     log3.warn("test %s", "warn is ok");
