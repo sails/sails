@@ -35,3 +35,8 @@ logging_test:logging_test.o
 	g++ $(CFLAGS) $(INCLUDE) -o logging_test logging_test.o -lcommon_log -lgtest -pthread
 logging_test.o:logging_test.cc
 	g++ $(CFLAGS) $(INCLUDE) -c logging_test.cc
+
+event_loop_test:event_loop_test.o
+	g++ $(CFLAGS) $(INCLUDE) -o event_loop_test event_loop_test.o -lcommon_net -lgtest -pthread
+event_loop_test.o:event_loop_test.cc
+	g++ $(CFLAGS) $(INCLUDE) -c event_loop_test.cc

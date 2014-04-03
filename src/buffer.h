@@ -11,7 +11,6 @@
 namespace sails {
 namespace net {
 
-
 class Buffer {
 public:
      Buffer():data(init_size),read_index(0),write_index(0) {
