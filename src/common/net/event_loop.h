@@ -45,9 +45,11 @@ public:
     void start_loop();
 private:
     void process_event(int fd, int events);
+    void array_needsize(int need_cnt);
+    void init_events(int start, int count);
     int epollfd;
-    struct epoll_event events[INIT_EVENTS];
-    struct ANFD anfds[INIT_EVENTS];
+    struct epoll_event *events;
+    struct ANFD *anfds;
     int max_events;
 };
 
@@ -56,6 +58,8 @@ private:
 } // namespace sails
 
 #endif /* _EVENT_LOOP_H_ */
+
+
 
 
 

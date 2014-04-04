@@ -11,7 +11,12 @@ namespace net {
 //const int EventLoop::INIT_EVENTS = 1000;
 
 EventLoop::EventLoop() {
+    events = (struct epoll_event*)malloc(sizeof(struct epoll_event)
+					 *INIT_EVENTS);
+    anfds = (struct ANFD*)malloc(sizeof(struct ANFD)
+					 *INIT_EVENTS);
     memset(anfds, 0, 1000*sizeof(struct ANFD));
+    max_events = INIT_EVENTS;
 }
 
 EventLoop::~EventLoop() {
@@ -19,6 +24,7 @@ EventLoop::~EventLoop() {
 }
 
 void EventLoop::init() {
+    
     epollfd = epoll_create(10);
     assert(epollfd > 0);
     for(int i = 0; i < INIT_EVENTS; i++) {
@@ -33,7 +39,7 @@ bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
 
     if(ev->fd > max_events) {
 	// malloc new evetns and anfds
-	return false;
+	array_needsize(ev->fd);
     }
 
     struct event *e = (struct event*)malloc(sizeof(struct event));
@@ -130,7 +136,49 @@ void EventLoop::process_event(int fd, int events) {
     }
 }
 
+void EventLoop::array_needsize(int need_cnt)
+{
+    int cur = max_events;
+    if(need_cnt > cur) {
+	int newcnt = cur;
+	do {
+	    newcnt += (newcnt >> 1) + 16;
+	}while(need_cnt > newcnt);
+	
+	fprintf(stderr, "reseize from %d to %d\n", cur, newcnt);
+	anfds = (struct ANFD*)realloc(anfds, sizeof(struct ANFD)*newcnt);
+	events = (struct epoll_event*)realloc(events, sizeof(struct epoll_event)*newcnt);
+
+	init_events(cur, newcnt-cur);
+	max_events = newcnt;
+    }
+}
+
+void EventLoop::init_events(int start, int count) {
+    for(int i = 0; i < count; i++) {
+	anfds[i+start].isused = 0;
+	anfds[i+start].fd = 0;
+	anfds[i+start].events = 0;
+	anfds[i+start].next = NULL;
+    }
+
+}
+
 } // namespace net
 } // namespace common
 } // namespace sails
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
