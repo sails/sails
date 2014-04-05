@@ -14,10 +14,12 @@
 #include "connection.h"
 #include "module_load.h"
 #include <signal.h>
+#include <common/net/event_loop.h>
 const int MAX_EVENTS = 1000;
 
 namespace sails {
 
+common::net::EventLoop ev_loop;
 Config config;
 std::map<std::string, std::string> modules;
 
@@ -35,6 +37,29 @@ int register_service() {
 	  }
      }     
      return 0;
+}
+
+void accept_socket(common::net::event* e, int revents) {
+//    if(revents & common::net::EventLoop::Event_READ) {
+	struct sockaddr_in local;
+	int addrlen = sizeof(struct sockaddr_in);
+	int connfd = accept(e->fd, 
+			    (struct sockaddr*)&local, 
+			    (socklen_t*)&addrlen);
+	printf("connfd:%d\n", connfd);
+	if (connfd == -1) {
+	    perror("accept");
+	    exit(EXIT_FAILURE);
+	}
+	sails::setnonblocking(connfd);
+
+	sails::common::net::event ev;
+	ev.fd = connfd;
+	ev.events = sails::common::net::EventLoop::Event_READ;
+	ev.cb = sails::read_data;
+	ev.next = NULL;
+	ev_loop.event_ctl(common::net::EventLoop::EVENT_CTL_ADD, &ev);
+//    }
 }
 
 void sails_init(int argc, char *argv[]) {
@@ -86,45 +111,15 @@ int main(int argc, char *argv[]) {
 	  exit(EXIT_FAILURE);
      }
 
-     int epollfd = epoll_create(10);
-     if(epollfd == -1) {
-	  perror("epoll_create");
-	  exit(EXIT_FAILURE);
-     }
-     struct epoll_event ev, events[MAX_EVENTS];
-     ev.events = EPOLLIN;
-     ev.data.fd = listenfd;
+     sails::common::net::event listen_ev;
+     listen_ev.fd = listenfd;
+     listen_ev.events = sails::common::net::EventLoop::Event_READ;
+     listen_ev.cb = sails::accept_socket;
+     listen_ev.next = NULL;
 
-     if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &ev)) {
-	  perror("epoll_ctl:listen_sock");
-	  exit(EXIT_FAILURE);
-     }
+     sails::ev_loop.init();
+     sails::ev_loop.event_ctl(sails::common::net::EventLoop::EVENT_CTL_ADD,
+	 &listen_ev);
 
-     for (;;) {
-	  int nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
-	  if (nfds == -1) {
-	       perror("epoll_pwait");
-	       exit(EXIT_FAILURE);
-	  }
-	  for (int n = 0; n < nfds; n++) {
-	       if (events[n].data.fd == listenfd) {
-		    int connfd = accept(listenfd, 
-					(struct sockaddr*)&local, (socklen_t*)&addrlen);
-		    if (connfd == -1) {
-			 perror("accept");
-			 exit(EXIT_FAILURE);
-		    }
-		    sails::setnonblocking(connfd);
-		    ev.events = EPOLLIN | EPOLLET;
-		    ev.data.fd = connfd;
-		    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &ev) == -1) {
-			 perror("epoll_ctl: connfd");
-			 exit(EXIT_FAILURE);
-		    }
-	       } else {
-		    sails::read_data(events[n].data.fd);
-	       }
-	  }
-     }
-     return 0;
+     sails::ev_loop.start_loop();
 }

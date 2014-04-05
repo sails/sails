@@ -6,10 +6,12 @@
 #include <vector>
 #include <thread>
 #include "http.h"
+#include <common/net/event_loop.h>
 
 namespace sails {
 
-void read_data(int connfd);
+//void read_data(int connfd);
+void read_data(common::net::event*, int revents);
 
 typedef struct ConnectionnHandleParam {
      struct message* message;

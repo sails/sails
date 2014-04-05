@@ -26,8 +26,14 @@ namespace sails {
 
 
 extern Config config;
+extern common::net::EventLoop ev_loop;
 
-void read_data(int connfd) {
+//void read_data(int connfd) {
+void read_data(common::net::event* ev, int revents) {
+    if(ev == NULL || ev->fd < 0) {
+	return;
+    }
+    int connfd = ev->fd;
      int len = 4 * 1024;
      char *buf = (char *)malloc(len);	  
      int n = 0;
@@ -38,6 +44,7 @@ void read_data(int connfd) {
      if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	                     // n=1: recv signal_pending before read data
 	  perror("read connfd");
+	  ev_loop.event_stop(connfd);
 	  close(connfd); // will delete from epoll set auto
 	  return;
      }

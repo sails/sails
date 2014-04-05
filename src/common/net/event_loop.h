@@ -42,8 +42,12 @@ public:
     
     void init();
     bool event_ctl(OperatorType op, struct event*);
+    bool event_stop(int fd);
     void start_loop();
 private:
+    bool add_event(struct event*);
+    bool delete_event(struct event*);
+    bool modify_event(struct event*);
     void process_event(int fd, int events);
     void array_needsize(int need_cnt);
     void init_events(int start, int count);

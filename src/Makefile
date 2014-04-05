@@ -1,6 +1,6 @@
 HTTP_PARSER_PATH = ../deps/http-parser
-CFLAGS=-std=c++11 -g -fno-omit-frame-pointer -O0
-INCLUDE=-I$(HTTP_PARSER_PATH)
+CFLAGS=-std=c++11 -g -fno-omit-frame-pointer -O0 -L../lib
+INCLUDE=-I$(HTTP_PARSER_PATH) -I./
 
 INSTALL_PATH=../dist
 
@@ -10,7 +10,7 @@ OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
 	config.o
 
 sails:$(OBJECTS)
-	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lprotobuf -ldl -ljson
+	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -L$(HTTP_PARSER_PATH) -pthread -lhttp_parser -lprotobuf -ldl -ljson -lcommon_net
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

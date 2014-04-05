@@ -34,9 +34,7 @@ void EventLoop::init() {
 	anfds[i].next = NULL;
     }
 }
-
-bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
-
+bool EventLoop::add_event(struct event*ev) {
     if(ev->fd > max_events) {
 	// malloc new evetns and anfds
 	array_needsize(ev->fd);
@@ -77,7 +75,7 @@ bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
 	    events = events | EPOLLOUT;
 	}
 	epoll_ev.events = events;
-	if (epoll_ctl(epollfd, op, ev->fd, &epoll_ev) == -1) {
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, ev->fd, &epoll_ev) == -1) {
 	    perror("epoll_ctl: listen_sock");
 	    return false;
 	}
@@ -90,6 +88,42 @@ bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
 	temp = temp->next;
     }
     anfds[fd].events = new_events;
+
+    return true;
+}
+
+bool EventLoop::delete_event(struct event* ev) {
+    return true;
+}
+
+bool EventLoop::modify_event(struct event* ev) {
+    return true;
+}
+
+bool EventLoop::event_stop(int fd) {
+    if(anfds[fd].isused == 1) {
+	anfds[fd].isused = 0;
+	// detele event list
+	struct event* cur = anfds[fd].next;
+	struct event* pre = cur;
+	while(cur != NULL) {
+	    pre = cur;
+	    cur = cur->next;
+	    free(pre);
+	    pre = NULL;
+	}
+    }
+    return true;
+}
+
+
+bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
+    if(op == EventLoop::EVENT_CTL_ADD) {
+	return this->add_event(ev);
+    }else if(op == EventLoop::EVENT_CTL_DEL) {
+	
+    }
+    
     
     return true;
 }
