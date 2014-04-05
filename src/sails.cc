@@ -40,13 +40,12 @@ int register_service() {
 }
 
 void accept_socket(common::net::event* e, int revents) {
-//    if(revents & common::net::EventLoop::Event_READ) {
+    if(revents & common::net::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
 	int connfd = accept(e->fd, 
 			    (struct sockaddr*)&local, 
 			    (socklen_t*)&addrlen);
-	printf("connfd:%d\n", connfd);
 	if (connfd == -1) {
 	    perror("accept");
 	    exit(EXIT_FAILURE);
@@ -59,7 +58,7 @@ void accept_socket(common::net::event* e, int revents) {
 	ev.cb = sails::read_data;
 	ev.next = NULL;
 	ev_loop.event_ctl(common::net::EventLoop::EVENT_CTL_ADD, &ev);
-//    }
+    }
 }
 
 void sails_init(int argc, char *argv[]) {
