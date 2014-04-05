@@ -29,8 +29,7 @@ public:
     static const int INIT_EVENTS = 1000;
     enum OperatorType {
 	EVENT_CTL_ADD = 1,
-	EVENT_CTL_DEL,
-	EVENT_CTL_MOD
+	EVENT_CTL_DEL
     };
     enum Events {
 	Event_READ = 1,
@@ -47,7 +46,6 @@ public:
 private:
     bool add_event(struct event*);
     bool delete_event(struct event*);
-    bool modify_event(struct event*);
     void process_event(int fd, int events);
     void array_needsize(int need_cnt);
     void init_events(int start, int count);

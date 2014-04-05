@@ -93,10 +93,44 @@ bool EventLoop::add_event(struct event*ev) {
 }
 
 bool EventLoop::delete_event(struct event* ev) {
-    return true;
-}
+    int fd = ev->fd;
+    if(fd < 0 || fd > max_events) {
+	return false;
+    }
+    if(anfds[fd].isused == 1) {
+	if((anfds[fd].events & ev->events) == 0) {
+	    return true; // not contain ev.events
+	}
+	struct event* pre = anfds[fd].next;
+	struct event* cur = pre->next;
+	while(cur != NULL) {
+	    int isdelete = 0;
+	    if((cur->events & ev->events) > 0) {
+		cur->events = cur->events^ev->events;
+		if(cur->events == 0) {
+		    //can delete it from the list
+		    isdelete = 1;
+		    cur = cur->next;
+		    free(pre->next);
+		    pre->next = cur;
+		}
+	    }
+	    if(!isdelete) {
+		pre = cur;
+		cur = cur->next;
+	    }
+	}
 
-bool EventLoop::modify_event(struct event* ev) {
+	if(anfds[fd].events & ev->events) {
+	    anfds[fd].events = anfds[fd].events^ev->events;
+		if(anfds[fd].events == 0) {
+		    //can delete it from the list
+		    struct event* temp = anfds[fd].next->next;
+		    free(anfds[fd].next);
+		    anfds[fd].next = temp;
+		}
+	}
+    }
     return true;
 }
 
@@ -121,9 +155,8 @@ bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
     if(op == EventLoop::EVENT_CTL_ADD) {
 	return this->add_event(ev);
     }else if(op == EventLoop::EVENT_CTL_DEL) {
-	
+	return this->delete_event(ev);
     }
-    
     
     return true;
 }
