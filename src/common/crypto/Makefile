@@ -2,7 +2,7 @@ TOPDIR:=../
 
 include ${TOPDIR}/common.mk
 
-TARGET := libcrypto.a
+TARGET := libcommon_crypto.a
 LOCAL_OBJ= MD5Checksum.o md5.o
 
 all : $(TARGET)
