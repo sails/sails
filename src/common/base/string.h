@@ -22,7 +22,7 @@ int first_index_of(const char* src, char c);
 int first_index_of_substr(const char* src, const char* substr);
 int last_index_of(const char* src, char c);
 
-
+char* url_encode(const char *source_str, char *encode_str);
 
 
 } // namespace common  

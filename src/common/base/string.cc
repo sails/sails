@@ -118,5 +118,37 @@ first_index_of_substr(const char* src, const char* substr)
     return -1;
 }
 
+
+
+// the principle is put char into hex encoding
+char* 
+url_encode(const char *source_str, char *encode_str)
+{
+    char hexchars[] = "0123456789ABCDEF";
+
+    int source_str_len = strlen(source_str);
+
+    int encode_index = 0;
+    for(int i = 0; i < source_str_len; i++) {
+	char c = source_str[i];
+	if(c == ' ') {
+	    encode_str[encode_index++] = '+';
+	}else if((c < '0' && c != '-' && c != '.') ||
+		 (c < 'A' && c > '9') ||
+		 (c > 'Z' && c < 'a' && c != '_') ||
+		 (c > 'z')) {
+	    encode_str[encode_index++] = '%';
+	    encode_str[encode_index++] = hexchars[c >> 4];
+	    encode_str[encode_index++]= hexchars[c & 15];
+	}else {
+	    encode_str[encode_index++] = c;
+	}
+    }
+
+    encode_str[encode_index] = '\0';
+    return encode_str;
+}
+
+
 } // namespace common
 } // namespace sails
