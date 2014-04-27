@@ -16,13 +16,13 @@ namespace net {
 
 enum header_element { NONE=0, FIELD, VALUE };
 
+enum http_parser_type { HTTP_REQUEST, HTTP_RESPONSE, HTTP_BOTH };
+
 
 #undef TRUE
 #define TRUE 1
 #undef FALSE
 #define FALSE 0
-
-enum http_parser_type { HTTP_REQUEST, HTTP_RESPONSE, HTTP_BOTH };
 
 struct http_message {
     char *raw;
@@ -82,6 +82,11 @@ private:
     std::map<std::string, std::string> param;
 };
 
+
+// get protocol type 
+enum PROTOCOL { ERROR_PROTOCOL=-1, NORMAL_PROTOCOL=0, PROTOBUF_PROTOCOL };
+const char* const PROTOBUF ="sails:protobuf";
+int get_request_protocol(HttpRequest *request);
 
 
 ///////////////////////////http response//////////////////////////////

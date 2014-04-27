@@ -44,6 +44,7 @@ bool EventLoop::add_event(struct event*ev) {
     e->fd = ev->fd;
     e->events = ev->events;
     e->cb = ev->cb;
+    e->data = ev->data;
     e->next = NULL;
 
     int fd = e->fd;

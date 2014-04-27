@@ -11,10 +11,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include "connection.h"
-#include "util.h"
 #include "thread_pool.h"
-#include "request.h"
-#include "response.h"
 #include "filter.h"
 #include "filter_default.h"
 #include "handle.h"
@@ -34,54 +31,34 @@ void read_data(common::net::event* ev, int revents) {
 	return;
     }
     int connfd = ev->fd;
-     int len = 4 * 1024;
-     char *buf = (char *)malloc(len);	  
-     int n = 0;
-     memset(buf, 0, len);
-     
-     n = read(connfd, buf, len);
-     
-     if(n == 0 || n == -1) { // n=0: client close or shutdown send
+
+    common::net::HttpConnector *connector = (common::net::HttpConnector *)ev->data;
+    int n = connector->read();
+    if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	                     // n=1: recv signal_pending before read data
 	  perror("read connfd");
+	  delete(connector);
 	  ev_loop.event_stop(connfd);
 	  close(connfd); // will delete from epoll set auto
 	  return;
      }
-     
-     printf("read buf :%s\n", buf);
+    connector->httpparser();
 
+    common::net::HttpRequest *request = NULL;
 
-     // parser http 
-     size_t size = HttpHandle::instance()->parser_http(buf, connfd);
-     free(buf); 
-     buf = NULL;
-     if(size <= 0) {
-	  close(connfd);
-	  return;
-     }
-
-     struct message* msg = get_message_by_connfd(connfd);
-     if(!msg->body_is_final && !msg->message_complete_on_eof) {
-	  return; // http be made from mutil tcp message
-     }
-     reset_message_by_connfd(connfd);
-
-     
-     ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
-     param->message = msg;
-     param->connfd = connfd;
-
-//     Connection::handle(param);
-
-     // use thread pool to handle request
-     static ThreadPool parser_pool(config.get_handle_thread_pool(),
-	  config.get_handle_request_queue_size());	
-     ThreadPoolTask task;
-     task.fun = Connection::handle;
-     task.argument = param;
-     parser_pool.add_task(task);
-
+    while((request=connector->get_next_httprequest()) != NULL) {
+	ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+	param->request = request;
+	param->conn_fd = connfd;
+	
+	// use thread pool to handle request
+	static ThreadPool parser_pool(config.get_handle_thread_pool(),
+				      config.get_handle_request_queue_size());	
+	ThreadPoolTask task;
+	task.fun = Connection::handle;
+	task.argument = param;
+	parser_pool.add_task(task);
+    }
 }
 
 void Connection::handle(void *message) 
@@ -92,14 +69,13 @@ void Connection::handle(void *message)
 		return;
 	}
 	
-	Request *request = new Request(param->message);
-	Response *response = new Response();
-	printf("param->connfd:%Xbd\n", param->connfd);
-	response->connfd = param->connfd;
+        common::net::HttpRequest *request = param->request;
+        common::net::HttpResponse *response = new common::net::HttpResponse();
+	response->connfd = param->conn_fd;
 	
 	printf("filter start");
 	// filter chain
-	FilterChain<Request*, Response*> chain;
+	FilterChain<common::net::HttpRequest*, common::net::HttpResponse*> chain;
 	FilterDefault *default_filter = new FilterDefault();
 	chain.add_filter(default_filter);
 
@@ -107,7 +83,8 @@ void Connection::handle(void *message)
 
 
 	// handle chain
-	HandleChain<Request*, Response*> handle_chain;
+	HandleChain<common::net::HttpRequest*, 
+		    common::net::HttpResponse*> handle_chain;
 	HandleDefault *default_handle = new HandleDefault();
 	handle_chain.add_handle(default_handle);
 	HandleProtoDecode *proto_decode = new HandleProtoDecode();
@@ -128,14 +105,13 @@ void Connection::handle(void *message)
 
 	delete request;
 	delete response;
-
 }
 	
 
 
 void Connection::set_max_connectfd(int max_connfd)
 {
-     set_max_connfd(max_connfd);
+//     set_max_connfd(max_connfd);
 }
 
 } // namespace sails

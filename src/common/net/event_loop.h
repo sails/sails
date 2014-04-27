@@ -13,6 +13,7 @@ struct event {
     int fd;
     int events;
     event_cb cb;
+    void *data;
     struct event* next;
 };
 

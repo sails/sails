@@ -8,13 +8,13 @@ INSTALL_PATH		= ../dist
 
 
 
-OBJECTS=sails.o http.o connection.o util.o thread_pool.o request.o \
-	 response.o filter_default.o handle_default.o \
+OBJECTS=sails.o connection.o thread_pool.o \
+	filter_default.o handle_default.o \
 	handle_proto_decode.o module_load.o service_register.o \
 	config.o
 
 sails:$(OBJECTS)
-	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -pthread -lhttp_parser -lprotobuf -ldl -ljson-cpp -lcommon_net
+	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -lsails -pthread -lhttp_parser -lprotobuf -ldl -ljson-cpp
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
@@ -32,9 +32,9 @@ sails:$(OBJECTS)
 
 ########################client library###################################
 
-clientcc=util.cc request.cc response.cc http.cc client_rpc_channel.cc client_rpc_controller.cc client_rpc.cc
+clientcc=client_rpc_channel.cc client_rpc_controller.cc client_rpc.cc
 libclient.so:$(clientcc)
-	g++ -shared $(CFLAGS) $(INCLUDE) -fPIC -o libclient.so $(clientcc) -lprotobuf -lhttp_parser
+	g++ -shared $(CFLAGS) $(INCLUDE) -fPIC -o libclient.so $(clientcc) -lprotobuf -lhttp_parser -lsails
 	mv libclient.so ../lib/libclient.so
 
 ########################client library###################################

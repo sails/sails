@@ -3,19 +3,19 @@
 
 #include <iostream>
 #include "handle.h"
-#include "request.h"
-#include "response.h"
+#include <common/net/http.h>
 
 namespace sails {
 
 
-class HandleDefault : public Handle<Request*, Response*>
+class HandleDefault : public Handle<common::net::HttpRequest*, common::net::HttpResponse*>
 {
 public:
-     void do_handle(Request* request, Response* response, 
-		    HandleChain<Request*, Response*> *chain);
+    void do_handle(common::net::HttpRequest* request, 
+		   common::net::HttpResponse* response, 
+		   HandleChain<common::net::HttpRequest*, common::net::HttpResponse*> *chain);
 
-     std::string get_request_path(Request *request);
+    std::string get_request_path(common::net::HttpRequest *request);
 };
 
 

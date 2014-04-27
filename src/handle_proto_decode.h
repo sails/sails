@@ -2,20 +2,20 @@
 #define _HANDLE_PROTO_DECODE_H_
 
 #include "handle.h"
-#include "request.h"
-#include "response.h"
+#include <common/net/http.h>
 
 namespace sails {
 
-class HandleProtoDecode : public Handle<Request*, Response*>
+class HandleProtoDecode : public Handle<common::net::HttpRequest*, common::net::HttpResponse*>
 {
 public:
-	void do_handle(Request* request, Response* response, 
-		       HandleChain<Request*, Response*> *chain);
+void do_handle(common::net::HttpRequest* request, 
+		   common::net::HttpResponse* response, 
+		   HandleChain<common::net::HttpRequest*, common::net::HttpResponse*> *chain);
 
 private:
-	void decode_protobuf(Request* request, Response* response, 
-		       HandleChain<Request*, Response*> *chain);
+void decode_protobuf(common::net::HttpRequest* request, common::net::HttpResponse* response, 
+			 HandleChain<common::net::HttpRequest*, common::net::HttpResponse*> *chain);
 };
 
 }
@@ -23,4 +23,8 @@ private:
 
 
 #endif /* _HANDLE_PROTO_DECODE_H_ */
+
+
+
+
 

@@ -193,6 +193,27 @@ char* HttpRequest::get_raw() {
 }
 
 
+// protocol type
+int get_request_protocol(HttpRequest* request) 
+{
+     if(request != NULL) {
+	  char *body = request->raw_data->body;
+	  if(strlen(body) > 0) {
+	       if(strncasecmp(body, PROTOBUF, strlen(PROTOBUF)) == 0) {
+		    return PROTOBUF_PROTOCOL;	
+	       }
+
+	  }
+	  return NORMAL_PROTOCOL;
+     }else {
+	  return ERROR_PROTOCOL;
+     }
+
+}
+
+
+
+
 /////////////////////////////http response////////////////////////////
 HttpResponse::HttpResponse() {
      this->raw_data = (struct http_message *)malloc(sizeof(struct http_message));

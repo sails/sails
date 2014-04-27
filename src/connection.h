@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include "http.h"
 #include <common/net/event_loop.h>
+#include <common/net/http_connector.h>
 
 namespace sails {
 
@@ -13,8 +13,8 @@ namespace sails {
 void read_data(common::net::event*, int revents);
 
 typedef struct ConnectionnHandleParam {
-     struct message* message;
-     int connfd;
+common::net::HttpRequest *request;
+int conn_fd;
 } ConnectionnHandleParam;
 
 class Connection {

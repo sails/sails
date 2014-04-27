@@ -10,11 +10,13 @@
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include "config.h"
-#include "util.h"
 #include "connection.h"
 #include "module_load.h"
 #include <signal.h>
+#include <common/base/util.h>
+#include <common/base/string.h>
 #include <common/net/event_loop.h>
+#include <common/net/http_connector.h>
 const int MAX_EVENTS = 1000;
 
 namespace sails {
@@ -50,12 +52,13 @@ void accept_socket(common::net::event* e, int revents) {
 	    perror("accept");
 	    exit(EXIT_FAILURE);
 	}
-	sails::setnonblocking(connfd);
+	sails::common::setnonblocking(connfd);
 
 	sails::common::net::event ev;
 	ev.fd = connfd;
 	ev.events = sails::common::net::EventLoop::Event_READ;
 	ev.cb = sails::read_data;
+	ev.data = new sails::common::net::HttpConnector(connfd);
 	ev.next = NULL;
 	ev_loop.event_ctl(common::net::EventLoop::EVENT_CTL_ADD, &ev);
     }
@@ -103,7 +106,7 @@ int main(int argc, char *argv[]) {
 	  exit(EXIT_FAILURE); 
      }
      bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
-     sails::setnonblocking(listenfd);
+     sails::common::setnonblocking(listenfd);
 
      if(listen(listenfd, 10) < 0) {
 	  perror("listen");

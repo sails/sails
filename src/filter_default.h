@@ -2,15 +2,15 @@
 #define _FILTER_DEFAULT_H_
 
 #include "filter.h"
-#include "request.h"
-#include "response.h"
+#include <common/net/http.h>
 
 namespace sails {
 
-class FilterDefault : public Filter<Request*, Response*>
+class FilterDefault : public Filter<common::net::HttpRequest*, common::net::HttpResponse*>
 {
-	void do_filter(Request* request, Response* response, 
-		       FilterChain<Request*, Response*> *chain);
+	void do_filter(common::net::HttpRequest* request, 
+		       common::net::HttpResponse* response, 
+		       FilterChain<common::net::HttpRequest*, common::net::HttpResponse*> *chain);
 };
 
 } // namespace sails
