@@ -23,15 +23,9 @@ HttpConnector::HttpConnector(int connect_fd)
 {
     parser.data = this;
 
-    struct http_message* message = (struct http_message*)malloc(
+    message = (struct http_message*)malloc(
 	sizeof(struct http_message));
     http_message_init(message);
-    this->request = new HttpRequest(message);
-
-    struct http_message* respmessage = (struct http_message*)malloc(
-	sizeof(struct http_message));
-    http_message_init(respmessage);
-    this->response = new HttpResponse(respmessage);
 
     http_parser_init(&parser, ::HTTP_BOTH);
 }
@@ -52,6 +46,17 @@ HttpRequest* HttpConnector::get_next_httprequest()
     return NULL;
 }
 
+
+HttpResponse* HttpConnector::get_next_httpresponse() {
+    if(!rep_list.empty()) {
+	HttpResponse *item = rep_list.front();
+	rep_list.pop_front();
+	return item;
+    }
+    return NULL;
+}
+
+
 void HttpConnector::httpparser() {
     char data[10000];
     strncpy(data, in_buf.peek(), in_buf.readable());
@@ -62,7 +67,6 @@ void HttpConnector::httpparser() {
     in_buf.retrieve(nparsed);
 }
 
-
 int
 HttpConnector::request_url_cb (http_parser *p, const char *buf, size_t len)
 {
@@ -70,7 +74,7 @@ HttpConnector::request_url_cb (http_parser *p, const char *buf, size_t len)
 	  printf("p->data == null\n");
      }
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      strlncat(m->request_url,
 	      sizeof(m->request_url),
@@ -91,7 +95,7 @@ int HttpConnector::status_complete_cb (http_parser *p) {
 int HttpConnector::header_field_cb (http_parser *p, const char *buf, size_t len)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      if (m->last_header_element != FIELD)
 	  m->num_headers++;
@@ -110,7 +114,7 @@ int HttpConnector::header_value_cb (http_parser *p, const char *buf, size_t len)
 {
 
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      strlncat(m->headers[m->num_headers-1][1],
 	      sizeof(m->headers[m->num_headers-1][1]),
@@ -124,7 +128,7 @@ int HttpConnector::header_value_cb (http_parser *p, const char *buf, size_t len)
 void HttpConnector::check_body_is_final (const http_parser *p)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      if (m->body_is_final) {
 	  fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 on last on_body callback call "
@@ -139,7 +143,7 @@ void HttpConnector::check_body_is_final (const http_parser *p)
 int HttpConnector::body_cb (http_parser *p, const char *buf, size_t len)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      strlncat(m->body,
 	      sizeof(m->body),
@@ -154,7 +158,7 @@ int HttpConnector::body_cb (http_parser *p, const char *buf, size_t len)
 int HttpConnector::count_body_cb (http_parser *p, const char *buf, size_t len)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      assert(buf);
      m->body_size += len;
@@ -166,7 +170,7 @@ int HttpConnector::count_body_cb (http_parser *p, const char *buf, size_t len)
 int HttpConnector::message_begin_cb (http_parser *p)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
      m->message_begin_cb_called = TRUE;
      return 0;
 }
@@ -174,7 +178,7 @@ int HttpConnector::message_begin_cb (http_parser *p)
 int HttpConnector::headers_complete_cb (http_parser *p)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      m->method = p->method;
      m->status_code = p->status_code;
@@ -189,7 +193,7 @@ int HttpConnector::headers_complete_cb (http_parser *p)
 int HttpConnector::message_complete_cb (http_parser *p)
 {
      HttpConnector* connector = (HttpConnector*)(p->data);
-     struct http_message *m = connector->request->raw_data;
+     struct http_message *m = connector->message;
 
      if (m->should_keep_alive != http_should_keep_alive(p))
      {
@@ -218,18 +222,17 @@ int HttpConnector::message_complete_cb (http_parser *p)
 	
      if(p->type == HTTP_REQUEST) {
 	 connector->handle_request();
-	 connector->push_request_list(connector->request);
-	 struct http_message* message = (struct http_message*)malloc(
-	     sizeof(struct http_message));
-	 http_message_init(message);
-	 connector->request = new HttpRequest(message);
+	 HttpRequest* request = new HttpRequest(m);
+	 connector->push_request_list(request);
+	 
      }else {
-	 connector->rep_list.push_back(connector->request);
-	 struct http_message* message = (struct http_message*)malloc(
-	     sizeof(struct http_message));
-	 http_message_init(message);
-	 connector->response = new HttpResponse(message);
+	 HttpResponse* response = new HttpResponse(m);
+	 connector->push_response_list(response);
      }
+     struct http_message* message = (struct http_message*)malloc(
+	     sizeof(struct http_message));
+     http_message_init(message);
+     connector->message = message;
 
      return 0;
 }
@@ -237,7 +240,7 @@ int HttpConnector::message_complete_cb (http_parser *p)
 
 void HttpConnector::handle_request()
 {
-     struct http_message *m = this->request->raw_data;
+     struct http_message *m = this->message;
 
      char url[200];
      memset(url, 0, 200);
@@ -257,7 +260,7 @@ void HttpConnector::parser_url(char *url)
 {
      struct http_parser_url u;
      int url_result = 0;
-     struct http_message *m = this->request->raw_data;
+     struct http_message *m = this->message;
      if((url_result = http_parser_parse_url(url, strlen(url), 0, &u)) == 0)
      {
 	  if(u.field_set & (1 << UF_PORT)) {
@@ -295,7 +298,17 @@ void HttpConnector::push_request_list(HttpRequest *req) {
 	sprintf(msg, "connect fd %d unhandle request list more than 20 and can't parser", connect_fd);
 	perror(msg);
     }
+}
 
+void HttpConnector::push_response_list(HttpResponse *rep) {
+    if(rep_list.size() <= 20) {
+	rep_list.push_back(rep);
+    }else {
+	char msg[100];
+	memset(msg, '\0', 100);
+	sprintf(msg, "connect fd %d unhandle response list more than 20 and can't parser", connect_fd);
+	perror(msg);
+    }
 }
 } // namespace net
 } // namespace common

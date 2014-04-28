@@ -2,13 +2,13 @@ INCLUDE=-I../../ -I$(TOPDIR)../../deps/http-parser
 
 CC		= gcc
 CXX		= g++
-CFLAGS 		= -std=c++11 -g -O0
+CFLAGS 		= -std=c++11 -g -O0 -L$(TOPDIR)base
 VPATH		= ${TOPDIR}/base
-
+DEPSLIBS 	= common_base
 
 
 %.o: %.cc
-	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
+	g++ $(CFLAGS) $(INCLUDE) -fPIC -c -o $@ $< -l$(DEPSLIBS)
 
 
 -include $(OBJECTS:.o=.d) # $(OBJECTS.o=.d)replace all *.o to *.d

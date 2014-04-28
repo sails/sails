@@ -1,7 +1,7 @@
 TOPDIR:=../
 
-TARGET := libcommon_log.a
-LOCAL_OBJ= logging.o time_t.o string.o filesys.o
+TARGET 		:= libcommon_log.a
+LOCAL_OBJ	= logging.o
 
 all : $(TARGET)
 

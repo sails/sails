@@ -34,7 +34,7 @@ sails:$(OBJECTS)
 
 clientcc=client_rpc_channel.cc client_rpc_controller.cc client_rpc.cc
 libclient.so:$(clientcc)
-	g++ -shared $(CFLAGS) $(INCLUDE) -fPIC -o libclient.so $(clientcc) -lprotobuf -lhttp_parser -lsails
+	g++ -shared $(CFLAGS) $(INCLUDE) -fPIC -o libclient.so $(clientcc) -lprotobuf -lhttp_parser -Wl,--no-whole-archive  -lsails -Wl,--no-whole-archive
 	mv libclient.so ../lib/libclient.so
 
 ########################client library###################################

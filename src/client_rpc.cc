@@ -70,17 +70,17 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 	    connector.httpparser();
 	}
 
-	common::net::HttpResponse *response = NULL;
-	while((response=connector->get_next_httprequest()) != NULL) {
+	common::net::HttpResponse *resp = NULL;
+	while((resp=connector.get_next_httpresponse()) != NULL) {
 	    printf("parser ok...............\n");
-	    common::net::http_message* msg = response->get_raw();
-	    printf("response body:%s\n", msg->body);
+	    char *body = resp->get_body();
+	    printf("response body:%s\n", body);
 		
-	    if(strlen(msg->body) > 0) {
-		if(strncasecmp(msg->body, 
+	    if(strlen(body) > 0) {
+		if(strncasecmp(body, 
 			       common::net::PROTOBUF, strlen(common::net::PROTOBUF)) == 0) {
 		    // protobuf message
-		    response->ParseFromString(string(msg->body+14));
+		    response->ParseFromString(string(body+14));
 				
 		}
 	    }

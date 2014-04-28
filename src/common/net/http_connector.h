@@ -17,6 +17,7 @@ public:
 
     void httpparser();
     HttpRequest* get_next_httprequest();
+    HttpResponse* get_next_httpresponse();
 
 private:
     // http_parser call_back
@@ -37,12 +38,13 @@ private:
     std::list<HttpResponse *> rep_list;
     
     http_parser parser;
-    HttpRequest *request; // at parser
-    HttpResponse *response;
+    struct http_message *message;
     static struct http_parser_settings settings;
     void handle_request();
     void parser_url(char *url);
-    void push_request_list(HttpRequest *);
+
+    void push_request_list(HttpRequest *req);
+    void push_response_list(HttpResponse *rep);
 };
 
 } // namespace net

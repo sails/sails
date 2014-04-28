@@ -222,6 +222,10 @@ HttpResponse::HttpResponse() {
      this->set_default_header();
 }
 
+HttpResponse::HttpResponse(struct http_message *raw_data) {
+    this->raw_data = raw_data;
+}
+
 HttpResponse::~HttpResponse() {
      if(this->raw_data != NULL) {
 	 delete_http_message(this->raw_data);
@@ -272,6 +276,10 @@ int HttpResponse::set_body(const char *body) {
 	  return 0;
      }
      return 1;
+}
+
+char *HttpResponse::get_body() {
+    return this->raw_data->body;
 }
 
 int HttpResponse::to_str() {
