@@ -7,7 +7,7 @@ namespace sails {
 
 class ModuleLoad {
 public:
-	void load(std::string modulepath);
+    void load(std::string modulepath);
 };
 
 } //namespace sails

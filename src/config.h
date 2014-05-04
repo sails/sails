@@ -12,15 +12,15 @@ namespace sails {
 class Config
 {
 public:
-     Config();
-     std::map<std::string, std::string> get_modules();
-     int get_listen_port();
-     int get_max_connfd();
-     int get_handle_thread_pool();
-     int get_handle_request_queue_size();
+    Config();
+    std::map<std::string, std::string> get_modules();
+    int get_listen_port();
+    int get_max_connfd();
+    int get_handle_thread_pool();
+    int get_handle_request_queue_size();
 
 private:
-     Json::Value root;
+    Json::Value root;
 };
 
 } // namespace sails
