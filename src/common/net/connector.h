@@ -10,12 +10,14 @@ namespace net {
 class Connector {
 public:
     Connector(int connect_fd);
+    Connector(); // after create, must call connect yourself
     ~Connector();
 private:
     Connector(const Connector&);
     Connector& operator=(const Connector&);
 
 public:
+    bool connect(const char *ip, uint16_t port, bool keepalive);
     int read();
     const char* peek();
     void retrieve(int len);
@@ -33,3 +35,6 @@ protected:
 } // namespace sails
 
 #endif /* _CONNECTOR_H_ */
+
+
+

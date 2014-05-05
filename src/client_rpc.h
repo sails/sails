@@ -7,16 +7,6 @@
 
 namespace sails {
 
-class RpcClientConnection
-{
-public:
-	RpcClientConnection(std::string ip, int port);
-	int get_available_con_fd();
-private:
-	int connectfd;
-	
-};
-
 class RpcClient {
 public:
 	RpcClient(std::string ip, int port);

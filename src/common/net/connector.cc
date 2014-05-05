@@ -1,5 +1,9 @@
 #include <common/net/connector.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <thread>
 
 namespace sails {
 namespace common {
@@ -9,8 +13,38 @@ Connector::Connector(int conn_fd) {
     connect_fd = conn_fd;
 }
 
+Connector::Connector() {
+    
+}
+
 Connector::~Connector() {
      
+}
+
+
+bool Connector::connect(const char *ip, uint16_t port, bool keepalive) {
+    struct sockaddr_in serveraddr;
+    connect_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(connect_fd == -1) {
+	printf("new connect_fd error\n");
+	return false;
+    }
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_addr.s_addr = inet_addr(ip);
+    serveraddr.sin_port = htons(port);
+
+
+    int ret = ::connect(connect_fd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    if(ret == -1) {
+	printf("connect failed\n");
+	return false;
+    }
+    if(keepalive) {
+	// new thread to send ping
+//	std::thread();
+    }
+
+    return true;
 }
 
 int Connector::read() {

@@ -13,6 +13,7 @@ class HttpConnector : public Connector {
 
 public:
     HttpConnector(int connect_fd);
+    HttpConnector(); // and then call connect
     ~HttpConnector();
 
     void httpparser();

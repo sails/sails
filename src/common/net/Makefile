@@ -1,7 +1,7 @@
 TOPDIR:=../
 
 TARGET := libcommon_net.a
-LOCAL_OBJ= event_loop.o http.o connector.o http_connector.o
+LOCAL_OBJ= event_loop.o http.o http_connector.o connector.o
 
 all : $(TARGET)
 

@@ -30,6 +30,17 @@ HttpConnector::HttpConnector(int connect_fd)
     http_parser_init(&parser, ::HTTP_BOTH);
 }
 
+HttpConnector::HttpConnector():Connector()
+{
+    parser.data = this;
+
+    message = (struct http_message*)malloc(
+	sizeof(struct http_message));
+    http_message_init(message);
+
+    http_parser_init(&parser, ::HTTP_BOTH);
+}
+
 HttpConnector::~HttpConnector()
 {
     
