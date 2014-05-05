@@ -4,7 +4,7 @@ INCLUDE=-I$(SRC)
 LIBPATH=../../lib
 
 client: client.o addressbook.pb.o
-	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -lclient -lprotobuf
+	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -pthread -lclient -lprotobuf
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

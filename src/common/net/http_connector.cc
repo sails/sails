@@ -43,7 +43,16 @@ HttpConnector::HttpConnector():Connector()
 
 HttpConnector::~HttpConnector()
 {
-    
+    if(!req_list.empty()) {
+	HttpRequest *item = req_list.front();
+	req_list.pop_front();
+	delete(item);
+    }
+    if(!rep_list.empty()) {
+	HttpResponse *item = rep_list.front();
+	rep_list.pop_front();
+        delete(item);
+    }
 }
 
 

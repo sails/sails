@@ -81,6 +81,7 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 				
 		}
 	    }
+	    delete(resp);
 	}
 	
 		
