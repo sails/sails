@@ -66,7 +66,7 @@ bool EventLoop::add_event(struct event*ev) {
     }
 
     if(need_add_to_epoll) {
-	struct epoll_event epoll_ev;
+	struct epoll_event epoll_ev = {};
 	short events = 0;
 	epoll_ev.data.fd = ev->fd;
 	if(ev->events & Event_READ) {
@@ -140,7 +140,7 @@ bool EventLoop::event_stop(int fd) {
 	anfds[fd].isused = 0;
 	// detele event list
 	struct event* cur = anfds[fd].next;
-	struct event* pre = cur;
+	struct event* pre = NULL;
 	while(cur != NULL) {
 	    pre = cur;
 	    cur = cur->next;
@@ -195,11 +195,15 @@ void EventLoop::process_event(int fd, int events) {
     }
     if(anfds[fd].events & events) {
 	struct event* io_w = anfds[fd].next;
-	while(io_w != NULL) {
+	while(io_w != NULL && io_w->cb != NULL) {
 	    if(io_w->events & events && io_w->fd == fd) {
 		io_w->cb(io_w, io_w->events);
 	    }
-	    io_w = io_w->next;
+	    if(anfds[fd].isused) { // call back may be delete
+		io_w = io_w->next;
+	    }else {
+		break;
+	    }
 	}
     }
 }

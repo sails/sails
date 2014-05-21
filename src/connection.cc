@@ -35,9 +35,11 @@ void read_data(common::net::event* ev, int revents) {
     common::net::HttpConnector *connector = (common::net::HttpConnector *)ev->data;
     int n = connector->read();
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
-	                     // n=1: recv signal_pending before read data
+	                     // n=-1: recv signal_pending before read data
 	  perror("read connfd");
 	  delete(connector);
+	  connector = NULL;
+	  ev->data = NULL;
 	  ev_loop.event_stop(connfd);
 	  close(connfd); // will delete from epoll set auto
 	  return;
@@ -102,7 +104,10 @@ void Connection::handle(void *message)
 		
 	}
 
-
+	delete proto_decode;
+	delete default_handle;
+	delete default_filter;
+	
 	delete request;
 	delete response;
 }

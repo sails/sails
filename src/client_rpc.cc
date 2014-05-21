@@ -37,6 +37,7 @@ int RpcClient::sync_call(const google::protobuf::MethodDescriptor *method,
 
 	// construct http request
 	common::net::http_message *raw_data = (common::net::http_message*)malloc(sizeof(common::net::http_message));
+	common::net::http_message_init(raw_data);
 	common::net::HttpRequest http_request(raw_data);
 	http_request.set_default_header();
 	stringstream port_str;

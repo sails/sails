@@ -47,6 +47,9 @@ void delete_http_message(struct http_message *msg) {
 	       free(msg->userinfo);
 	       msg->userinfo = NULL;
 	  }
+	  if(msg->raw != NULL) {
+	      free(msg->raw);
+	  }
 	  free(msg);
 	  msg = NULL;
      }

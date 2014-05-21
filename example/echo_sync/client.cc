@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	RpcControllerImp controller;
 
 //	test_fun(channel, controller);
-	for(int i = 0; i < 10000; i++) {
+	for(int i = 0; i < 1; i++) {
 	    std::thread t(test_fun, std::ref(channel), std::ref(controller));
 	    t.join();
 	}

@@ -53,6 +53,9 @@ void HandleProtoDecode::decode_protobuf(common::net::HttpRequest *request, commo
 
 	    response_content = string(common::net::PROTOBUF)+response_content;
 	    response->set_body(response_content.c_str());
+
+	    delete request_msg;
+	    delete response_mg;
 	}
     }
 }

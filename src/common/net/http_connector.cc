@@ -43,6 +43,10 @@ HttpConnector::HttpConnector():Connector()
 
 HttpConnector::~HttpConnector()
 {
+    if(this->message != NULL) {
+	free(this->message);
+	this->message = NULL;
+    }
     if(!req_list.empty()) {
 	HttpRequest *item = req_list.front();
 	req_list.pop_front();
@@ -79,6 +83,7 @@ HttpResponse* HttpConnector::get_next_httpresponse() {
 
 void HttpConnector::httpparser() {
     char data[10000];
+    memset(data, '\0', 10000);
     strncpy(data, in_buf.peek(), in_buf.readable());
     //parser, if ok retrieve else ignore
     size_t nparsed = http_parser_execute(&parser, &settings, 
@@ -250,7 +255,7 @@ int HttpConnector::message_complete_cb (http_parser *p)
 	 connector->push_response_list(response);
      }
      struct http_message* message = (struct http_message*)malloc(
-	     sizeof(struct http_message));
+	 sizeof(struct http_message));
      http_message_init(message);
      connector->message = message;
 
