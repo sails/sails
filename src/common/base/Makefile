@@ -1,7 +1,7 @@
 TOPDIR:=../
 
 TARGET := libcommon_base.a
-LOCAL_OBJ= filesys.o string.o time_t.o util.o
+LOCAL_OBJ= filesys.o string.o time_t.o util.o thread_pool.o
 
 all : $(TARGET)
 

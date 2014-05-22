@@ -1,8 +1,9 @@
+#include <common/base/thread_pool.h>
 #include <stdio.h>
-#include "thread_pool.h"
 #include <sys/sysinfo.h>
 
 namespace sails {
+namespace common {
 
 
 ThreadPool::ThreadPool(int queue_size) {
@@ -52,7 +53,7 @@ int ThreadPool::get_task_queue_size()
     return this->task_queue.size();
 }
 
-int ThreadPool::add_task(sails::ThreadPoolTask task) {
+int ThreadPool::add_task(ThreadPoolTask task) {
     int result = -1;
     this->lock.lock();
     if(this->task_queue_available_size > 0) {
@@ -102,4 +103,5 @@ void* ThreadPool::threadpool_thread(void *threadpool) {
     return(NULL);
 }
 	
-}
+} // namespace common
+} // namespace sails

@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include "connection.h"
-#include "thread_pool.h"
+#include <common/base/thread_pool.h>
 #include "filter.h"
 #include "filter_default.h"
 #include "handle.h"
@@ -55,9 +55,9 @@ void read_data(common::net::event* ev, int revents) {
 	param->conn_fd = connfd;
 	
 	// use thread pool to handle request
-	static ThreadPool parser_pool(config.get_handle_thread_pool(),
+	static common::ThreadPool parser_pool(config.get_handle_thread_pool(),
 				      config.get_handle_request_queue_size());	
-	ThreadPoolTask task;
+	common::ThreadPoolTask task;
 	task.fun = Connection::handle;
 	task.argument = param;
 	parser_pool.add_task(task);

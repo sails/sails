@@ -8,7 +8,7 @@ INSTALL_PATH		= ../dist
 
 
 
-OBJECTS=sails.o connection.o thread_pool.o \
+OBJECTS=sails.o connection.o \
 	filter_default.o handle_default.o \
 	handle_proto_decode.o module_load.o service_register.o \
 	config.o
