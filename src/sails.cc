@@ -75,10 +75,22 @@ void sails_init(int argc, char *argv[]) {
     Connection::set_max_connectfd(config.get_max_connfd());
 }
 
-void sails_on_exit(int status, void *arg) {
+void sails_exit() {
     modules.clear();
     ModuleLoad::unload();
-    printf("on exit");
+
+    printf("on exit\n");
+    exit(EXIT_SUCCESS);
+}
+
+void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
+    switch(signo) {
+	case SIGINT:
+	{
+	    sails_exit();
+	    break;
+	}
+    }
 }
 
 } //namespace sails
@@ -89,7 +101,17 @@ void sails_on_exit(int status, void *arg) {
 int main(int argc, char *argv[]) {
     // configure
     sails::sails_init(argc, argv);
-    on_exit(sails::sails_on_exit, NULL);
+
+    // 
+    struct sigaction act;
+    act.sa_sigaction = sails::sails_signal_handle;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    if(sigaction(SIGINT, &act, NULL) == -1) {
+	perror("sigaction error");
+	exit(EXIT_FAILURE);
+    }
+
     int port = sails::config.get_listen_port();
     if(port < 8000) {
 	printf("port must be more than 8000\n");

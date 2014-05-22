@@ -54,15 +54,3 @@ private:
 
 #endif /* _HTTP_CONNECTOR_H_ */
 
-
-
-
-
-
-
-
-
-
-
-
-

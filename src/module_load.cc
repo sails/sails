@@ -10,6 +10,9 @@ using namespace std;
 
 namespace sails {
 
+
+list<void*> ModuleLoad::modules;
+
 void ModuleLoad::load(string modulepath) {
     if(access(modulepath.c_str(), F_OK) == 0
        && access(modulepath.c_str(), R_OK) == 0) {
@@ -39,15 +42,14 @@ void ModuleLoad::load(string modulepath) {
 	    list<google::protobuf::Service*>::iterator iter;
 	    for(iter = service_list->begin(); iter != service_list->end();) {
 		google::protobuf::Service* service = *iter;
-		printf("service name:%s\n", service->GetDescriptor()->name().c_str());
+//		printf("service name:%s\n", service->GetDescriptor()->name().c_str());
 		ServiceRegister::instance()->register_service(service);
 		iter = service_list->erase(iter);
 	    }
 	    delete service_list;
 	    service_list = NULL;
 	}		
-
-//   		dlclose(handle);
+	ModuleLoad::modules.push_back(handle);
 
     }else {
 	cout << "can't load module " << modulepath
@@ -57,6 +59,15 @@ void ModuleLoad::load(string modulepath) {
 
 void ModuleLoad::unload() {
     ServiceRegister::release_services();
+
+    google::protobuf::ShutdownProtobufLibrary();
+
+    for(void* handle: ModuleLoad::modules) {
+	dlclose(handle);
+    }
+    ModuleLoad::modules.clear();
+
 }
 
 } // namespace sails
+

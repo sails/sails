@@ -20,7 +20,16 @@ EventLoop::EventLoop() {
 }
 
 EventLoop::~EventLoop() {
-    
+    if(events != NULL) {
+	for(int i = 0; i < max_events; i++) {
+	    event_stop(i);
+	}
+	free(events);
+	events = NULL;
+    }
+    if(anfds != NULL) {
+	free(anfds);
+    }
 }
 
 void EventLoop::init() {

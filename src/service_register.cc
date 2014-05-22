@@ -13,7 +13,7 @@ ServiceRegister *ServiceRegister::_instance = NULL;
 bool ServiceRegister::register_service(google::protobuf::Service *service) {
 	
     service_map.insert(
-	map<string, Service*>::value_type(service->GetDescriptor()->name(), 
+	map<string, Service*>::value_type(std::string(service->GetDescriptor()->name()), 
 					  service));
 
     return true;
@@ -35,11 +35,11 @@ void ServiceRegister::release_services() {
     map<string, Service*>::iterator iter;
     for (iter = s->service_map.begin(); iter != s->service_map.end(); iter++) {
 	if(iter->second != NULL) {
-	    delete iter->second;
+	    delete (Service*)iter->second;
 	    iter->second = NULL;
-	    s->service_map.erase(iter);
 	}
     }
+    s->service_map.clear();
     delete s;
 }
 } // namespace sails
