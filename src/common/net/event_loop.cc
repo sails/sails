@@ -35,9 +35,11 @@ void EventLoop::init() {
     }
 }
 bool EventLoop::add_event(struct event*ev) {
-    if(ev->fd > max_events) {
-	// malloc new evetns and anfds
-	array_needsize(ev->fd);
+    if(ev->fd >= max_events) {
+	// malloc new events and anfds
+	if(!array_needsize(ev->fd+1)) {
+	    return false;
+	}
     }
 
     struct event *e = (struct event*)malloc(sizeof(struct event));
@@ -208,7 +210,7 @@ void EventLoop::process_event(int fd, int events) {
     }
 }
 
-void EventLoop::array_needsize(int need_cnt)
+bool EventLoop::array_needsize(int need_cnt)
 {
     int cur = max_events;
     if(need_cnt > cur) {
@@ -216,14 +218,24 @@ void EventLoop::array_needsize(int need_cnt)
 	do {
 	    newcnt += (newcnt >> 1) + 16;
 	}while(need_cnt > newcnt);
+        struct ANFD* tempadfds = (struct ANFD*)realloc(anfds, sizeof(struct ANFD)*newcnt);
+	if(tempadfds == NULL) {
+	    return false;
+	}
+	anfds = tempadfds;
+
+        struct epoll_event* tempevents = (struct epoll_event*)realloc(events, sizeof(struct epoll_event)*newcnt);
+	if(tempevents == NULL) {
+	    return false;
+	}
+	events = tempevents;
 	
-	fprintf(stderr, "reseize from %d to %d\n", cur, newcnt);
-	anfds = (struct ANFD*)realloc(anfds, sizeof(struct ANFD)*newcnt);
-	events = (struct epoll_event*)realloc(events, sizeof(struct epoll_event)*newcnt);
+	fprintf(stdin, "relloc %ld for epoll_event array\n", sizeof(struct epoll_event)*newcnt);
 
 	init_events(cur, newcnt-cur);
 	max_events = newcnt;
     }
+    return true;
 }
 
 void EventLoop::init_events(int start, int count) {
@@ -239,18 +251,4 @@ void EventLoop::init_events(int start, int count) {
 } // namespace net
 } // namespace common
 } // namespace sails
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

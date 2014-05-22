@@ -21,21 +21,22 @@ Config::Config() {
     ifs.close();
 }
 
-map<string, string> Config::get_modules()
+map<string, string>* Config::get_modules(map<string, string> *modules)
 {
-    map<string, string> retmap;
-
-    int module_size = root["modules"].size();
-    if(module_size >  0) {
-	for(int i = 0; i < module_size; i++) {
-	    string name = root["modules"][i]["name"].asString();
-	    string value = root["modules"][i]["path"].asString();
-	    if(!name.empty() && !value.empty()) {
-		retmap.insert(pair<string, string>(name, value));
+    if(modules != NULL) {
+	    int module_size = root["modules"].size();
+	    if(module_size >  0) {
+		for(int i = 0; i < module_size; i++) {
+		    string name = root["modules"][i]["name"].asString();
+		    string value = root["modules"][i]["path"].asString();
+		    if(!name.empty() && !value.empty()) {
+		        modules->insert(pair<string, string>(name, value));
+		    }
+		}
 	    }
-	}
     }
-    return retmap;
+
+    return modules;
 }
 
 int Config::get_listen_port()

@@ -48,7 +48,7 @@ private:
     bool add_event(struct event*);
     bool delete_event(struct event*);
     void process_event(int fd, int events);
-    void array_needsize(int need_cnt);
+    bool array_needsize(int need_cnt);
     void init_events(int start, int count);
     int epollfd;
     struct epoll_event *events;

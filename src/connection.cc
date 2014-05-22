@@ -50,6 +50,7 @@ void read_data(common::net::event* ev, int revents) {
 
     while((request=connector->get_next_httprequest()) != NULL) {
 	ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+	param->connector = connector;
 	param->request = request;
 	param->conn_fd = connfd;
 	
@@ -71,6 +72,7 @@ void Connection::handle(void *message)
 		return;
 	}
 	
+	common::net::HttpConnector *connector = param->connector;
         common::net::HttpRequest *request = param->request;
         common::net::HttpResponse *response = new common::net::HttpResponse();
 	response->connfd = param->conn_fd;
@@ -99,7 +101,11 @@ void Connection::handle(void *message)
 	int n = write(response->connfd, response->get_raw(), 
 		      strlen(response->get_raw()));
 	if(request->raw_data->should_keep_alive != 1) {
-		close(response->connfd);
+	    delete(connector);
+	    connector = NULL;
+	    ev_loop.event_stop(response->connfd);
+	    close(response->connfd);
+	    printf("close connfd:%d\n", response->connfd);
 	}else {
 		
 	}
@@ -110,6 +116,9 @@ void Connection::handle(void *message)
 	
 	delete request;
 	delete response;
+	if(param != NULL) {
+	    free(param);
+	}
 }
 	
 

@@ -26,19 +26,18 @@ Config config;
 std::map<std::string, std::string> modules;
 
 void init_config(int argc, char *argv[]) {
-     modules = config.get_modules();
+    config.get_modules(&modules);
 }
 
 int register_service() {
-     ModuleLoad module_load;
-     std::map<std::string, std::string>::iterator iter;
-     for(iter = modules.begin(); iter != modules.end()
-	      ; iter++) {
-	  if(!iter->second.empty()) {
-	       module_load.load(iter->second);
-	  }
-     }     
-     return 0;
+    std::map<std::string, std::string>::iterator iter;
+    for(iter = modules.begin(); iter != modules.end()
+	    ; iter++) {
+	if(!iter->second.empty()) {
+	    ModuleLoad::load(iter->second);
+	}
+    }     
+    return 0;
 }
 
 void accept_socket(common::net::event* e, int revents) {
@@ -60,17 +59,26 @@ void accept_socket(common::net::event* e, int revents) {
 	ev.cb = sails::read_data;
 	ev.data = new sails::common::net::HttpConnector(connfd);
 	ev.next = NULL;
-	ev_loop.event_ctl(common::net::EventLoop::EVENT_CTL_ADD, &ev);
+	if(!ev_loop.event_ctl(common::net::EventLoop::EVENT_CTL_ADD, &ev)){
+	    close(connfd);
+	    delete (sails::common::net::HttpConnector*)ev.data;
+	}
     }
 }
 
 void sails_init(int argc, char *argv[]) {
-     init_config(argc, argv);
-     if (register_service() != 0) {
-	  perror("register service");
-	  exit(EXIT_FAILURE);
-     }
-     Connection::set_max_connectfd(config.get_max_connfd());
+    init_config(argc, argv);
+    if (register_service() != 0) {
+	perror("register service");
+	exit(EXIT_FAILURE);
+    }
+    Connection::set_max_connectfd(config.get_max_connfd());
+}
+
+void sails_on_exit(int status, void *arg) {
+    modules.clear();
+    ModuleLoad::unload();
+    printf("on exit");
 }
 
 } //namespace sails
@@ -79,49 +87,62 @@ void sails_init(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
-     // configure
-     sails::sails_init(argc, argv);
+    // configure
+    sails::sails_init(argc, argv);
+    on_exit(sails::sails_on_exit, NULL);
+    int port = sails::config.get_listen_port();
+    if(port < 8000) {
+	printf("port must be more than 8000\n");
+	return 1;
+    }
+    int  listenfd = 0;
+    if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	perror("create listen socket");
+	exit(EXIT_FAILURE);
+    }
+    struct sockaddr_in servaddr, local;
+    int addrlen = sizeof(struct sockaddr_in);
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(port);
 
-     int port = sails::config.get_listen_port();
-     if(port < 8000) {
-	  printf("port must be more than 8000\n");
-	  return 1;
-     }
-     int  listenfd = 0;
-     if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	  perror("create listen socket");
-	  exit(EXIT_FAILURE);
-     }
-     struct sockaddr_in servaddr, local;
-     int addrlen = sizeof(struct sockaddr_in);
-     bzero(&servaddr, sizeof(servaddr));
-     servaddr.sin_family = AF_INET;
-     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-     servaddr.sin_port = htons(port);
+    int flag=1,len=sizeof(int); // for can restart right now
+    if( setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, len) == -1) 
+    {
+	perror("setsockopt"); 
+	exit(EXIT_FAILURE); 
+    }
+    bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
+    sails::common::setnonblocking(listenfd);
 
-     int flag=1,len=sizeof(int); // for can restart right now
-     if( setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, len) == -1) 
-     {
-	  perror("setsockopt"); 
-	  exit(EXIT_FAILURE); 
-     }
-     bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
-     sails::common::setnonblocking(listenfd);
+    if(listen(listenfd, 10) < 0) {
+	perror("listen");
+	exit(EXIT_FAILURE);
+    }
 
-     if(listen(listenfd, 10) < 0) {
-	  perror("listen");
-	  exit(EXIT_FAILURE);
-     }
+    sails::common::net::event listen_ev;
+    listen_ev.fd = listenfd;
+    listen_ev.events = sails::common::net::EventLoop::Event_READ;
+    listen_ev.cb = sails::accept_socket;
+    listen_ev.next = NULL;
 
-     sails::common::net::event listen_ev;
-     listen_ev.fd = listenfd;
-     listen_ev.events = sails::common::net::EventLoop::Event_READ;
-     listen_ev.cb = sails::accept_socket;
-     listen_ev.next = NULL;
+    sails::ev_loop.init();
+    if(!sails::ev_loop.event_ctl(sails::common::net::EventLoop::EVENT_CTL_ADD,
+				&listen_ev)) {
+	fprintf(stderr, "add listen fd to event loop fail");
+        exit(EXIT_FAILURE);
+    }
 
-     sails::ev_loop.init();
-     sails::ev_loop.event_ctl(sails::common::net::EventLoop::EVENT_CTL_ADD,
-	 &listen_ev);
-
-     sails::ev_loop.start_loop();
+    sails::ev_loop.start_loop();
 }
+
+
+
+
+
+
+
+
+
+

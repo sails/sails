@@ -37,14 +37,13 @@ void ModuleLoad::load(string modulepath) {
 	list<google::protobuf::Service*> *service_list = (*register_fun)();
 	if(service_list != NULL) {
 	    list<google::protobuf::Service*>::iterator iter;
-	    for(iter = service_list->begin(); iter != service_list->end(); ++iter) {
-
+	    for(iter = service_list->begin(); iter != service_list->end();) {
 		google::protobuf::Service* service = *iter;
 		printf("service name:%s\n", service->GetDescriptor()->name().c_str());
 		ServiceRegister::instance()->register_service(service);
-		
+		iter = service_list->erase(iter);
 	    }
-	    delete(service_list);
+	    delete service_list;
 	    service_list = NULL;
 	}		
 
@@ -54,6 +53,10 @@ void ModuleLoad::load(string modulepath) {
 	cout << "can't load module " << modulepath
 	     << " not found or can't read " << endl;
     }
+}
+
+void ModuleLoad::unload() {
+    ServiceRegister::release_services();
 }
 
 } // namespace sails

@@ -13,8 +13,9 @@ namespace sails {
 void read_data(common::net::event*, int revents);
 
 typedef struct ConnectionnHandleParam {
-common::net::HttpRequest *request;
-int conn_fd;
+    common::net::HttpConnector *connector;
+    common::net::HttpRequest *request;
+    int conn_fd;
 } ConnectionnHandleParam;
 
 class Connection {

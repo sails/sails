@@ -29,7 +29,19 @@ google::protobuf::Service* ServiceRegister::get_service(string key) {
     }
 }
 
+void ServiceRegister::release_services() {
 
+    ServiceRegister* s = ServiceRegister::instance();
+    map<string, Service*>::iterator iter;
+    for (iter = s->service_map.begin(); iter != s->service_map.end(); iter++) {
+	if(iter->second != NULL) {
+	    delete iter->second;
+	    iter->second = NULL;
+	    s->service_map.erase(iter);
+	}
+    }
+    delete s;
+}
 } // namespace sails
 
 

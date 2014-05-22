@@ -21,10 +21,13 @@ public:
 	}
 	return _instance;
     }
+
+    static void release_services();
 private:
     std::map<std::string, google::protobuf::Service*> service_map;
     static ServiceRegister *_instance;
 };
+
 
 } // namespace sails
 
