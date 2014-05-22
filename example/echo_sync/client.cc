@@ -50,6 +50,8 @@ int main(int argc, char *argv[])
 	    std::thread t(test_fun, std::ref(channel), std::ref(controller));
 	    t.join();
 	}
-	return 0;
 
+	google::protobuf::ShutdownProtobufLibrary();
+
+	return 0;
 }

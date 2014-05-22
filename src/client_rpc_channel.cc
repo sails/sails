@@ -25,6 +25,8 @@ void RpcChannelImp::CallMethod(const MethodDescriptor* method,
 	if(ret == 0 && done != NULL) {
 		done->Run();		
 	}
+	delete client;
+	client = NULL;
 }
 
 

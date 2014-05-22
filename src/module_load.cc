@@ -42,7 +42,7 @@ void ModuleLoad::load(string modulepath) {
 	    list<google::protobuf::Service*>::iterator iter;
 	    for(iter = service_list->begin(); iter != service_list->end();) {
 		google::protobuf::Service* service = *iter;
-//		printf("service name:%s\n", service->GetDescriptor()->name().c_str());
+		printf("service name:%s\n", service->GetDescriptor()->name().c_str());
 		ServiceRegister::instance()->register_service(service);
 		iter = service_list->erase(iter);
 	    }
