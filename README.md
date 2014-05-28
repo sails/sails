@@ -62,3 +62,9 @@ server status
 -------------
 
 with ctemplate, sails build-in status report display by html file
+
+
+build
+=====
+
+because the use of c++11 regex features, so need gcc 4.9 or above
