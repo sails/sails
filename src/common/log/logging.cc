@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <regex>
 #ifdef __linux__
 #include <unistd.h>
 #include <sys/stat.h>
@@ -195,23 +196,53 @@ void Logger::check_loginfo() {
     if(current_time - update_loginfo_time > 10) {
 	FILE* file = fopen(log_config_file, "r");
 	if(file != NULL) {
-	    char conf[1000];
-	    memset(conf, '\0', 1000);
-	    if(fread(conf, 1, 1000, file)) {
-		if(first_index_of_substr(conf, "LogLevel=DEBUG") >= 0) {
-		    this->level = Logger::LOG_LEVEL_DEBUG;
-		}else if(first_index_of_substr(conf, "LogLevel=INFO") >=0 ) {
-		    this->level = Logger::LOG_LEVEL_INFO;
-		}else if(first_index_of_substr(conf, "LogLevel=WARN") >= 0) {
-		    this->level = Logger::LOG_LEVEL_WARN;
-		}else if(first_index_of_substr(conf, "LogLevel=ERROR") >= 0) {
-		    this->level = Logger::LOG_LEVEL_ERROR;
+	    char buf[100];
+	    std::smatch cm;
+	    
+	    std::regex level("LogLevel=[a-zA-Z]+");
+
+	    while(fgets(buf, 100, file) != NULL) {
+		int size = strlen(buf);
+		if (size > 0) {
+		    if(buf[size-1] == '\n') { // linux file
+			buf[size-1] = '\0';
+		    }else if (buf[size-2] == '\r' && buf[size-1] == '\n')  { // windows file
+			buf[size-2] = '\0';buf[size-1] = '\0';
+		    }
+
+		    std::cmatch cm;
+		    if(regex_match(buf, cm, level)) {// match level
+			Logger::LogLevel setlevel = get_level_by_name(buf+9);
+			if(setlevel != Logger::LOG_LEVEL_NONE) {
+			    printf("set level %d\n", setlevel);
+			    this->level = Logger::LOG_LEVEL_WARN;
+			}
+		    }
 		}
+		memset(buf, '\0', 100);
 	    }
+
 	    fclose(file);
 	}
 	update_loginfo_time = current_time;
     }
+}
+
+Logger::LogLevel Logger::get_level_by_name(char *name)
+{
+    if(name == NULL || strlen(name) == 0) {
+	return Logger::LOG_LEVEL_NONE;
+    }
+    if(strcasecmp("debug", name) == 0) {
+	return Logger::LOG_LEVEL_DEBUG;
+    }else if(strcasecmp("info", name) == 0) {
+	return Logger::LOG_LEVEL_INFO;
+    }else if(strcasecmp("warn", name) == 0) {
+	return Logger::LOG_LEVEL_WARN;
+    }else if(strcasecmp("error", name) == 0) {
+	return Logger::LOG_LEVEL_ERROR;
+    }
+    return Logger::LOG_LEVEL_NONE;
 }
 
 void Logger::set_file_path()

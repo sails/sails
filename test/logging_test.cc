@@ -29,7 +29,7 @@ TEST(logging_test, logger)
     log3.error("test %s", "error is ok");
 
 
-/*
+
     printf("start test update infor from log.conf\n");
     	log::Logger log4(log::Logger::LOG_LEVEL_ERROR, "./test2.log", log::Logger::SPLIT_HOUR);
     while(1) {	
@@ -39,7 +39,7 @@ TEST(logging_test, logger)
 	log4.error("test %s", "error is ok");
 	sleep(1);
     }
-*/
+
 
     printf("test factory\n");
     log::Logger* log5 = log::LoggerFactory::getLog(std::string("testfactory"));

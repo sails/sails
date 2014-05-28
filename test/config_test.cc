@@ -6,7 +6,8 @@ using namespace sails;
 using namespace std;
 TEST(config_test, get_modules) {
 	Config config;
-	map<string, string> modules = config.get_modules();
+	map<string, string> modules;
+	config.get_modules(&modules);
 	map<string, string>::iterator iter;
 	for(iter = modules.begin(); iter != modules.end(); iter++) {
 		cout << iter->first << ":" << iter->second << endl;

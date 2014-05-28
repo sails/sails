@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "thread_pool.h"
+#include <common/base/thread_pool.h>
 
 using namespace sails;
 
 TEST(thread_pool, new_thread_pool)
 {
-	ThreadPool *pool = new ThreadPool(10);
+        common::ThreadPool *pool = new common::ThreadPool(10);
 	EXPECT_EQ(pool->get_thread_num(), 2);
 	delete pool;
 	pool = NULL;
@@ -18,8 +18,8 @@ void task_test(void *arg) {
 
 TEST(thread_pool, add_task)
 {
-	ThreadPool *pool = new ThreadPool(100);
-	ThreadPoolTask task;
+	common::ThreadPool *pool = new common::ThreadPool(100);
+	common::ThreadPoolTask task;
 	task.fun = task_test;
 	int num = 100;
 	task.argument = &num;

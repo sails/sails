@@ -15,10 +15,11 @@ namespace log {
 class Logger {
 public:
     enum LogLevel{
+	LOG_LEVEL_NONE =-1,
 	LOG_LEVEL_DEBUG = 1,
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_WARN,
-	LOG_LEVEL_ERROR
+	LOG_LEVEL_ERROR,
     };
 
     enum SAVEMODE{
@@ -41,6 +42,7 @@ private:
     void set_msg_prefix(Logger::LogLevel level, char *msg);
     void set_filename_by_savemode(char* filename);
     void check_loginfo();
+    Logger::LogLevel get_level_by_name(char *name);
     void set_file_path();
     bool ensure_directory_exist();
 
