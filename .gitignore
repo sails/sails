@@ -1,6 +1,7 @@
 *~
 *.o
 *.d
+cscope.out
 sails
 htmlget
 /test/test
@@ -8,5 +9,7 @@ htmlget
 /test/filter_test
 /src/test
 /test/response
-/test/core
+core
 /test/response_test
+callgraph.*
+callgrind.out*
