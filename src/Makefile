@@ -14,7 +14,7 @@ OBJECTS=sails.o connection.o \
 	config.o
 
 sails:$(OBJECTS)
-	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -lsails -pthread -lhttp_parser -lprotobuf -ldl -ljson-cpp
+	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -lsails -pthread -lhttp_parser -lprotobuf -ldl -ljson-cpp  -lsails
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

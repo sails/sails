@@ -36,3 +36,8 @@ event_loop_test:event_loop_test.o
 	g++ $(CFLAGS) $(INCLUDE) -o event_loop_test event_loop_test.o -lsails -lgtest -pthread
 event_loop_test.o:event_loop_test.cc
 	g++ $(CFLAGS) $(INCLUDE) -c event_loop_test.cc
+
+timer_test:timer_test.o
+	g++ $(CFLAGS) $(INCLUDE) -o timer_test timer_test.o -lsails -lgtest -pthread
+timer_test.o:timer_test.cc
+	g++ $(CFLAGS) $(INCLUDE) -c timer_test.cc

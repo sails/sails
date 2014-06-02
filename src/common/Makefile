@@ -9,3 +9,5 @@ all:
 	ar cru libsails.a *.o
 	rm -r *.o
 	ranlib libsails.a
+	rm ../../lib/libsails.a
+	cp libsails.a ../../lib/

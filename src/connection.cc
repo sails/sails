@@ -21,12 +21,12 @@
 
 namespace sails {
 
-
+extern common::net::ConnectorTimeout connect_timer;
 extern Config config;
-extern common::net::EventLoop ev_loop;
+extern common::EventLoop ev_loop;
 
 //void read_data(int connfd) {
-void read_data(common::net::event* ev, int revents) {
+void read_data(common::event* ev, int revents) {
     if(ev == NULL || ev->fd < 0) {
 	return;
     }
@@ -44,6 +44,9 @@ void read_data(common::net::event* ev, int revents) {
 	  close(connfd); // will delete from epoll set auto
 	  return;
      }
+
+//    connect_timer.update_connector_time(connector);// update timeout
+
     connector->httpparser();
 
     common::net::HttpRequest *request = NULL;

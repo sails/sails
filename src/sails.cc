@@ -15,13 +15,14 @@
 #include <signal.h>
 #include <common/base/util.h>
 #include <common/base/string.h>
-#include <common/net/event_loop.h>
+#include <common/base/event_loop.h>
 #include <common/net/http_connector.h>
 const int MAX_EVENTS = 1000;
 
 namespace sails {
 
-common::net::EventLoop ev_loop;
+common::EventLoop ev_loop;
+common::net::ConnectorTimeout connect_timer(10);
 Config config;
 std::map<std::string, std::string> modules;
 
@@ -40,8 +41,8 @@ int register_service() {
     return 0;
 }
 
-void accept_socket(common::net::event* e, int revents) {
-    if(revents & common::net::EventLoop::Event_READ) {
+void accept_socket(common::event* e, int revents) {
+    if(revents & common::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
 	int connfd = accept(e->fd, 
@@ -53,13 +54,18 @@ void accept_socket(common::net::event* e, int revents) {
 	}
 	sails::common::setnonblocking(connfd);
 
-	sails::common::net::event ev;
+	sails::common::event ev;
 	ev.fd = connfd;
-	ev.events = sails::common::net::EventLoop::Event_READ;
+	ev.events = sails::common::EventLoop::Event_READ;
 	ev.cb = sails::read_data;
-	ev.data = new sails::common::net::HttpConnector(connfd);
+
+	// set timeout
+	common::net::HttpConnector *con = new common::net::HttpConnector(connfd);
+	connect_timer.update_connector_time(con);
+
+	ev.data = con;
 	ev.next = NULL;
-	if(!ev_loop.event_ctl(common::net::EventLoop::EVENT_CTL_ADD, &ev)){
+	if(!ev_loop.event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 	    close(connfd);
 	    delete (sails::common::net::HttpConnector*)ev.data;
 	}
@@ -143,14 +149,14 @@ int main(int argc, char *argv[]) {
 	exit(EXIT_FAILURE);
     }
 
-    sails::common::net::event listen_ev;
+    sails::common::event listen_ev;
     listen_ev.fd = listenfd;
-    listen_ev.events = sails::common::net::EventLoop::Event_READ;
+    listen_ev.events = sails::common::EventLoop::Event_READ;
     listen_ev.cb = sails::accept_socket;
     listen_ev.next = NULL;
 
     sails::ev_loop.init();
-    if(!sails::ev_loop.event_ctl(sails::common::net::EventLoop::EVENT_CTL_ADD,
+    if(!sails::ev_loop.event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
 				&listen_ev)) {
 	fprintf(stderr, "add listen fd to event loop fail");
         exit(EXIT_FAILURE);

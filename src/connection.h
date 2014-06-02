@@ -4,13 +4,13 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include <common/net/event_loop.h>
+#include <common/base/event_loop.h>
 #include <common/net/http_connector.h>
 
 namespace sails {
 
 //void read_data(int connfd);
-void read_data(common::net::event*, int revents);
+void read_data(common::event*, int revents);
 
 typedef struct ConnectionnHandleParam {
     common::net::HttpConnector *connector;

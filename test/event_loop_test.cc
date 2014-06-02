@@ -1,4 +1,4 @@
-#include <common/net/event_loop.h>
+#include <common/base/event_loop.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -9,7 +9,7 @@
 using namespace sails::common;
 
 
-void listen_callback(net:: event*ev, int revents)
+void listen_callback(event*ev, int revents)
 {
     printf("listen callback start  \n");
     struct sockaddr_in servaddr, local;
@@ -48,14 +48,14 @@ TEST(logging_test, logger)
 	exit(EXIT_FAILURE);
     }
  
-    net::event ev;
+    event ev;
     ev.fd = listenfd;
-    ev.events = net::EventLoop::Event_READ;
+    ev.events = EventLoop::Event_READ;
     ev.cb = &listen_callback;
 
-    net::EventLoop ev_loop;
+    EventLoop ev_loop;
     ev_loop.init();    
-    ev_loop.event_ctl(net::EventLoop::EVENT_CTL_ADD, &ev);
+    ev_loop.event_ctl(EventLoop::EVENT_CTL_ADD, &ev);
     printf("start loop\n");
     ev_loop.start_loop();
     
