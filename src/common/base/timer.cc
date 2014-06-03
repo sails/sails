@@ -13,16 +13,17 @@ namespace common {
 Timer::Timer(EventLoop *ev_loop, int tick) {
     this->tick = tick;
     this->ev_loop = ev_loop;
+    this->data = NULL;
 }
 
-bool Timer::init() {
+bool Timer::init(ExpiryAction action, void *data, int when=1) {
 
     timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
 
     new_value = (struct itimerspec*)malloc(sizeof(struct itimerspec));
     new_value->it_interval.tv_sec = tick;
     new_value->it_interval.tv_nsec = 0;
-    new_value->it_value.tv_sec = 1;
+    new_value->it_value.tv_sec = when;
     new_value->it_value.tv_nsec = 0;
     timerfd_settime(timerfd, 0, new_value, NULL);
 
@@ -39,7 +40,17 @@ bool Timer::init() {
 	timerfd = 0;
 	return false;
     }
+    this->action = action;
+    this->data = data;
     return true;
+}
+
+bool Timer::disarms() 
+{
+    if(timerfd > 0) {
+	close(timerfd);
+	timerfd = 0;
+    }
 }
 
 void Timer::read_timerfd_data(common::event* ev, int revents)
@@ -62,29 +73,16 @@ Timer::~Timer() {
 	close(timerfd);
 	timerfd = 0;
     }
-}
-
-
-
-/////////////////////////////////HeapTimer//////////////////////////////
-
-HeapTimer::HeapTimer(EventLoop *ev_loop, int tick):Timer(ev_loop, tick)
-{
-    
-}
-void HeapTimer::add_timer(int interval, int& timerId, ExpiryAction expiry_action)
-{
-    
+    ev_loop = NULL;
+    action = NULL;
+    if(new_value != NULL) {
+	free(new_value);
+    }
 }
     
-void HeapTimer::delete_timer(int timerId)
+void Timer::pertick_processing()
 {
-    
-}
-    
-void HeapTimer::pertick_processing()
-{
-    printf("tick\n");
+    (*action)(this->data);
 }
 
 

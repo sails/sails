@@ -7,42 +7,30 @@
 namespace sails {
 namespace common {
 
-typedef void ExpiryAction(void *data);
+typedef void (*ExpiryAction)(void *data);
 
 class Timer {
 public:
-    Timer(EventLoop *ev_loop, int tick = 1);
+    // set tick to zero, the timer expires just once
+    Timer(EventLoop *ev_loop,  int tick = 1);
     ~Timer();
-    bool init();
+    // set when to zero disarms the timer
+    bool init(ExpiryAction action, void *data, int when);
+    bool disarms();
 public:
-    virtual void add_timer(int interval, int& timerId, ExpiryAction expiry_action) = 0;
-    
-    virtual void delete_timer(int timerId) = 0;
-    
-    virtual void pertick_processing() = 0;
 
     static void read_timerfd_data(common::event*, int revents);
+    void pertick_processing();
 private:
     int tick;
     int timerfd;
     struct itimerspec *new_value;
     EventLoop *ev_loop;
+    ExpiryAction action;
+    void *data;
     char temp_data[50];
 };
 
-
-
-class HeapTimer : public Timer {
-public:
-    HeapTimer(EventLoop *ev_loop, int tick = 1);
-    
-    void add_timer(int interval, int& timerId, ExpiryAction expiry_action);
-    
-    void delete_timer(int timerId);
-    
-    void pertick_processing();
-
-};
 
 } // namespace common
 } // namespace sails 
