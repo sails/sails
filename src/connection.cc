@@ -79,7 +79,7 @@ void Connection::handle(void *message)
         common::net::HttpResponse *response = new common::net::HttpResponse();
 	response->connfd = param->conn_fd;
 	
-	printf("filter start");
+//	printf("filter start");
 	// filter chain
 	FilterChain<common::net::HttpRequest*, common::net::HttpResponse*> chain;
 	FilterDefault *default_filter = new FilterDefault();
@@ -99,7 +99,7 @@ void Connection::handle(void *message)
 
 	// out put
 	response->to_str();
-	printf("response:%s\n", response->get_raw());
+//	printf("response:%s\n", response->get_raw());
 	int n = write(response->connfd, response->get_raw(), 
 		      strlen(response->get_raw()));
 	if(request->raw_data->should_keep_alive != 1) {

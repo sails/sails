@@ -68,3 +68,25 @@ build
 =====
 
 because the use of c++11 regex features, so need gcc 4.9 or above
+
+
+performance
+===========
+
+test computer:
+
+* cpu  :   Intel(R) Core(TM)2 Duo CPU     T6400  @ 2.00GHz
+
+* memory : 5G
+
+* server and client run on this computer
+
+**one client sync call method 10000 times**
+
+run client like this: **time ./client:** and result:
+
+    real	0m4.944s
+    user	0m1.249s
+    sys	    0m0.620s`
+
+so, in this case will reach 5000 tps.

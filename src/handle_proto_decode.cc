@@ -21,7 +21,7 @@ void HandleProtoDecode::do_handle(common::net::HttpRequest *request,
     if(request != 0) {
 	int proto_type = get_request_protocol(request);
 	if(proto_type == common::net::PROTOBUF_PROTOCOL) {
-	    printf("protobuf protocol decode handle\n");
+//	    printf("protobuf protocol decode handle\n");
 	    decode_protobuf(request, response, chain);
 	}
     }
@@ -43,7 +43,7 @@ void HandleProtoDecode::decode_protobuf(common::net::HttpRequest *request, commo
 	    const MethodDescriptor *method_desc = service->GetDescriptor()->method(method_index);
 	    Message *request_msg = service->GetRequestPrototype(method_desc).New();
 	    Message *response_mg = service->GetResponsePrototype(method_desc).New();
-	    printf("body:%s\n", request->raw_data->body+14);
+//	    printf("body:%s\n", request->raw_data->body+14);
 	    string msgstr(request->raw_data->body+14);
 	    request_msg->ParseFromString(msgstr);
 	    service->CallMethod(method_desc,NULL, request_msg, response_mg, NULL);

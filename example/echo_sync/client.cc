@@ -44,13 +44,26 @@ int main(int argc, char *argv[])
 	RpcControllerImp controller;
 
 //	test_fun(channel, controller);
-	for(int i = 0; i < 1000; i++) {
+	for(int i = 0; i < 10000; i++) {
 	    printf("test index:%d\n", i);
+/*
 	    std::thread t(test_fun, std::ref(channel), std::ref(controller));
 	    t.join();
+*/
+	    test_fun(channel, controller);
 	}
 
 	google::protobuf::ShutdownProtobufLibrary();
 
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+

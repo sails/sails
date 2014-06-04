@@ -10,7 +10,7 @@ class AddressBookServiceImp : public AddressBookService
                        const ::test::AddressBook* request,
                        ::test::AddressBook* response,
 			 ::google::protobuf::Closure* done) {
-		printf("add method call\n");
+//		printf("add method call\n");
 		if(request != NULL && response != NULL) {
 			Person *resp_person = response->add_person();
 			const Person req_person = request->person(0);

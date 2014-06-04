@@ -52,7 +52,7 @@ void HandleChain<T, U>::do_handle(T t, U u) {
 			handle->do_handle(t, u, this);
 		}
 	}else {
-		printf("end handle chain\n");
+//		printf("end handle chain\n");
 	}
 }
 
