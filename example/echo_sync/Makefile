@@ -1,10 +1,12 @@
+HTTP_PARSER 		= ../../deps/http-parser
+PROTOBUF		= ../../deps/protobuf
 SRC=../../src
 CFLAGS=-std=c++11 -g
-INCLUDE=-I$(SRC)
+INCLUDE=-I$(SRC) -I$(HTTP_PARSER) -I$(PROTOBUF)/src
 LIBPATH=../../lib
 
 client: client.o addressbook.pb.o
-	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -pthread -lclient -lprotobuf
+	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -pthread -lclient  -lprotobuf -lhttp_parser
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

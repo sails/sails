@@ -32,7 +32,7 @@ sails:$(OBJECTS)
 
 ########################client library###################################
 
-clientcc=client_rpc_channel.cc client_rpc_controller.cc client_rpc.cc
+clientcc=client_rpc_channel.cc client_rpc_controller.cc
 libclient.so:$(clientcc)
 	g++ -shared $(CFLAGS) $(INCLUDE) -fPIC -o libclient.so $(clientcc) -Wl,--whole-archive  -lsails -Wl,--no-whole-archive  -lprotobuf -lhttp_parser
 	mv libclient.so ../lib/libclient.so

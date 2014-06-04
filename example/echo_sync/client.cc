@@ -2,7 +2,6 @@
 #include <iostream>
 #include "client_rpc_channel.h"
 #include "client_rpc_controller.h"
-#include "client_rpc.h"
 #include "addressbook.pb.h"
 #include <thread>
 
