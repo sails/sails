@@ -1,6 +1,7 @@
 #include <common/net/http_connector.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <common/base/string.h>
 
 namespace sails {
@@ -25,6 +26,9 @@ HttpConnector::HttpConnector(int connect_fd)
 
     message = (struct http_message*)malloc(
 	sizeof(struct http_message));
+
+    assert(message != NULL);
+
     http_message_init(message);
 
     http_parser_init(&parser, ::HTTP_BOTH);
@@ -36,6 +40,8 @@ HttpConnector::HttpConnector():Connector()
 
     message = (struct http_message*)malloc(
 	sizeof(struct http_message));
+    assert(message != NULL);
+
     http_message_init(message);
 
     http_parser_init(&parser, ::HTTP_BOTH);
@@ -256,6 +262,8 @@ int HttpConnector::message_complete_cb (http_parser *p)
      }
      struct http_message* message = (struct http_message*)malloc(
 	 sizeof(struct http_message));
+     assert(message != NULL);
+
      http_message_init(message);
      connector->message = message;
 

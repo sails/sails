@@ -41,3 +41,7 @@ timer_test:timer_test.o
 	g++ $(CFLAGS) $(INCLUDE) -o timer_test timer_test.o -lsails -lgtest -pthread
 timer_test.o:timer_test.cc
 	g++ $(CFLAGS) $(INCLUDE) -c timer_test.cc
+shared_pointer_test:shared_pointer_test.o
+	g++ $(CFLAGS) $(INCLUDE) -o shared_pointer_test shared_pointer_test.o -lgtest -pthread
+shared_pointer_test.o:shared_pointer_test.cc
+	g++ $(CFLAGS) $(INCLUDE) -c shared_pointer_test.cc

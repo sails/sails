@@ -37,15 +37,14 @@ void read_data(common::event* ev, int revents) {
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	                     // n=-1: recv signal_pending before read data
 	  perror("read connfd");
-	  delete(connector);
-	  connector = NULL;
 	  ev->data = NULL;
 	  ev_loop.event_stop(connfd);
-	  close(connfd); // will delete from epoll set auto
+	  delete(connector);
+	  connector = NULL;
 	  return;
      }
 
-//    connect_timer.update_connector_time(connector);// update timeout
+    connect_timer.update_connector_time(connector);// update timeout
 
     connector->httpparser();
 
@@ -104,10 +103,9 @@ void Connection::handle(void *message)
 	int n = write(response->connfd, response->get_raw(), 
 		      strlen(response->get_raw()));
 	if(request->raw_data->should_keep_alive != 1) {
-	    delete(connector);
-	    connector = NULL;
 	    ev_loop.event_stop(response->connfd);
-	    close(response->connfd);
+	    delete connector;
+	    connector = NULL;
 	    printf("close connfd:%d\n", response->connfd);
 	}else {
 		

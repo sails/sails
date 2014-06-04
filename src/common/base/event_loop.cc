@@ -87,7 +87,7 @@ bool EventLoop::add_event(struct event*ev) {
 	}
 	epoll_ev.events = events;
 	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, ev->fd, &epoll_ev) == -1) {
-	    perror("epoll_ctl: listen_sock");
+	    perror("epoll_ctl");
 	    return false;
 	}
     }

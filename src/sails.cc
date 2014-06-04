@@ -26,6 +26,7 @@ common::net::ConnectorTimeout connect_timer(10);
 Config config;
 std::map<std::string, std::string> modules;
 
+
 void init_config(int argc, char *argv[]) {
     config.get_modules(&modules);
 }
@@ -73,6 +74,8 @@ void accept_socket(common::event* e, int revents) {
 }
 
 void sails_init(int argc, char *argv[]) {
+    sails::ev_loop.init();
+    connect_timer.init(&ev_loop);
     init_config(argc, argv);
     if (register_service() != 0) {
 	perror("register service");
@@ -155,7 +158,6 @@ int main(int argc, char *argv[]) {
     listen_ev.cb = sails::accept_socket;
     listen_ev.next = NULL;
 
-    sails::ev_loop.init();
     if(!sails::ev_loop.event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
 				&listen_ev)) {
 	fprintf(stderr, "add listen fd to event loop fail");

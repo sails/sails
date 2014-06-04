@@ -3,6 +3,7 @@
 
 #include <common/base/buffer.h>
 #include <common/base/uncopyable.h>
+#include <common/base/timer.h>
 #include <list>
 #include <memory>
 
@@ -16,7 +17,7 @@ class Connector {
 public:
     Connector(int connect_fd);
     Connector(); // after create, must call connect yourself
-    ~Connector();
+    virtual ~Connector();
 private:
     Connector(const Connector&);
     Connector& operator=(const Connector&);
@@ -44,12 +45,13 @@ protected:
 
 class ConnectorTimerEntry : public Uncopyable {
 public:
-    ConnectorTimerEntry(Connector* connector);
+    ConnectorTimerEntry(Connector* connector, EventLoop *ev_loop);
     ~ConnectorTimerEntry();
 
     friend class Connector;
 private:
     Connector* connector;
+    EventLoop *ev_loop;
 };
 
 class ConnectorTimeout : public Uncopyable {
@@ -57,17 +59,24 @@ public:
     ConnectorTimeout(int timeout=ConnectorTimeout::default_timeout); // seconds
     ~ConnectorTimeout();
     
+    bool init(EventLoop *ev_loop);
     void update_connector_time(Connector* connector);
 private:
     class Bucket {
     public:
 	std::list<std::shared_ptr<ConnectorTimerEntry>> entry_list;
     };
+public:
+    void process_tick();
+    static void timer_callback(void *data);
 private:
     const static int default_timeout = 10;
     int timeout;
     int timeindex;
     std::vector<Bucket*> *time_wheel;
+
+    EventLoop *ev_loop;
+    Timer *timer;
 };
 
 

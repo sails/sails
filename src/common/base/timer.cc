@@ -36,6 +36,7 @@ bool Timer::init(ExpiryAction action, void *data, int when=1) {
     ev.next = NULL;
 
     if(!ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
+	printf("timerfd:%d\n", timerfd);
 	close(timerfd);
 	timerfd = 0;
 	return false;
