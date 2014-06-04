@@ -11,6 +11,7 @@ namespace net {
 
 /////////////////////////////message///////////////////////////////////
 #define MAX_HEADERS 13
+#define MAX_PATH_SIZE 1024
 #define MAX_ELEMENT_SIZE 2048
 
 
@@ -29,8 +30,8 @@ struct http_message {
     enum http_parser_type type;
     int method;
     int status_code;
-    char request_path[MAX_ELEMENT_SIZE];
-    char request_url[MAX_ELEMENT_SIZE];
+    char request_path[MAX_PATH_SIZE];
+    char request_url[MAX_PATH_SIZE];
     char fragment[MAX_ELEMENT_SIZE];
     char query_string[MAX_ELEMENT_SIZE];
     char body[MAX_ELEMENT_SIZE];

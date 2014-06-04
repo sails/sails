@@ -21,18 +21,7 @@ void http_message_init(struct http_message *msg)
 	msg->userinfo = NULL;
 	msg->port = 0;
 	msg->num_headers = 0;
-/*
-  memset(msg->request_path, 0, MAX_ELEMENT_SIZE);
-  memset(msg->request_url, 0, MAX_ELEMENT_SIZE);
-  memset(msg->fragment, 0, MAX_ELEMENT_SIZE);
-  memset(msg->query_string, 0, MAX_ELEMENT_SIZE);
-  memset(msg->body, 0, MAX_ELEMENT_SIZE);
-	  
-  for(int i = 0; i < MAX_HEADERS; i++) {
-  memset(msg->headers[i][0], 0, MAX_ELEMENT_SIZE);
-  memset(msg->headers[i][1], 0, MAX_ELEMENT_SIZE);
-  }
-*/
+
 	msg->last_header_element = NONE;
 	msg->should_keep_alive = 1;
 	msg->upgrade = NULL;
