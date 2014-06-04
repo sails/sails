@@ -81,12 +81,14 @@ test computer:
 
 * server and client run on this computer
 
+* build with -O2
+
 **one client sync call method 10000 times**
 
 run client like this: **time ./client:** and result:
 
-    real	0m4.944s
-    user	0m1.249s
-    sys	    0m0.620s`
+    real	0m4.895s
+    user	0m1.061s
+    sys	    0m0.794s
 
 so, in this case will reach 5000 tps.
