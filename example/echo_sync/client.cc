@@ -11,7 +11,7 @@ using namespace test;
 
 
 void DoneCallback(AddressBook *response) {
-	printf("done call back\n");
+//	printf("done call back\n");
 }
 
 void test_fun(RpcChannelImp &channel, RpcControllerImp &controller) {
@@ -30,28 +30,38 @@ void test_fun(RpcChannelImp &channel, RpcControllerImp &controller) {
     
     stub.add(&controller, &request, &response, callback);
     
-    printf("response:\n");
-    std::cout << response.DebugString() << std::endl;
+//    printf("response:\n");
+//    std::cout << response.DebugString() << std::endl;
+}
+
+
+void client_test(int port) {
+
+    RpcChannelImp channel("127.0.0.1", port);
+    RpcControllerImp controller;
+
+    for(int i = 0; i < 10000; i++) {
+	test_fun(channel, controller);
+    }
 }
 
 int main(int argc, char *argv[])
 {
-	int port = 8000;
-	if(argc == 2) {
-		port = atoi(argv[1]);
-	}
-        RpcChannelImp channel("127.0.0.1", port);
-	RpcControllerImp controller;
+    int clients = 1;
+    
+    int port = 8000;
+    if(argc >= 2) {
+	port = atoi(argv[1]);
+    }
+    if(argc >= 3) {
+	clients = atoi(argv[2]);
+    }
+    printf("clients thread:%d\n", clients);
+    for(int i = 0; i < clients; i++) {
+	std::thread t(client_test, port);
+	t.join();
+    }
 
-//	test_fun(channel, controller);
-	for(int i = 0; i < 10000; i++) {
-	    printf("test index:%d\n", i);
-/*
-	    std::thread t(test_fun, std::ref(channel), std::ref(controller));
-	    t.join();
-*/
-	    test_fun(channel, controller);
-	}
 
 	google::protobuf::ShutdownProtobufLibrary();
 

@@ -76,7 +76,7 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
     common::net::HttpResponse *resp = NULL;
     while((resp=connector.get_next_httpresponse()) != NULL) {
 	char *body = resp->get_body();
-	printf("response body:%s\n", body);
+//	printf("response body:%s\n", body);
 		
 	if(strlen(body) > 0) {
 	    if(strncasecmp(body, 
@@ -88,9 +88,6 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
 	}
 	delete(resp);
     }
-	
-		
-    printf("\n");
 	
     return 0;
 }

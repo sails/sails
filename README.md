@@ -75,7 +75,7 @@ performance
 
 test computer:
 
-* cpu  :   Intel(R) Core(TM)2 Duo CPU     T6400  @ 2.00GHz
+* cpu  :   T6400  @ 2.00GHz, cpu num:1, cpu cores:2
 
 * memory : 5G
 
@@ -85,10 +85,22 @@ test computer:
 
 **one client sync call method 10000 times**
 
-run client like this: **time ./client:** and result:
 
-    real	0m4.895s
-    user	0m1.061s
-    sys	    0m0.794s
+    sails@xu:~/workspace/sails/example/echo_sync$ time ./client 
+    clients thread:1
+    
+    real	0m3.514s
+    user	0m0.960s
+    sys	    0m0.289s
+and in the server two thread to handle message, in this case will reach 8000 tps.
 
-so, in this case will reach 5000 tps.
+**five client thread sync call, and each 10000 times**
+
+    sails@xu:~/workspace/sails/example/echo_sync$ time ./client 8000 5
+    clients thread:5
+    
+    real	0m18.417s
+    user	0m4.767s
+    sys	    0m1.443s
+
+also 8000 tps
