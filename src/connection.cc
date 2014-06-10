@@ -10,13 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include "connection.h"
 #include <common/base/thread_pool.h>
-#include "filter.h"
-#include "filter_default.h"
-#include "handle.h"
-#include "handle_default.h"
-#include "handle_proto_decode.h"
+#include <common/base/handle.h>
+#include "handle_rpc.h"
 #include "config.h"
 
 namespace sails {
@@ -32,7 +28,7 @@ void read_data(common::event* ev, int revents) {
     }
     int connfd = ev->fd;
 
-    common::net::HttpConnector *connector = (common::net::HttpConnector *)ev->data;
+    common::net::ComConnector *connector = (common::net::ComConnector *)ev->data;
     int n = connector->read();
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	                     // n=-1: recv signal_pending before read data
@@ -46,14 +42,15 @@ void read_data(common::event* ev, int revents) {
 
     connect_timer.update_connector_time(connector);// update timeout
 
-    connector->httpparser();
+    connector->parser();
 
-    common::net::HttpRequest *request = NULL;
+    common::net::PacketCommon *packet = NULL;
 
-    while((request=connector->get_next_httprequest()) != NULL) {
+    while((packet=connector->get_next_packet()) != NULL) {
+//	printf("get a rpc call:%s\n", ((common::net::PacketRPC*)packet)->data);
 	ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
 	param->connector = connector;
-	param->request = request;
+	param->packet = packet;
 	param->conn_fd = connfd;
 	
 	// use thread pool to handle request
@@ -74,49 +71,30 @@ void Connection::handle(void *message)
 		return;
 	}
 	
-	common::net::HttpConnector *connector = param->connector;
-        common::net::HttpRequest *request = param->request;
-        common::net::HttpResponse *response = new common::net::HttpResponse();
-	response->connfd = param->conn_fd;
-	
-//	printf("filter start");
-	// filter chain
-	FilterChain<common::net::HttpRequest*, common::net::HttpResponse*> chain;
-	FilterDefault *default_filter = new FilterDefault();
-	chain.add_filter(default_filter);
+	common::net::ComConnector *connector = param->connector;
+        common::net::PacketCommon *request = param->packet;
+	int connfd = param->conn_fd;
 
-	chain.do_filter(request, response);
-
+	int response_len = sizeof(common::net::PacketRPC)+2048;
+	common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
+	memset(response, 0, response_len);
 
 	// handle chain
-	HandleChain<common::net::HttpRequest*, 
-		    common::net::HttpResponse*> handle_chain;
-	HandleDefault *default_handle = new HandleDefault();
-	handle_chain.add_handle(default_handle);
-	HandleProtoDecode *proto_decode = new HandleProtoDecode();
+	common::HandleChain<common::net::PacketCommon*, 
+		    common::net::PacketCommon*> handle_chain;
+	HandleRPC *proto_decode = new HandleRPC();
 	handle_chain.add_handle(proto_decode);
 	handle_chain.do_handle(request, response);
 
-	// out put
-	response->to_str();
-//	printf("response:%s\n", response->get_raw());
-	int n = write(response->connfd, response->get_raw(), 
-		      strlen(response->get_raw()));
-	if(request->raw_data->should_keep_alive != 1) {
-	    ev_loop.event_stop(response->connfd);
-	    delete connector;
-	    connector = NULL;
-	    printf("close connfd:%d\n", response->connfd);
-	}else {
-		
+	if(response != NULL) {
+	    // out put
+	    int n = write(connfd, response, response->len);
 	}
 
 	delete proto_decode;
-	delete default_handle;
-	delete default_filter;
 	
-	delete request;
-	delete response;
+        free(request);
+        free(response);
 	if(param != NULL) {
 	    free(param);
 	}

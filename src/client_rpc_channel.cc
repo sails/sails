@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
-#include <common/net/http_connector.h>
+#include <common/net/packets.h>
 
 using namespace std;
 using namespace google::protobuf;
@@ -38,53 +38,36 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
     const string service_name = method->service()->name();
     string content = request->SerializeAsString();
 
+    int len = sizeof(common::net::PacketRPC)+content.length()-1;
+    common::net::PacketRPC *packet = (common::net::PacketRPC*)malloc(len);
+    memset(packet, 0, len);
+    packet->common.type.opcode = common::net::PACKET_PROTOBUF_CALL;
+    packet->common.len = len;
+    memcpy(packet->service_name, service_name.c_str(), service_name.length());
+    memcpy(packet->method_name, method->name().c_str(), method->name().length());
+    packet->method_index = method->index();
+    memcpy(packet->data, content.c_str(), content.length());
 
-    // construct http request
-    common::net::http_message *raw_data = (common::net::http_message*)malloc(sizeof(common::net::http_message));
-    common::net::http_message_init(raw_data);
-    common::net::HttpRequest http_request(raw_data);
-    http_request.set_default_header();
-    stringstream port_str;
-    port_str << port;
-    http_request.set_header("Host", (ip+":"+port_str.str()).c_str());
-    http_request.set_request_method(2);
-    http_request.set_header("serviceName", method->service()->name().c_str());
-    http_request.set_header("methodName", method->name().c_str());
-    stringstream indexstr;
-    indexstr << method->index();
-    http_request.set_header("methodIndex", indexstr.str().c_str());
+    
+//    printf("send len:%d\n", len);
+//    printf("send data:%s\n", packet->data);
 
-    content = string(common::net::PROTOBUF)+content;
-    http_request.set_body(content.c_str());
-		
-    stringstream body_len_str;
-    body_len_str<<content.length();
-    http_request.set_header("Content-Length", body_len_str.str().c_str());
-    http_request.to_str();
-    char *data = http_request.get_raw();
-
-//    printf("%s\n", data);
-
-    connector.write(data, strlen(data));
+    connector.write((char *)packet, len);
     connector.send();
 
     int n = connector.read();
     if(n > 0) {
-	connector.httpparser();
+	connector.parser();
     }
 
-    common::net::HttpResponse *resp = NULL;
-    while((resp=connector.get_next_httpresponse()) != NULL) {
-	char *body = resp->get_body();
+    common::net::PacketCommon *resp = NULL;
+    while((resp=connector.get_next_packet()) != NULL) {
+	char *body = ((common::net::PacketRPC*)resp)->data;
 //	printf("response body:%s\n", body);
 		
 	if(strlen(body) > 0) {
-	    if(strncasecmp(body, 
-			   common::net::PROTOBUF, strlen(common::net::PROTOBUF)) == 0) {
-		// protobuf message
-		response->ParseFromString(string(body+14));
-				
-	    }
+	    // protobuf message
+	    response->ParseFromString(string(body));
 	}
 	delete(resp);
     }

@@ -17,6 +17,7 @@
 #include <common/base/string.h>
 #include <common/base/event_loop.h>
 #include <common/net/http_connector.h>
+#include <common/net/com_connector.h>
 const int MAX_EVENTS = 1000;
 
 namespace sails {
@@ -61,7 +62,8 @@ void accept_socket(common::event* e, int revents) {
 	ev.cb = sails::read_data;
 
 	// set timeout
-	common::net::HttpConnector *con = new common::net::HttpConnector(connfd);
+//	common::net::HttpConnector *con = new common::net::HttpConnector(connfd);
+	common::net::ComConnector *con = new common::net::ComConnector(connfd);
 	connect_timer.update_connector_time(con);
 
 	ev.data = con;

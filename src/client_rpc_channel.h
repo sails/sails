@@ -1,7 +1,7 @@
 #ifndef _CLIENT_RPC_CHANNEL_H_
 #define _CLIENT_RPC_CHANNEL_H_
 
-#include <common/net/http_connector.h>
+#include <common/net/com_connector.h>
 #include <google/protobuf/service.h>
 
 namespace sails {
@@ -22,7 +22,7 @@ public:
 		  const google::protobuf::Message* request,
 		  google::protobuf::Message* response);
 private:
-    common::net::HttpConnector connector;
+    common::net::ComConnector connector;
     std::string ip;
     int port;
 };

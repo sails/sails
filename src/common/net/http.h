@@ -48,7 +48,7 @@ struct http_message {
 	
     unsigned short http_major;
     unsigned short http_minor;
-	
+
     int message_begin_cb_called;
     int headers_complete_cb_called;
     int message_complete_cb_called;

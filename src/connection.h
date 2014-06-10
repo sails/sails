@@ -5,7 +5,8 @@
 #include <vector>
 #include <thread>
 #include <common/base/event_loop.h>
-#include <common/net/http_connector.h>
+#include <common/net/packets.h>
+#include <common/net/com_connector.h>
 
 namespace sails {
 
@@ -13,8 +14,8 @@ namespace sails {
 void read_data(common::event*, int revents);
 
 typedef struct ConnectionnHandleParam {
-    common::net::HttpConnector *connector;
-    common::net::HttpRequest *request;
+    common::net::ComConnector *connector;
+    common::net::PacketCommon *packet;
     int conn_fd;
 } ConnectionnHandleParam;
 
