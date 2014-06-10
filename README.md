@@ -97,7 +97,7 @@ and in the server two thread to handle message, in this case will reach 7800 tps
 **two client sync call method 10000 times**
 
 
-    sails@xu:~/workspace/sails/example/echo_sync$ time ./client 
+    sails@xu:~/workspace/sails/example/echo_sync$ time ./client 8000 2
     clients thread:2
     
     real	0m2.420s

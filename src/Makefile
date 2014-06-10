@@ -1,7 +1,7 @@
 HTTP_PARSER 		= ../deps/http-parser
 JSON_CPP		= ../deps/json-cpp
 PROTOBUF		= ../deps/protobuf
-CFLAGS			= -std=c++11 -g -fno-omit-frame-pointer -O0 -L../lib
+CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../lib
 INCLUDE			= -I$(HTTP_PARSER) -I$(JSON_CPP)/include -I$(PROTOBUF)/src -I./
 
 INSTALL_PATH		= ../dist
