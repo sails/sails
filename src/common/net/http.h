@@ -111,7 +111,6 @@ private:
     void set_default_header();
 };
 
-
 } // namespace net
 } // namespace common
 } // namespace sails

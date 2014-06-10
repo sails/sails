@@ -92,7 +92,7 @@ test computer:
     real	0m3.514s
     user	0m0.960s
     sys	    0m0.289s
-and in the server two thread to handle message, in this case will reach 8000 tps.
+and in the server two thread to handle message, in this case will reach 3000 tps.
 
 **five client thread sync call, and each 10000 times**
 
@@ -103,4 +103,33 @@ and in the server two thread to handle message, in this case will reach 8000 tps
     user	0m4.767s
     sys	    0m1.443s
 
-also 8000 tps
+also 3000 tps
+
+
+test computer2:
+
+* cpu  :   E5504  @ 2.00GHz, cpu num:2, cpu cores:4
+
+* memory : 24G, 21G free
+
+* server and client run on this computer
+
+* build with debug
+
+**one client sync call method 10000 times**
+
+    clients thread:1
+    
+    real	0m4.221s
+    user	0m0.159s
+    sys	    0m0.245s
+
+**eight client sync call method 10000 times(8*10000)**
+
+    clients thread:8
+    
+    real	0m4.115s
+    user	0m0.116s
+    sys	    0m0.196s
+
+so, in this case 2w tps
