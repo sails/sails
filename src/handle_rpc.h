@@ -14,6 +14,7 @@ public:
 		   common::net::PacketCommon* response, 
 		   common::HandleChain<common::net::PacketCommon*, common::net::PacketCommon*> *chain);
     void decode_protobuf(common::net::PacketRPC *brequest, common::net::PacketRPC *response, common::HandleChain<common::net::PacketCommon *, common::net::PacketCommon *> *chain);
+    ~HandleRPC();
 };
 
 

@@ -31,14 +31,14 @@ void read_data(common::event* ev, int revents) {
     common::net::ComConnector *connector = (common::net::ComConnector *)ev->data;
     int n = connector->read();
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
-	                     // n=-1: recv signal_pending before read data
-	  perror("read connfd");
-	  ev->data = NULL;
-	  ev_loop.event_stop(connfd);
-	  delete(connector);
-	  connector = NULL;
-	  return;
-     }
+	// n=-1: recv signal_pending before read data
+	perror("read connfd");
+	ev->data = NULL;
+	ev_loop.event_stop(connfd);
+	delete(connector);
+	connector = NULL;
+	return;
+    }
 
     connect_timer.update_connector_time(connector);// update timeout
 
@@ -47,57 +47,58 @@ void read_data(common::event* ev, int revents) {
     common::net::PacketCommon *packet = NULL;
 
     while((packet=connector->get_next_packet()) != NULL) {
-//	printf("get a rpc call:%s\n", ((common::net::PacketRPC*)packet)->data);
-	ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
-	param->connector = connector;
-	param->packet = packet;
-	param->conn_fd = connfd;
+	if (packet->type.opcode == common::net::PACKET_HEARTBEAT) {
+	    return;
+	}else if (packet->type.opcode == common::net::PACKET_PROTOBUF_CALL) {
+	    ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+	    param->connector = connector;
+	    param->packet = packet;
+	    param->conn_fd = connfd;
 	
-	// use thread pool to handle request
-	static common::ThreadPool parser_pool(config.get_handle_thread_pool(),
-				      config.get_handle_request_queue_size());	
-	common::ThreadPoolTask task;
-	task.fun = Connection::handle;
-	task.argument = param;
-	parser_pool.add_task(task);
+	    // use thread pool to handle request
+	    static common::ThreadPool parser_pool(config.get_handle_thread_pool(), config.get_handle_request_queue_size());	
+	    common::ThreadPoolTask task;
+	    task.fun = Connection::handle_rpc;
+	    task.argument = param;
+	    parser_pool.add_task(task);
+	}
     }
 }
 
-void Connection::handle(void *message) 
+void Connection::handle_rpc(void *message) 
 {
-	ConnectionnHandleParam *param = NULL;
-	param = (ConnectionnHandleParam *)message;
-	if(param == 0) {
-		return;
-	}
+    ConnectionnHandleParam *param = NULL;
+    param = (ConnectionnHandleParam *)message;
+    if(param == 0) {
+	return;
+    }
 	
-	common::net::ComConnector *connector = param->connector;
-        common::net::PacketCommon *request = param->packet;
-	int connfd = param->conn_fd;
+    common::net::ComConnector *connector = param->connector;
+    common::net::PacketCommon *request = param->packet;
+    int connfd = param->conn_fd;
 
-	int response_len = sizeof(common::net::PacketRPC)+2048;
-	common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
-	memset(response, 0, response_len);
+    int response_len = sizeof(common::net::PacketRPC)+2048;
+    common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
+    memset(response, 0, response_len);
 
-	// handle chain
-	common::HandleChain<common::net::PacketCommon*, 
-		    common::net::PacketCommon*> handle_chain;
-	HandleRPC *proto_decode = new HandleRPC();
-	handle_chain.add_handle(proto_decode);
-	handle_chain.do_handle(request, response);
-
-	if(response != NULL) {
-	    // out put
-	    int n = write(connfd, response, response->len);
-	}
-
-	delete proto_decode;
 	
-        free(request);
-        free(response);
-	if(param != NULL) {
-	    free(param);
-	}
+    common::HandleChain<common::net::PacketCommon*, 
+			common::net::PacketCommon*> handle_chain;
+    HandleRPC proto_decode;
+    handle_chain.add_handle(&proto_decode);
+	
+    handle_chain.do_handle(request, response);
+
+    if(response != NULL) {
+	// out put
+	int n = write(connfd, response, response->len);
+    }
+	
+    free(request);
+    free(response);
+    if(param != NULL) {
+	free(param);
+    }
 }
 	
 

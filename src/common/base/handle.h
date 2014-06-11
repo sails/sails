@@ -14,7 +14,13 @@ class Handle
 {
 public:
     virtual void do_handle(T t, U u, HandleChain<T, U> *chain) = 0;
+    virtual ~Handle();
 };
+
+template <typename T, typename U>
+Handle<T, U>::~Handle() {
+    
+}
 
 
 
@@ -23,6 +29,8 @@ class HandleChain
 {
 public:
     HandleChain();
+
+    ~HandleChain();
 	
     void do_handle(T t, U u);
 
@@ -42,6 +50,19 @@ private:
 template <typename T, typename U>
 HandleChain<T, U>::HandleChain() {
     this->index = 0;
+}
+
+template <typename T, typename U>
+HandleChain<T, U>::~HandleChain() {
+/*
+    while(this->chain.size() > 0) {
+	Handle<T, U> *handle = this->chain.back();
+	if(handle != NULL) {
+	    delete handle;
+	}
+	this->chain.pop_back();
+    }
+*/
 }
 
 template <typename T, typename U>

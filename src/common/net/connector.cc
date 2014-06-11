@@ -100,13 +100,13 @@ ConnectorTimerEntry::ConnectorTimerEntry(Connector* connector, EventLoop *ev_loo
 
 ConnectorTimerEntry::~ConnectorTimerEntry() {
     if(this->connector != NULL) {
-	printf("delete connector\n");
+//	printf("delete connector\n");
 	// close fd and delete connector
 	ev_loop->event_stop(connector->connect_fd);
 	delete connector;
 	connector = NULL;
     }
-    printf("delete connector timer entry\n");
+//    printf("delete connector timer entry\n");
 }
 
 const int ConnectorTimeout::default_timeout;
@@ -142,10 +142,10 @@ void ConnectorTimeout::process_tick() {
     //empty bucket
     Bucket* bucket = time_wheel->at(timeindex);
     if (bucket != NULL) {
-	printf("clear timerindex:%d\n", timeindex);
+//	printf("clear timerindex:%d\n", timeindex);
 	std::list<std::shared_ptr<ConnectorTimerEntry>>::iterator iter;
 	for (iter=bucket->entry_list.begin(); iter!=bucket->entry_list.end(); iter++) {
-	    printf("user count :%ld\n",(*iter).use_count());
+//	    printf("user count :%ld\n",(*iter).use_count());
 	}
 
         bucket->entry_list.clear();
@@ -174,7 +174,7 @@ void ConnectorTimeout::update_connector_time(Connector* connector)
 {
     if(connector != NULL) {
 	int add_index = (timeindex+timeout-1)%timeout;
-	printf("add to bucket %d\n", add_index);
+//	printf("add to bucket %d\n", add_index);
 	if(!connector->has_set_timer) {
 	    connector->has_set_timer = true;
 	    std::shared_ptr<ConnectorTimerEntry> shared_entry(new ConnectorTimerEntry(connector, ev_loop));

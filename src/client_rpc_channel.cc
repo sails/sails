@@ -57,6 +57,7 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
 
     int n = connector.read();
     if(n > 0) {
+//	printf("read n:%d\n", n);
 	connector.parser();
     }
 

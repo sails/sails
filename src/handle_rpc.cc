@@ -33,7 +33,6 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Pa
     string method_name(request->method_name);
     int method_index = request->method_index;
 
-//    cout << service_name << " " << method_name << " " << method_index << endl;
     if(!service_name.empty() && !method_name.empty()) {
 	google::protobuf::Service* service = ServiceRegister::instance()->get_service(service_name);
 	if(service != NULL) {
@@ -57,6 +56,10 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Pa
 	    delete response_mg;
 	}
     }
+}
+
+HandleRPC::~HandleRPC() {
+//    printf("delete handle_rpc\n");
 }
 
 } // namespace sails 
