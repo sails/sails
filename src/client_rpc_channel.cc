@@ -1,5 +1,6 @@
 #include "client_rpc_channel.h"
 #include <stdio.h>
+#include <iostream>
 #include <sstream>
 #include <assert.h>
 #include <google/protobuf/message.h>
@@ -48,23 +49,17 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
     packet->method_index = method->index();
     memcpy(packet->data, content.c_str(), content.length());
 
-    
-//    printf("send len:%d\n", len);
-//    printf("send data:%s\n", packet->data);
-
     connector.write((char *)packet, len);
     connector.send();
 
     int n = connector.read();
     if(n > 0) {
-//	printf("read n:%d\n", n);
 	connector.parser();
     }
 
     common::net::PacketCommon *resp = NULL;
     while((resp=connector.get_next_packet()) != NULL) {
 	char *body = ((common::net::PacketRPC*)resp)->data;
-//	printf("response body:%s\n", body);
 		
 	if(strlen(body) > 0) {
 	    // protobuf message

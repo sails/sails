@@ -35,6 +35,7 @@ void ComConnector::parser() {
 	int packetlen = packet->len;
 	if(in_buf.readable() >= packetlen) {
 	    PacketCommon *item = (PacketCommon*)malloc(packetlen);
+	    memset(item, 0, packetlen);
 	    memcpy(item, packet, packetlen);
 	    in_buf.retrieve(packetlen);
 	    push_recv_list(item);

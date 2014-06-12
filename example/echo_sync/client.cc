@@ -31,7 +31,7 @@ void test_fun(RpcChannelImp &channel, RpcControllerImp &controller) {
     stub.add(&controller, &request, &response, callback);
     
 //    printf("response:\n");
-//    std::cout << response.DebugString() << std::endl;
+    std::cout << response.DebugString() << std::endl;
 }
 
 

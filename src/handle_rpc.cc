@@ -41,7 +41,10 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Pa
 	    Message *request_msg = service->GetRequestPrototype(method_desc).New();
 	    Message *response_mg = service->GetResponsePrototype(method_desc).New();
 
-	    string msgstr(request->data);
+	    static int PacketRPCSIZE = sizeof(common::net::PacketRPC);
+	    
+	    string msgstr(request->data, request->common.len-PacketRPCSIZE+1);
+	    
 	    request_msg->ParseFromString(msgstr);
 	    service->CallMethod(method_desc,NULL, request_msg, response_mg, NULL);
 	    string response_content = response_mg->SerializeAsString();
