@@ -89,10 +89,10 @@ test computer:
     sails@xu:~/workspace/sails/example/echo_sync$ time ./client 
     clients thread:1
     
-    real	0m1.016s
-    user	0m0.199s
-    sys	    0m0.301s
-and in the server two thread to handle message, in this case will reach 9800 tps.
+    real	0m1.112s
+    user	0m0.182s
+    sys	    0m0.348s
+and in the server two thread to handle message, in this case will reach 9000 tps.
 
 **two client sync call method 10000 times**
 
@@ -100,10 +100,10 @@ and in the server two thread to handle message, in this case will reach 9800 tps
     sails@xu:~/workspace/sails/example/echo_sync$ time ./client 8000 2
     clients thread:2
     
-    real	0m2.056s
-    user	0m0.408s
-    sys	    0m0.611s
-9730 tps.
+    real	0m0.802s
+    user	0m0.205s
+    sys	    0m0.456s
+25000 tps.
 
 
 **five client thread sync call, and each 10000 times**
@@ -111,12 +111,22 @@ and in the server two thread to handle message, in this case will reach 9800 tps
     sails@xu:~/workspace/sails/example/echo_sync$ time ./client 8000 5
     clients thread:5
     
-    real	0m5.164s
-    user	0m1.018s
-    sys	    0m1.540s
+    real	0m1.676s
+    user	0m0.420s
+    sys	    0m1.028s
 
-9680 tps
+30000 tps
 
+**twenty client thread sync call, and each 10000 times**
+
+    sails@xu:~/workspace/sails/example/echo_sync$ time ./client 8000 30
+    clients thread:5
+    
+    real	0m6.460s
+    user	0m1.717s
+    sys	    0m4.074s
+
+31000 tps
 
 test computer2:
 
