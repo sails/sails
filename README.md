@@ -130,9 +130,9 @@ and in the server two thread to handle message, in this case will reach 9000 tps
 
 test computer2:
 
-* cpu  :   E5504  @ 2.00GHz, cpu num:2, cpu cores:4
+* cpu  :   E5-2630  @ 2.30GHz, cpu cores:8
 
-* memory : 24G, 21G free
+* memory : 8G, 6G free
 
 * server and client run on this computer
 
@@ -142,15 +142,17 @@ test computer2:
 
     clients thread:1
     
-    real	0m-----s
-    user	0m-----s
-    sys	    0m-----s
+    real	0m0.792s
+    user	0m0.248s
+    sys	    0m0.056s
+12600 tps
 
 **eight client sync call method 10000 times(8*10000)**
 
     clients thread:8
     
-    real	0m-----s
-    user	0m-----s
-    sys	    0m-----s
+    real	0m1.541s
+    user	0m1.008s
+    sys	    0m1.568s
 
+52000 tps
