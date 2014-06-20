@@ -13,6 +13,7 @@ using namespace google::protobuf;
 
 namespace sails {
 
+
 RpcChannelImp::RpcChannelImp(string ip, int port):ip(ip),port(port) {
     assert(connector.connect(ip.c_str(), 8000, true));
     
@@ -51,7 +52,6 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
 
     connector.write((char *)packet, len);
     connector.send();
-
     int n = connector.read();
     if(n > 0) {
 	connector.parser();

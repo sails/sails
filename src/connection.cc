@@ -21,6 +21,8 @@ extern common::net::ConnectorTimeout connect_timer;
 extern Config config;
 extern common::EventLoop ev_loop;
 
+long drop_packet_num = 0;
+
 //void read_data(int connfd) {
 void read_data(common::event* ev, int revents) {
     if(ev == NULL || ev->fd < 0) {
@@ -60,7 +62,10 @@ void read_data(common::event* ev, int revents) {
 	    common::ThreadPoolTask task;
 	    task.fun = Connection::handle_rpc;
 	    task.argument = param;
-	    parser_pool.add_task(task);
+	    if (parser_pool.add_task(task) == -1) {
+		drop_packet_num++;
+		printf("drop_packet_num:%ld\n", drop_packet_num);
+	    }
 	}
     }
 }
@@ -77,11 +82,13 @@ void Connection::handle_rpc(void *message)
     common::net::PacketCommon *request = param->packet;
     int connfd = param->conn_fd;
 
+    param->connector = NULL;
+    param->packet = NULL;
+
     int response_len = sizeof(common::net::PacketRPC)+2048;
     common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
     memset(response, 0, response_len);
 
-	
     common::HandleChain<common::net::PacketCommon*, 
 			common::net::PacketCommon*> handle_chain;
     HandleRPC proto_decode;
@@ -93,11 +100,11 @@ void Connection::handle_rpc(void *message)
 	// out put
 	int n = write(connfd, response, response->len);
     }
-	
     free(request);
     free(response);
     if(param != NULL) {
 	free(param);
+	param = NULL;
     }
 }
 	

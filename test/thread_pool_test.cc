@@ -3,6 +3,7 @@
 
 using namespace sails;
 
+int call_num = 0;
 TEST(thread_pool, new_thread_pool)
 {
         common::ThreadPool *pool = new common::ThreadPool(10);
@@ -12,22 +13,23 @@ TEST(thread_pool, new_thread_pool)
 }
 
 void task_test(void *arg) {
-	int num = *(int *)arg;
-	printf("task test end\n");
+    int num = *(int *)arg;
+    printf("call num:%d\n", call_num++);
+    printf("task test end\n");
 }
 
 TEST(thread_pool, add_task)
 {
-	common::ThreadPool *pool = new common::ThreadPool(100);
+	common::ThreadPool *pool = new common::ThreadPool(10);
 	common::ThreadPoolTask task;
 	task.fun = task_test;
 	int num = 100;
 	task.argument = &num;
-	for(int i = 0; i < 5; i++){
-		pool->add_task(task);
+	for(int i = 0; i < 5000; i++){
+	    pool->add_task(task);
 	}
 	
-	std::this_thread::sleep_for(std::chrono::seconds(1));//wait for task all executed
+	std::this_thread::sleep_for(std::chrono::seconds(10));//wait for task all executed
 
 	delete pool;
 	pool = NULL;

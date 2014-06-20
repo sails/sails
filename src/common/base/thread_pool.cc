@@ -71,35 +71,35 @@ void* ThreadPool::threadpool_thread(void *threadpool) {
     ThreadPoolTask task;
 
     for(;;) {
-	// lock must be taken to wait on conditional varible
-	std::unique_lock<std::mutex> locker(pool->lock);
 
-	// wait on condition variable, check for spurious wakeups.
-	// when returning from wait, we own the lock.
+	{
+	    // lock must be taken to wait on conditional varible
+	    std::unique_lock<std::mutex> locker(pool->lock);
 
-	while((pool->task_queue.size() == 0) 
-	      && (!pool->shutdown)) {
-	    pool->notify.wait(locker); // wait would release lock, and when return it can get lock
-	}
-	if((pool->shutdown == immediate_shutdown) ||
-	   ((pool->shutdown == graceful_shutdown) &&
-	    (pool->task_queue.size() == 0))) {
-	    printf("shutdown\n");
-	    break;
-	}
+	    // wait on condition variable, check for spurious wakeups.
+	    // when returning from wait, we own the lock.
+
+	    while((pool->task_queue.size() == 0) 
+		  && (!pool->shutdown)) {
+		pool->notify.wait(locker); // wait would release lock, and when return it can get lock
+	    }
+	    if((pool->shutdown == immediate_shutdown) ||
+	       ((pool->shutdown == graceful_shutdown) &&
+		(pool->task_queue.size() == 0))) {
+		printf("shutdown\n");
+		break;
+	    }
 		
-	// grab our task
-	task = pool->task_queue.front();
-	pool->task_queue.pop();
-	pool->task_queue_available_size++;
+	    // grab our task
+	    task = pool->task_queue.front();
+	    pool->task_queue.pop();
+	    pool->task_queue_available_size++;
+	} // will release lock when locker destroy
 
-	// unlock
-	pool->lock.unlock();
-		
 	// work
 	(*(task.fun))(task.argument);
     }
-    pool->lock.unlock();
+
     return(NULL);
 }
 	

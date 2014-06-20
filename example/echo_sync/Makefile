@@ -1,7 +1,7 @@
 HTTP_PARSER 		= ../../deps/http-parser
 PROTOBUF		= ../../deps/protobuf
 SRC=../../src
-CFLAGS=-std=c++11 -g -O0
+CFLAGS=-std=c++11 -O2
 INCLUDE=-I$(SRC) -I$(HTTP_PARSER) -I$(PROTOBUF)/src
 LIBPATH=../../lib
 

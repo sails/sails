@@ -23,7 +23,6 @@ void HandleRPC::do_handle(common::net::PacketCommon *request,
 			    (common::net::PacketRPC*)response, chain);
 	}
 	chain->do_handle(request, response);
-	return;
     }
 }
 
@@ -42,7 +41,6 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Pa
 	    Message *response_mg = service->GetResponsePrototype(method_desc).New();
 
 	    static int PacketRPCSIZE = sizeof(common::net::PacketRPC);
-	    
 	    string msgstr(request->data, request->common.len-PacketRPCSIZE+1);
 	    
 	    request_msg->ParseFromString(msgstr);
@@ -50,8 +48,10 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Pa
 	    string response_content = response_mg->SerializeAsString();
 
 	    const char* data = response_content.c_str();
+
 	    int len = sizeof(common::net::PacketRPC)+response_content.length()-1;
 	    response->common.type.opcode = common::net::PACKET_PROTOBUF_RET;
+
 	    response->common.len = len;
 	    memcpy(response->data, data, response_content.length());
 
