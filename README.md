@@ -156,23 +156,3 @@ test computer2:
     sys	    0m1.684s
 
 52,000 tps
-
-**30 client sync call method 10000 times(30*10000)**
-
-    clients thread:30
-    
-    real	0m3.653s
-    user	0m2.716s
-    sys	    0m5.784s
-
-82,000 tps
-
-**1000 client sync call method 10000 times(1000*10000)**
-
-    clients thread:1000
-    
-    real	0m6.268s
-    user	0m6.224s
-    sys	    0m12.701s
-
-1,600,000 tps
