@@ -99,6 +99,7 @@ void Connection::handle_rpc(void *message)
     if(response != NULL) {
 	// out put
 	int n = write(connfd, response, response->len);
+//	int n = write(connfd, response, sizeof(common::net::PacketRPC));
     }
     free(request);
     free(response);

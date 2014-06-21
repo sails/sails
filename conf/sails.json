@@ -3,5 +3,5 @@
     "modules":[{"name":"test", "path":"../lib/service_test.so"}],
     "max_connfd":2000,
     "handle_thread_pool":2,
-    "handle_request_queue_size":100
+    "handle_request_queue_size":1000
 }
