@@ -16,14 +16,15 @@
 #include <common/base/util.h>
 #include <common/base/string.h>
 #include <common/base/event_loop.h>
-#include <common/net/http_connector.h>
-#include <common/net/com_connector.h>
+#include <common/net/connector.h>
+//#include <common/net/http_connector.h>
+//#include <common/net/com_connector.h>
 const int MAX_EVENTS = 1000;
 
 namespace sails {
 
 common::EventLoop ev_loop;
-common::net::ConnectorTimeout connect_timer(10);
+common::net::ConnectorTimeout<common::net::PacketCommon> connect_timer(10);
 Config config;
 std::map<std::string, std::string> modules;
 
@@ -63,14 +64,17 @@ void accept_socket(common::event* e, int revents) {
 
 	// set timeout
 //	common::net::HttpConnector *con = new common::net::HttpConnector(connfd);
-	common::net::ComConnector *con = new common::net::ComConnector(connfd);
+//	common::net::ComConnector *con = new common::net::ComConnector(connfd);
+	common::net::Connector<common::net::PacketCommon> *con = new common::net::Connector<common::net::PacketCommon>(connfd);
+	con->set_parser_fun(parser_cb);
+	
 	connect_timer.update_connector_time(con);
 
 	ev.data = con;
 	ev.next = NULL;
 	if(!ev_loop.event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 	    close(connfd);
-	    delete (sails::common::net::HttpConnector*)ev.data;
+	    delete (sails::common::net::Connector<common::net::PacketCommon>*)ev.data;
 	}
     }
 }

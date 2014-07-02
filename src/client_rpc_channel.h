@@ -1,7 +1,8 @@
 #ifndef _CLIENT_RPC_CHANNEL_H_
 #define _CLIENT_RPC_CHANNEL_H_
 
-#include <common/net/com_connector.h>
+#include <common/net/packets.h>
+#include <common/net/connector.h>
 #include <google/protobuf/service.h>
 
 namespace sails {
@@ -21,8 +22,11 @@ public:
 		  google::protobuf::RpcController* controller,
 		  const google::protobuf::Message* request,
 		  google::protobuf::Message* response);
+
+    static common::net::PacketCommon* parser_cb(
+	common::net::Connector<common::net::PacketCommon> *connector);
 private:
-    common::net::ComConnector connector;
+    common::net::Connector<common::net::PacketCommon> connector;
     std::string ip;
     int port;
 };
@@ -30,3 +34,13 @@ private:
 } // namespace sails
 
 #endif /* _CLIENT_RPC_CHANNEL_H_ */
+
+
+
+
+
+
+
+
+
+

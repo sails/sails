@@ -17,11 +17,36 @@
 
 namespace sails {
 
-extern common::net::ConnectorTimeout connect_timer;
+extern common::net::ConnectorTimeout<common::net::PacketCommon> connect_timer;
 extern Config config;
 extern common::EventLoop ev_loop;
 
 long drop_packet_num = 0;
+
+
+common::net::PacketCommon* parser_cb(
+    common::net::Connector<common::net::PacketCommon> *connector) {
+    if (connector->readable() < sizeof(common::net::PacketCommon)) {
+	return NULL;
+    }
+    common::net::PacketCommon *packet = (common::net::PacketCommon*)connector->peek();
+    if (packet->type.opcode >= common::net::PACKET_MAX) { // error, and empty all data
+	connector->retrieve(connector->readable());
+	return NULL;
+    }
+    if (packet != NULL) {
+	int packetlen = packet->len;
+	if(connector->readable() >= packetlen) {
+	    common::net::PacketCommon *item = (common::net::PacketCommon*)malloc(packetlen);
+	    memset(item, 0, packetlen);
+	    memcpy(item, packet, packetlen);
+	    connector->retrieve(packetlen);
+	    
+	    return item;
+	}
+    }
+    return NULL;
+}
 
 //void read_data(int connfd) {
 void read_data(common::event* ev, int revents) {
@@ -30,7 +55,7 @@ void read_data(common::event* ev, int revents) {
     }
     int connfd = ev->fd;
 
-    common::net::ComConnector *connector = (common::net::ComConnector *)ev->data;
+    common::net::Connector<common::net::PacketCommon> *connector = (common::net::Connector<common::net::PacketCommon> *)ev->data;
     int n = connector->read();
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	// n=-1: recv signal_pending before read data
@@ -78,7 +103,7 @@ void Connection::handle_rpc(void *message)
 	return;
     }
 	
-    common::net::ComConnector *connector = param->connector;
+    common::net::Connector<common::net::PacketCommon> *connector = param->connector;
     common::net::PacketCommon *request = param->packet;
     int connfd = param->conn_fd;
 

@@ -16,7 +16,7 @@ namespace sails {
 
 RpcChannelImp::RpcChannelImp(string ip, int port):ip(ip),port(port) {
     assert(connector.connect(ip.c_str(), 8000, true));
-    
+    connector.set_parser_fun(RpcChannelImp::parser_cb);
 }
 
 void RpcChannelImp::CallMethod(const MethodDescriptor* method, 
@@ -31,6 +31,29 @@ void RpcChannelImp::CallMethod(const MethodDescriptor* method,
     }
 }
 
+common::net::PacketCommon* RpcChannelImp::parser_cb(
+    common::net::Connector<common::net::PacketCommon> *connector) {
+
+    if (connector->readable() < sizeof(common::net::PacketCommon)) {
+	return NULL;
+    }
+    common::net::PacketCommon *packet = (common::net::PacketCommon*)connector->peek();
+    if (packet->type.opcode >= common::net::PACKET_MAX) { // error, and empty all data
+	connector->retrieve(connector->readable());
+	return NULL;
+    }
+    if (packet != NULL) {
+	int packetlen = packet->len;
+	if(connector->readable() >= packetlen) {
+	    common::net::PacketCommon *item = (common::net::PacketCommon*)malloc(packetlen);
+	    memset(item, 0, packetlen);
+	    memcpy(item, packet, packetlen);
+	    connector->retrieve(packetlen);
+	    return item;
+	}
+    }
+    return NULL;
+}
 int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method, 
 			     google::protobuf::RpcController *controller, 
 			     const google::protobuf::Message *request, 
@@ -60,7 +83,6 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
     common::net::PacketCommon *resp = NULL;
     while((resp=connector.get_next_packet()) != NULL) {
 	char *body = ((common::net::PacketRPC*)resp)->data;
-		
 	if(strlen(body) > 0) {
 	    // protobuf message
 	    response->ParseFromString(string(body));

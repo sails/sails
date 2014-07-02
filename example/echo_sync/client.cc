@@ -30,13 +30,12 @@ void test_fun(RpcChannelImp &channel, RpcControllerImp &controller) {
     
     stub.add(&controller, &request, &response, callback);
     
-//    printf("response:\n");
 //    std::cout << response.DebugString() << std::endl;
 }
 
 
 void client_test(int port) {
-	printf("connect thread\n");
+    printf("connect thread\n");
     RpcChannelImp channel("127.0.0.1", port);
     RpcControllerImp controller;
 
