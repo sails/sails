@@ -54,11 +54,13 @@ public:
     
     void set_parser_fun(PARSER_CB<T> parser_cb);
     void set_invalid_msg_cb(INVALID_MSG_CB<T> cb);
+    INVALID_MSG_CB<T> get_invalid_msg_cb();
     void set_delete_cb(DELETE_CB<T> cb);
-
 
     friend class ConnectorTimerEntry<T>;
     friend class ConnectorTimeout<T>;
+
+    void *data;
 protected:
     sails::common::Buffer in_buf;
     sails::common::Buffer out_buf;
@@ -113,6 +115,16 @@ private:
 
 
 
+
+
+
+
+
+
+
+
+
+
 template<typename T>
 Connector<T>::Connector(int conn_fd) {
     parser_cb = NULL;
@@ -120,6 +132,7 @@ Connector<T>::Connector(int conn_fd) {
     delete_cb = NULL;
     connect_fd = conn_fd;
     has_set_timer = false;
+    data = NULL;
 }
 
 template<typename T>
@@ -128,6 +141,7 @@ Connector<T>::Connector() {
     invalid_msg_cb = NULL;
     delete_cb = NULL;
     has_set_timer = false;
+    data = NULL;
 }
 
 template<typename T>
@@ -190,6 +204,11 @@ void Connector<T>::set_invalid_msg_cb(INVALID_MSG_CB<T> cb)
 }
 
 template<typename T>
+INVALID_MSG_CB<T> Connector<T>::get_invalid_msg_cb() {
+    return this->invalid_msg_cb;
+}
+
+template<typename T>
 void Connector<T>::set_delete_cb(DELETE_CB<T> cb)
 {
     this->delete_cb = cb;
@@ -225,9 +244,10 @@ void Connector<T>::retrieve(int len) {
 template<typename T>
 void Connector<T>::parser() {
     if (this->parser_cb != NULL) {
-	T* packet = parser_cb(this);
-	if (packet != NULL) {
+	T* packet = NULL;
+	while ((packet = parser_cb(this)) != NULL) {
 	    push_recv_list(packet);
+	    packet = NULL;
 	}
     }
 }

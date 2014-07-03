@@ -54,7 +54,7 @@ Logger::Logger(LogLevel level, const char *filename, SAVEMODE mode) {
     assert(ensure_directory_exist());
 }
 
-void Logger::debug(char *format, ...) {
+void Logger::debug(const char *format, ...) {
     check_loginfo();
     if(LOG_LEVEL_DEBUG >= level) {
 	va_list ap;
@@ -64,7 +64,7 @@ void Logger::debug(char *format, ...) {
     }
 }
 
-void Logger::info(char *format, ...) {
+void Logger::info(const char *format, ...) {
     check_loginfo();
     if(LOG_LEVEL_INFO >= level) {
 	va_list ap;
@@ -74,7 +74,7 @@ void Logger::info(char *format, ...) {
     }
 }
 
-void Logger::warn(char *format, ...) {
+void Logger::warn(const char *format, ...) {
     check_loginfo();
     if(LOG_LEVEL_WARN >= level) {
 	va_list ap;
@@ -84,7 +84,7 @@ void Logger::warn(char *format, ...) {
     }
 }
 
-void Logger::error(char *format, ...) {
+void Logger::error(const char *format, ...) {
     check_loginfo();
     if(LOG_LEVEL_ERROR >= level) {
 	va_list ap;
@@ -94,7 +94,7 @@ void Logger::error(char *format, ...) {
     }
 }
 
-void Logger::output(Logger::LogLevel level, char *format, va_list ap) {
+void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
     char msg[1000];
     memset(msg, '\0', 1000);
 	
@@ -215,7 +215,7 @@ void Logger::check_loginfo() {
 			Logger::LogLevel setlevel = get_level_by_name(buf+9);
 			if(setlevel != Logger::LOG_LEVEL_NONE) {
 			    printf("set level %d\n", setlevel);
-			    this->level = Logger::LOG_LEVEL_WARN;
+			    this->level = setlevel;
 			}
 		    }
 		}
@@ -228,7 +228,7 @@ void Logger::check_loginfo() {
     }
 }
 
-Logger::LogLevel Logger::get_level_by_name(char *name)
+Logger::LogLevel Logger::get_level_by_name(const char *name)
 {
     if(name == NULL || strlen(name) == 0) {
 	return Logger::LOG_LEVEL_NONE;
@@ -260,7 +260,7 @@ void Logger::set_file_path()
 
 bool Logger::ensure_directory_exist()
 {
-    printf("path:%s", this->path);
+    printf("path:%s\n", this->path);
     return make_directory(this->path);
 }
 

@@ -33,16 +33,16 @@ public:
     Logger(LogLevel level, const char *filename);
     Logger(LogLevel level, const char *filename, SAVEMODE mode);
     
-    void debug(char* format, ...);
-    void info (char* format, ...);
-    void warn (char* format, ...);
-    void error(char* format, ...);
+    void debug(const char* format, ...);
+    void info (const char* format, ...);
+    void warn (const char* format, ...);
+    void error(const char* format, ...);
 private:
-    void output(Logger::LogLevel level, char* format, va_list ap);
+    void output(Logger::LogLevel level, const char* format, va_list ap);
     void set_msg_prefix(Logger::LogLevel level, char *msg);
     void set_filename_by_savemode(char* filename);
     void check_loginfo();
-    Logger::LogLevel get_level_by_name(char *name);
+    Logger::LogLevel get_level_by_name(const char *name);
     void set_file_path();
     bool ensure_directory_exist();
 
@@ -70,14 +70,3 @@ private:
 } // namespace sails
 
 #endif /* _LOGGING_H_ */
-
-
-
-
-
-
-
-
-
-
-
