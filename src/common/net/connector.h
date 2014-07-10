@@ -61,6 +61,7 @@ public:
     friend class ConnectorTimeout<T>;
 
     void *data;
+    bool is_closed;
 protected:
     sails::common::Buffer in_buf;
     sails::common::Buffer out_buf;
@@ -133,6 +134,7 @@ Connector<T>::Connector(int conn_fd) {
     connect_fd = conn_fd;
     has_set_timer = false;
     data = NULL;
+    is_closed = false;
 }
 
 template<typename T>
@@ -142,6 +144,7 @@ Connector<T>::Connector() {
     delete_cb = NULL;
     has_set_timer = false;
     data = NULL;
+    is_closed = false;
 }
 
 template<typename T>

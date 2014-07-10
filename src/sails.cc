@@ -63,11 +63,12 @@ void accept_socket(common::event* e, int revents) {
 	ev.cb = sails::read_data;
 
 	// set timeout
-//	common::net::HttpConnector *con = new common::net::HttpConnector(connfd);
-//	common::net::ComConnector *con = new common::net::ComConnector(connfd);
 	common::net::Connector<common::net::PacketCommon> *con = new common::net::Connector<common::net::PacketCommon>(connfd);
+	// set call back
 	con->set_parser_fun(parser_cb);
-	
+	con->set_delete_cb(delete_connector);
+	con->set_invalid_msg_cb(NULL);
+
 	connect_timer.update_connector_time(con);
 
 	ev.data = con;
@@ -76,6 +77,7 @@ void accept_socket(common::event* e, int revents) {
 	    close(connfd);
 	    delete (sails::common::net::Connector<common::net::PacketCommon>*)ev.data;
 	}
+
     }
 }
 

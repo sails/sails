@@ -24,24 +24,40 @@ extern common::EventLoop ev_loop;
 long drop_packet_num = 0;
 
 
+void delete_connector(common::net::Connector<common::net::PacketCommon> *connector)
+{
+    ev_loop.event_stop(connector->get_connector_fd());
+}
+
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector) {
+
+
     if (connector->readable() < sizeof(common::net::PacketCommon)) {
 	return NULL;
     }
     common::net::PacketCommon *packet = (common::net::PacketCommon*)connector->peek();
-    if (packet->type.opcode >= common::net::PACKET_MAX) { // error, and empty all data
+    if (packet->type.opcode >= common::net::PACKET_MAX
+	|| packet->type.opcode <= common::net::PACKET_MIN) { // error, and empty all data
 	connector->retrieve(connector->readable());
+	if (connector->get_invalid_msg_cb() != NULL) {
+	    connector->get_invalid_msg_cb()(connector);
+	}
 	return NULL;
     }
+
+
     if (packet != NULL) {
 	int packetlen = packet->len;
+	if (packetlen < sizeof(common::net::PacketCommon)) {
+	    return NULL;
+	}
 	if(connector->readable() >= packetlen) {
 	    common::net::PacketCommon *item = (common::net::PacketCommon*)malloc(packetlen);
 	    memset(item, 0, packetlen);
 	    memcpy(item, packet, packetlen);
 	    connector->retrieve(packetlen);
-	    
+
 	    return item;
 	}
     }
@@ -60,8 +76,7 @@ void read_data(common::event* ev, int revents) {
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	// n=-1: recv signal_pending before read data
 	perror("read connfd");
-	ev->data = NULL;
-	ev_loop.event_stop(connfd);
+
 	delete(connector);
 	connector = NULL;
 	return;
@@ -69,29 +84,35 @@ void read_data(common::event* ev, int revents) {
 
     connect_timer.update_connector_time(connector);// update timeout
 
-    connector->parser();
+    connector->parser(); // maybe you want to close connect when parser invalid msg, so you can set connector is_closed to true
 
-    common::net::PacketCommon *packet = NULL;
+    if (! connector->is_closed) {
+	common::net::PacketCommon *packet = NULL;
 
-    while((packet=connector->get_next_packet()) != NULL) {
-	if (packet->type.opcode == common::net::PACKET_HEARTBEAT) {
-	    return;
-	}else if (packet->type.opcode == common::net::PACKET_PROTOBUF_CALL) {
-	    ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
-	    param->connector = connector;
-	    param->packet = packet;
-	    param->conn_fd = connfd;
+	while((packet=connector->get_next_packet()) != NULL) {
+	    if (packet->type.opcode == common::net::PACKET_HEARTBEAT) {
+		return;
+	    }else if (packet->type.opcode == common::net::PACKET_PROTOBUF_CALL) {
+		
+		ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+		param->connector = connector;
+		param->packet = packet;
+		param->conn_fd = connfd;
 	
-	    // use thread pool to handle request
-	    static common::ThreadPool parser_pool(config.get_handle_thread_pool(), config.get_handle_request_queue_size());	
-	    common::ThreadPoolTask task;
-	    task.fun = Connection::handle_rpc;
-	    task.argument = param;
-	    if (parser_pool.add_task(task) == -1) {
-		drop_packet_num++;
-		printf("drop_packet_num:%ld\n", drop_packet_num);
+		// use thread pool to handle request
+		static common::ThreadPool parser_pool(config.get_handle_thread_pool(), config.get_handle_request_queue_size());	
+		common::ThreadPoolTask task;
+		task.fun = Connection::handle_rpc;
+		task.argument = param;
+		if (parser_pool.add_task(task) == -1) {
+		    drop_packet_num++;
+		    printf("drop_packet_num:%ld\n", drop_packet_num);
+		}
 	    }
 	}
+    } else {
+	delete connector;
+	connector = NULL;
     }
 }
 
@@ -118,7 +139,7 @@ void Connection::handle_rpc(void *message)
 			common::net::PacketCommon*> handle_chain;
     HandleRPC proto_decode;
     handle_chain.add_handle(&proto_decode);
-	
+
     handle_chain.do_handle(request, response);
 
     if(response != NULL) {

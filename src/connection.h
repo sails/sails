@@ -30,6 +30,9 @@ public:
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector);
 
+void delete_connector(
+    common::net::Connector<common::net::PacketCommon> *connector);
+
 } //namespace sails
 
 #endif /* _CONNECTION_H_ */

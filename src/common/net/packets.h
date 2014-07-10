@@ -10,6 +10,7 @@ namespace net {
 
 enum PacketDefine
 {
+    PACKET_MIN = 0,
     PACKET_HEARTBEAT = 1,             // heartbeat
     PACKET_EXCEPTION,                 // exception
     PACKET_PROTOBUF_CALL,             // protobuf

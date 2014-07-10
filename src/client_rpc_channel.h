@@ -35,12 +35,3 @@ private:
 
 #endif /* _CLIENT_RPC_CHANNEL_H_ */
 
-
-
-
-
-
-
-
-
-

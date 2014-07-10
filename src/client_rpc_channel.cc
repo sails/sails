@@ -83,9 +83,10 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
     common::net::PacketCommon *resp = NULL;
     while((resp=connector.get_next_packet()) != NULL) {
 	char *body = ((common::net::PacketRPC*)resp)->data;
+	string str_body(body, resp->len-sizeof(common::net::PacketRPC)+1);
 	if(strlen(body) > 0) {
 	    // protobuf message
-	    response->ParseFromString(string(body));
+	    response->ParseFromString(str_body);
 	}
 	delete(resp);
     }
@@ -95,6 +96,3 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
 
 
 } // namespace sails
-
-
-
