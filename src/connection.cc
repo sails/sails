@@ -23,6 +23,8 @@ extern common::EventLoop ev_loop;
 
 long drop_packet_num = 0;
 
+std::mutex connector_lock;
+
 
 void delete_connector(common::net::Connector<common::net::PacketCommon> *connector)
 {
@@ -70,50 +72,66 @@ void read_data(common::event* ev, int revents) {
 	return;
     }
     int connfd = ev->fd;
-
     common::net::Connector<common::net::PacketCommon> *connector = (common::net::Connector<common::net::PacketCommon> *)ev->data;
-    int n = connector->read();
-    if(n == 0 || n == -1) { // n=0: client close or shutdown send
-	// n=-1: recv signal_pending before read data
-	perror("read connfd");
 
-	delete(connector);
-	connector = NULL;
+    if (connector == NULL) {
 	return;
     }
 
-    connect_timer.update_connector_time(connector);// update timeout
+    connector_lock.lock();
+    connector->extern_data++;
+    connector_lock.unlock();
 
-    connector->parser(); // maybe you want to close connect when parser invalid msg, so you can set connector is_closed to true
+    int n = connector->read();
 
-    if (! connector->is_closed) {
-	common::net::PacketCommon *packet = NULL;
-
-	while((packet=connector->get_next_packet()) != NULL) {
-	    if (packet->type.opcode == common::net::PACKET_HEARTBEAT) {
-		return;
-	    }else if (packet->type.opcode == common::net::PACKET_PROTOBUF_CALL) {
-		
-		ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
-		param->connector = connector;
-		param->packet = packet;
-		param->conn_fd = connfd;
+    if(n == 0 || n == -1) { // n=0: client close or shutdown send
+	// n=-1: recv signal_pending before read data
+	perror("read connfd");
+        connector->close();
+    }else {
 	
-		// use thread pool to handle request
-		static common::ThreadPool parser_pool(config.get_handle_thread_pool(), config.get_handle_request_queue_size());	
-		common::ThreadPoolTask task;
-		task.fun = Connection::handle_rpc;
-		task.argument = param;
-		if (parser_pool.add_task(task) == -1) {
-		    drop_packet_num++;
-		    printf("drop_packet_num:%ld\n", drop_packet_num);
+	connect_timer.update_connector_time(connector);// update timeout
+
+	connector->parser(); // maybe you want to close connect when parser invalid msg, so you can set connector is_closed to true
+
+	if (! connector->isClosed()) {
+	    common::net::PacketCommon *packet = NULL;
+
+	    while((packet=connector->get_next_packet()) != NULL) {
+		if (packet->type.opcode == common::net::PACKET_HEARTBEAT) {
+
+		}else if (packet->type.opcode == common::net::PACKET_PROTOBUF_CALL) {
+		    
+		    ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+		    param->connector = connector;
+		    param->packet = packet;
+		    param->conn_fd = connfd;
+	
+		    // use thread pool to handle request
+		    static common::ThreadPool parser_pool(config.get_handle_thread_pool(), config.get_handle_request_queue_size());	
+		    common::ThreadPoolTask task;
+		    task.fun = Connection::handle_rpc;
+		    task.argument = param;
+		    if (parser_pool.add_task(task) == -1) {
+			drop_packet_num++;
+			printf("drop_packet_num:%ld\n", drop_packet_num);
+		    }else {
+			connector_lock.lock();
+			connector->extern_data++;
+			connector_lock.unlock();
+		    }
 		}
 	    }
 	}
-    } else {
+    }
+
+    connector_lock.lock();
+    connector->extern_data--;
+    if (connector->isClosed() && connector->extern_data == 0) {
 	delete connector;
 	connector = NULL;
     }
+    connector_lock.unlock();
 }
 
 void Connection::handle_rpc(void *message) 
@@ -121,46 +139,51 @@ void Connection::handle_rpc(void *message)
     ConnectionnHandleParam *param = NULL;
     param = (ConnectionnHandleParam *)message;
     if(param == 0) {
-	return;
+
+    }else{
+	common::net::Connector<common::net::PacketCommon> *connector = param->connector;
+	common::net::PacketCommon *request = param->packet;
+	int connfd = param->conn_fd;
+
+	param->connector = NULL;
+	param->packet = NULL;
+
+	int response_len = sizeof(common::net::PacketRPC)+2048;
+	common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
+	memset(response, 0, response_len);
+
+	common::HandleChain<common::net::PacketCommon*, 
+			    common::net::PacketCommon*> handle_chain;
+	HandleRPC proto_decode;
+	handle_chain.add_handle(&proto_decode);
+
+	handle_chain.do_handle(request, response);
+
+	if(response != NULL) {
+	    // out put
+	    int n = write(connfd, response, response->len);
+	}
+
+
+	connector_lock.lock();
+	connector->extern_data--;
+	if (connector->extern_data == 0 && connector->isClosed()) { // task 
+	    delete connector;
+	    connector = NULL;
+	}
+	connector_lock.unlock();
+    
+	free(request);
+	free(response);
+	if(param != NULL) {
+	    free(param);
+	    param = NULL;
+	}
+
     }
 	
-    common::net::Connector<common::net::PacketCommon> *connector = param->connector;
-    common::net::PacketCommon *request = param->packet;
-    int connfd = param->conn_fd;
-
-    param->connector = NULL;
-    param->packet = NULL;
-
-    int response_len = sizeof(common::net::PacketRPC)+2048;
-    common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
-    memset(response, 0, response_len);
-
-    common::HandleChain<common::net::PacketCommon*, 
-			common::net::PacketCommon*> handle_chain;
-    HandleRPC proto_decode;
-    handle_chain.add_handle(&proto_decode);
-
-    handle_chain.do_handle(request, response);
-
-    if(response != NULL) {
-	// out put
-	int n = write(connfd, response, response->len);
-//	int n = write(connfd, response, sizeof(common::net::PacketRPC));
-    }
-    free(request);
-    free(response);
-    if(param != NULL) {
-	free(param);
-	param = NULL;
-    }
 }
 	
-
-
-void Connection::set_max_connectfd(int max_connfd)
-{
-//     set_max_connfd(max_connfd);
-}
 
 } // namespace sails
 

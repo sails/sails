@@ -89,7 +89,6 @@ void sails_init(int argc, char *argv[]) {
 	perror("register service");
 	exit(EXIT_FAILURE);
     }
-    Connection::set_max_connectfd(config.get_max_connfd());
 }
 
 void sails_exit() {

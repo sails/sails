@@ -13,7 +13,9 @@
 #include <assert.h>
 #include <list>
 #include <memory>
-
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 namespace sails {
 namespace common {
@@ -48,6 +50,9 @@ public:
     int write(char* data, int len);
     int send();
 
+    void close();
+    bool isClosed();
+
     void parser();
     int get_connector_fd();
     T* get_next_packet();
@@ -61,11 +66,12 @@ public:
     friend class ConnectorTimeout<T>;
 
     void *data;
-    bool is_closed;
+    int extern_data;
 protected:
     sails::common::Buffer in_buf;
     sails::common::Buffer out_buf;
     int connect_fd;
+    std::mutex fd_lock;
     bool has_set_timer;
     std::weak_ptr<ConnectorTimerEntry<T>> timer_entry;
 
@@ -74,6 +80,8 @@ protected:
     std::list<T *> recv_list;
     INVALID_MSG_CB<T> invalid_msg_cb;
     DELETE_CB<T> delete_cb;
+private:
+    bool is_closed;
 };
 
 template<typename T>
@@ -134,6 +142,7 @@ Connector<T>::Connector(int conn_fd) {
     connect_fd = conn_fd;
     has_set_timer = false;
     data = NULL;
+    extern_data = 0;
     is_closed = false;
 }
 
@@ -144,18 +153,19 @@ Connector<T>::Connector() {
     delete_cb = NULL;
     has_set_timer = false;
     data = NULL;
+    extern_data = 0;
     is_closed = false;
 }
 
 template<typename T>
 Connector<T>::~Connector() {
 
-    if (connect_fd > 0) {
-	close(connect_fd);
-    }
-    
     if (delete_cb != NULL) {
 	delete_cb(this);
+    }
+
+    if (connect_fd > 0) {
+	::close(connect_fd);
     }
 
     if(timer_entry.use_count() > 0) {
@@ -218,12 +228,35 @@ void Connector<T>::set_delete_cb(DELETE_CB<T> cb)
 }
 
 template<typename T>
-int Connector<T>::read() {
-    char tmp[65536] = {'\0'};
-    int read_count = ::read(this->connect_fd, tmp, 65536);
-    if(read_count > 0) {
-	this->in_buf.append(tmp, read_count);
+void Connector<T>::close()
+{
+    this->fd_lock.lock();
+    if (!is_closed && this->connect_fd > 0) {
+	::close(this->connect_fd);
+	is_closed = true;
     }
+    this->fd_lock.unlock();
+}
+
+template<typename T>
+bool Connector<T>::isClosed()
+{
+    return is_closed;
+}
+
+
+template<typename T>
+int Connector<T>::read() {
+    this->fd_lock.lock();
+    int read_count = 0;
+    if (!is_closed && this->connect_fd > 0) {
+	char tmp[65536] = {'\0'};
+	read_count = ::read(this->connect_fd, tmp, 65536);
+	if(read_count > 0) {
+	    this->in_buf.append(tmp, read_count);
+	}
+    }
+    this->fd_lock.unlock();
 
     return read_count;
 }
@@ -288,14 +321,18 @@ int Connector<T>::write(char* data, int len) {
 
 template<typename T>
 int Connector<T>::send() {
+    this->fd_lock.lock();
     int ret = 0;
-    int write_able = this->out_buf.readable();
-    if(write_able > 0) {
-	ret = ::write(this->connect_fd, this->out_buf.peek(), write_able);
-	if(ret > 0) {
-	    this->out_buf.retrieve(ret);
+    if (!is_closed && this->connect_fd > 0) {
+	int write_able = this->out_buf.readable();
+	if(write_able > 0) {
+	    ret = ::write(this->connect_fd, this->out_buf.peek(), write_able);
+	    if(ret > 0) {
+		this->out_buf.retrieve(ret);
+	    }
 	}
     }
+    this->fd_lock.unlock();
     return ret;
 
 }
