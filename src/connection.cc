@@ -31,6 +31,20 @@ void delete_connector(common::net::Connector<common::net::PacketCommon> *connect
     ev_loop.event_stop(connector->get_connector_fd());
 }
 
+ConnectorDeleter::ConnectorDeleter(common::net::Connector<common::net::PacketCommon> *connector) {
+	this->connector = connector;
+}
+
+ConnectorDeleter::~ConnectorDeleter() {
+    connector_lock.lock();
+    connector->extern_data--;
+    if (connector->isClosed() && connector->extern_data == 0) {
+	delete connector;
+	connector = NULL;
+    }
+    connector_lock.unlock();
+}
+
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector) {
 
@@ -81,6 +95,7 @@ void read_data(common::event* ev, int revents) {
     connector_lock.lock();
     connector->extern_data++;
     connector_lock.unlock();
+    ConnectorDeleter deleter(connector);
 
     int n = connector->read();
 
@@ -125,23 +140,18 @@ void read_data(common::event* ev, int revents) {
 	}
     }
 
-    connector_lock.lock();
-    connector->extern_data--;
-    if (connector->isClosed() && connector->extern_data == 0) {
-	delete connector;
-	connector = NULL;
-    }
-    connector_lock.unlock();
 }
 
 void Connection::handle_rpc(void *message) 
 {
+
     ConnectionnHandleParam *param = NULL;
     param = (ConnectionnHandleParam *)message;
     if(param == 0) {
 
     }else{
 	common::net::Connector<common::net::PacketCommon> *connector = param->connector;
+	ConnectorDeleter deleter(connector);
 	common::net::PacketCommon *request = param->packet;
 	int connfd = param->conn_fd;
 
@@ -164,15 +174,6 @@ void Connection::handle_rpc(void *message)
 	    int n = write(connfd, response, response->len);
 	}
 
-
-	connector_lock.lock();
-	connector->extern_data--;
-	if (connector->extern_data == 0 && connector->isClosed()) { // task 
-	    delete connector;
-	    connector = NULL;
-	}
-	connector_lock.unlock();
-    
 	free(request);
 	free(response);
 	if(param != NULL) {

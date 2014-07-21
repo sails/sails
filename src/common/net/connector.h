@@ -164,7 +164,7 @@ Connector<T>::~Connector() {
 	delete_cb(this);
     }
 
-    if (connect_fd > 0) {
+    if (!is_closed) {
 	::close(connect_fd);
     }
 

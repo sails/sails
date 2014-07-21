@@ -25,6 +25,13 @@ public:
      static void handle_rpc(void *message);
 };
 
+class ConnectorDeleter {
+public:
+    ConnectorDeleter(common::net::Connector<common::net::PacketCommon> *connector);
+    ~ConnectorDeleter();
+private:
+    common::net::Connector<common::net::PacketCommon> *connector;
+};
 
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector);
