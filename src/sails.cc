@@ -17,6 +17,7 @@
 #include <common/base/string.h>
 #include <common/base/event_loop.h>
 #include <common/net/connector.h>
+#include <common/log/logging.h>
 //#include <common/net/http_connector.h>
 //#include <common/net/com_connector.h>
 const int MAX_EVENTS = 1000;
@@ -27,7 +28,8 @@ common::EventLoop ev_loop;
 common::net::ConnectorTimeout<common::net::PacketCommon> connect_timer(10);
 Config config;
 std::map<std::string, std::string> modules;
-
+common::log::Logger log(common::log::Logger::LOG_LEVEL_DEBUG,
+			"./log/sails.log", common::log::Logger::SPLIT_DAY);
 
 void init_config(int argc, char *argv[]) {
     config.get_modules(&modules);

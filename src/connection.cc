@@ -12,6 +12,7 @@
 #include <iostream>
 #include <common/base/thread_pool.h>
 #include <common/base/handle.h>
+#include <common/log/logging.h>
 #include "handle_rpc.h"
 #include "config.h"
 
@@ -20,6 +21,7 @@ namespace sails {
 extern common::net::ConnectorTimeout<common::net::PacketCommon> connect_timer;
 extern Config config;
 extern common::EventLoop ev_loop;
+extern common::log::Logger log;
 
 long drop_packet_num = 0;
 
@@ -68,8 +70,17 @@ common::net::PacketCommon* parser_cb(
 	if (packetlen < sizeof(common::net::PacketCommon)) {
 	    return NULL;
 	}
+	if (packetlen > PACKET_MAX_LEN) {
+	    connector->retrieve(packetlen);
+	    log.error("receive a invalid packet len:%d", packetlen);
+	    
+	}
 	if(connector->readable() >= packetlen) {
 	    common::net::PacketCommon *item = (common::net::PacketCommon*)malloc(packetlen);
+	    if (item == NULL) {
+		log.error("malloc failed due to copy receive data to a common packet len:%d", packetlen);
+		return NULL;
+	    }
 	    memset(item, 0, packetlen);
 	    memcpy(item, packet, packetlen);
 	    connector->retrieve(packetlen);

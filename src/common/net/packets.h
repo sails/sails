@@ -19,6 +19,8 @@ enum PacketDefine
     PACKET_MAX                        // use as illegal judgment gettype() > MSG_MAX
 };
 
+#define PACKET_MAX_LEN  1024
+
 typedef struct
 {
 	uint8_t opcode;
