@@ -16,7 +16,7 @@ namespace sails {
 
 RpcChannelImp::RpcChannelImp(string ip, int port):ip(ip),port(port) {
     assert(connector.connect(ip.c_str(), 8000, true));
-    connector.set_parser_fun(RpcChannelImp::parser_cb);
+    connector.set_parser_cb(RpcChannelImp::parser_cb);
 }
 
 void RpcChannelImp::CallMethod(const MethodDescriptor* method, 
