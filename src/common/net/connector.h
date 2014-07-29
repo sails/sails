@@ -180,7 +180,6 @@ Connector<T>::Connector() {
     delete_cb = NULL;
     timeout_cb = NULL;
     close_cb = NULL;
-    timer_entry = NULL;
     has_set_timer = false;
     data = NULL;
     is_closed = false;

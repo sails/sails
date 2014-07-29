@@ -260,7 +260,6 @@ void Logger::set_file_path()
 
 bool Logger::ensure_directory_exist()
 {
-    printf("path:%s\n", this->path);
     return make_directory(this->path);
 }
 
