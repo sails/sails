@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/epoll.h>
 #include <sys/types.h>
+#include <memory>
 #include "config.h"
 #include "connection.h"
 #include "module_load.h"
@@ -18,8 +19,6 @@
 #include <common/base/event_loop.h>
 #include <common/net/connector.h>
 #include <common/log/logging.h>
-//#include <common/net/http_connector.h>
-//#include <common/net/com_connector.h>
 const int MAX_EVENTS = 1000;
 
 namespace sails {
@@ -60,24 +59,27 @@ void accept_socket(common::event* e, int revents) {
 	sails::common::setnonblocking(connfd);
 
 	sails::common::event ev;
+	emptyEvent(ev);
 	ev.fd = connfd;
 	ev.events = sails::common::EventLoop::Event_READ;
 	ev.cb = sails::read_data;
 
 	// set timeout
-	common::net::Connector<common::net::PacketCommon> *con = new common::net::Connector<common::net::PacketCommon>(connfd);
-	// set call back
-	con->set_parser_fun(parser_cb);
-	con->set_delete_cb(delete_connector);
-	con->set_invalid_msg_cb(NULL);
+	std::shared_ptr<common::net::Connector<common::net::PacketCommon>> connector (new common::net::Connector<common::net::PacketCommon>(connfd));
+	connector->set_parser_cb(parser_cb);
+        connector->set_delete_cb(delete_connector_cb);
+	connector->set_invalid_msg_cb(NULL);
+	connector->set_close_cb(close_cb);
+	connector->set_timeout_cb(timeout_cb);
+	connect_timer.update_connector_time(connector);
 
-	connect_timer.update_connector_time(con);
 
-	ev.data = con;
-	ev.next = NULL;
+	common::net::ConnectorAdapter<common::net::PacketCommon>* connectorAdapter= new common::net::ConnectorAdapter<common::net::PacketCommon>(connector);
+	
+	ev.data = connectorAdapter;
+	ev.stop_cb = event_stop_cb;
 	if(!ev_loop.event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
-	    close(connfd);
-	    delete (sails::common::net::Connector<common::net::PacketCommon>*)ev.data;
+	    //do noting, connector delete will close fd
 	}
 
     }
@@ -96,7 +98,7 @@ void sails_init(int argc, char *argv[]) {
 void sails_exit() {
     modules.clear();
     ModuleLoad::unload();
-
+    sails::ev_loop.stop_loop();
     printf("on exit\n");
     exit(EXIT_SUCCESS);
 }
@@ -162,10 +164,10 @@ int main(int argc, char *argv[]) {
     }
 
     sails::common::event listen_ev;
+    emptyEvent(listen_ev);
     listen_ev.fd = listenfd;
     listen_ev.events = sails::common::EventLoop::Event_READ;
     listen_ev.cb = sails::accept_socket;
-    listen_ev.next = NULL;
 
     if(!sails::ev_loop.event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
 				&listen_ev)) {

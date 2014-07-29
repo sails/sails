@@ -27,6 +27,9 @@ template<typename T> using PARSER_CB = T* (*)(Connector<T> *connector);
 template<typename T> using INVALID_MSG_CB = void (*)(Connector<T> *connector);
 template<typename T> using DELETE_CB = void (*)(Connector<T> *connector);
 
+template<typename T> using TIMEOUT_CB = void (*)(Connector<T> *connector);
+template<typename T> using CLOSE_CB = void (*)(Connector<T> *connector);
+
 template<typename T> class ConnectorTimerEntry;
 template<typename T> class ConnectorTimeout;
 
@@ -56,45 +59,67 @@ public:
     void parser();
     int get_connector_fd();
     T* get_next_packet();
+
+    void set_timeout();
+    bool timeout();
+    void setTimerEntry(std::weak_ptr<ConnectorTimerEntry<T>> entry);
+    std::weak_ptr<ConnectorTimerEntry<T>> getTimerEntry();
+    bool haveSetTimer();
     
-    void set_parser_fun(PARSER_CB<T> parser_cb);
+    void set_parser_cb(PARSER_CB<T> parser_cb);
     void set_invalid_msg_cb(INVALID_MSG_CB<T> cb);
     INVALID_MSG_CB<T> get_invalid_msg_cb();
     void set_delete_cb(DELETE_CB<T> cb);
+    void set_timeout_cb(TIMEOUT_CB<T> cb);
+    void set_close_cb(CLOSE_CB<T> close_cb);
 
-    friend class ConnectorTimerEntry<T>;
-    friend class ConnectorTimeout<T>;
 
     void *data;
-    int extern_data;
 protected:
     sails::common::Buffer in_buf;
     sails::common::Buffer out_buf;
     int connect_fd;
     std::mutex fd_lock;
-    bool has_set_timer;
-    std::weak_ptr<ConnectorTimerEntry<T>> timer_entry;
 
     PARSER_CB<T> parser_cb;
     void push_recv_list(T *packet);
     std::list<T *> recv_list;
     INVALID_MSG_CB<T> invalid_msg_cb;
     DELETE_CB<T> delete_cb;
+    TIMEOUT_CB<T> timeout_cb;
+    CLOSE_CB<T> close_cb;
 private:
     bool is_closed;
+    bool is_timeout;
+    bool has_set_timer;
+    std::weak_ptr<ConnectorTimerEntry<T>> timer_entry;
+
 };
+
+
+template<typename T>
+class ConnectorAdapter {
+public:
+    ConnectorAdapter(std::shared_ptr<Connector<T>> connector);
+    std::shared_ptr<Connector<T>> getConnector();
+private:
+    std::shared_ptr<Connector<T>> connector;
+};
+
 
 template<typename T>
 class ConnectorTimerEntry : public Uncopyable {
 public:
-    ConnectorTimerEntry(Connector<T>* connector, EventLoop *ev_loop);
+    ConnectorTimerEntry(std::shared_ptr<Connector<T>> connector, EventLoop *ev_loop);
     ~ConnectorTimerEntry();
 
     friend class Connector<T>;
 private:
-    Connector<T>* connector;
+    std::shared_ptr<Connector<T>> connector;
     EventLoop *ev_loop;
 };
+
+
 
 template<typename T>
 class ConnectorTimeout : public Uncopyable {
@@ -103,7 +128,7 @@ public:
     ~ConnectorTimeout();
     
     bool init(EventLoop *ev_loop);
-    void update_connector_time(Connector<T>* connector);
+    void update_connector_time(std::shared_ptr<Connector<T>> connector);
 private:
     class Bucket {
     public:
@@ -139,11 +164,13 @@ Connector<T>::Connector(int conn_fd) {
     parser_cb = NULL;
     invalid_msg_cb = NULL;
     delete_cb = NULL;
+    timeout_cb = NULL;
+    close_cb = NULL;
     connect_fd = conn_fd;
     has_set_timer = false;
     data = NULL;
-    extern_data = 0;
     is_closed = false;
+    is_timeout = false;
 }
 
 template<typename T>
@@ -151,10 +178,13 @@ Connector<T>::Connector() {
     parser_cb = NULL;
     invalid_msg_cb = NULL;
     delete_cb = NULL;
+    timeout_cb = NULL;
+    close_cb = NULL;
+    timer_entry = NULL;
     has_set_timer = false;
     data = NULL;
-    extern_data = 0;
     is_closed = false;
+    is_timeout = false;
 }
 
 template<typename T>
@@ -166,11 +196,6 @@ Connector<T>::~Connector() {
 
     if (!is_closed) {
 	::close(connect_fd);
-    }
-
-    if(timer_entry.use_count() > 0) {
-	std::shared_ptr<ConnectorTimerEntry<T>> entry = timer_entry.lock();
-        entry->connector = NULL;
     }
 }
 
@@ -201,12 +226,25 @@ bool Connector<T>::connect(const char *ip, uint16_t port, bool keepalive) {
 }
 
 template<typename T>
+void Connector<T>::set_timeout() {
+    this->is_timeout = true;
+    if (timeout_cb != NULL) {
+	timeout_cb(this);
+    }
+}
+
+template<typename T>
+bool Connector<T>::timeout() {
+    return is_timeout;
+}
+
+template<typename T>
 int Connector<T>::get_connector_fd() {
     return this->connect_fd;
 }
 
 template<typename T>
-void Connector<T>::set_parser_fun(PARSER_CB<T> parser_cb) {
+void Connector<T>::set_parser_cb(PARSER_CB<T> parser_cb) {
     this->parser_cb = parser_cb;
 }
 
@@ -228,12 +266,27 @@ void Connector<T>::set_delete_cb(DELETE_CB<T> cb)
 }
 
 template<typename T>
+void Connector<T>::set_timeout_cb(TIMEOUT_CB<T> cb)
+{
+    this->timeout_cb = cb;
+}
+
+template<typename T>
+void Connector<T>::set_close_cb(CLOSE_CB<T> close_cb)
+{
+    this->close_cb = close_cb;
+}
+
+template<typename T>
 void Connector<T>::close()
 {
     this->fd_lock.lock();
     if (!is_closed && this->connect_fd > 0) {
 	::close(this->connect_fd);
 	is_closed = true;
+	if (close_cb != NULL) {
+	    close_cb(this);
+	}
     }
     this->fd_lock.unlock();
 }
@@ -244,6 +297,20 @@ bool Connector<T>::isClosed()
     return is_closed;
 }
 
+template<typename T>
+void Connector<T>::setTimerEntry(std::weak_ptr<ConnectorTimerEntry<T>> entry) {
+    this->timer_entry = entry;
+    this->has_set_timer = true;
+}
+
+template<typename T>
+std::weak_ptr<ConnectorTimerEntry<T>> Connector<T>::getTimerEntry() {
+    return this->timer_entry;
+}
+template<typename T>
+bool Connector<T>::haveSetTimer() {
+    return this->has_set_timer;
+}
 
 template<typename T>
 int Connector<T>::read() {
@@ -281,7 +348,7 @@ template<typename T>
 void Connector<T>::parser() {
     if (this->parser_cb != NULL) {
 	T* packet = NULL;
-	while ((packet = parser_cb(this)) != NULL) {
+	while ((packet = this->parser_cb(this)) != NULL) {
 	    push_recv_list(packet);
 	    packet = NULL;
 	}
@@ -337,8 +404,23 @@ int Connector<T>::send() {
 
 }
 
+
+
 template<typename T>
-ConnectorTimerEntry<T>::ConnectorTimerEntry(Connector<T>* connector, EventLoop *ev_loop) {
+ConnectorAdapter<T>::ConnectorAdapter(std::shared_ptr<Connector<T>> connector) {
+    this->connector = connector;
+}
+
+template<typename T>
+std::shared_ptr<Connector<T>> ConnectorAdapter<T>::getConnector() {
+    return this->connector;
+}
+
+
+
+
+template<typename T>
+ConnectorTimerEntry<T>::ConnectorTimerEntry(std::shared_ptr<Connector<T>> connector, EventLoop *ev_loop) {
     this->connector = connector;
     this->ev_loop = ev_loop;
 }
@@ -346,14 +428,23 @@ ConnectorTimerEntry<T>::ConnectorTimerEntry(Connector<T>* connector, EventLoop *
 template<typename T>
 ConnectorTimerEntry<T>::~ConnectorTimerEntry() {
     if(this->connector != NULL) {
-//	printf("delete connector\n");
 	// close fd and delete connector
-	ev_loop->event_stop(connector->connect_fd);
-	delete connector;
-	connector = NULL;
+	this->connector->set_timeout();
     }
 //    printf("delete connector timer entry\n");
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 template<typename T>
@@ -391,10 +482,6 @@ void ConnectorTimeout<T>::process_tick() {
     if (bucket != NULL) {
 //	printf("clear timerindex:%d\n", timeindex);
 	typename std::list<std::shared_ptr<ConnectorTimerEntry<T>>>::iterator iter;
-	for (iter=bucket->entry_list.begin(); iter!=bucket->entry_list.end(); iter++) {
-//	    printf("user count :%ld\n",(*iter).use_count());
-	}
-
         bucket->entry_list.clear();
     }
 }
@@ -419,20 +506,22 @@ ConnectorTimeout<T>::~ConnectorTimeout() {
 }
 
 template<typename T>
-void ConnectorTimeout<T>::update_connector_time(Connector<T>* connector)
+void ConnectorTimeout<T>::update_connector_time(std::shared_ptr<Connector<T>> connector)
 {
-    if(connector != NULL) {
+    if(connector.get() != NULL) {
 	int add_index = (timeindex+timeout-1)%timeout;
 //	printf("add to bucket %d\n", add_index);
-	if(!connector->has_set_timer) {
-	    connector->has_set_timer = true;
+	if(!connector->haveSetTimer()) {
 	    std::shared_ptr<ConnectorTimerEntry<T>> shared_entry(new ConnectorTimerEntry<T>(connector, ev_loop));
 	    std::weak_ptr<ConnectorTimerEntry<T>> weak_temp(shared_entry);
-	    connector->timer_entry = weak_temp;
+	    connector->setTimerEntry(weak_temp);
 	    time_wheel->at(add_index)->entry_list.push_back(shared_entry);
+
 	}else {
-	    time_wheel->at(add_index)->entry_list.push_back(
-		connector->timer_entry.lock());
+	    if (!connector->timeout()) {
+		time_wheel->at(add_index)->entry_list.push_back(
+		    connector->getTimerEntry().lock());
+	    }
 	}
     }
 }
@@ -443,4 +532,8 @@ void ConnectorTimeout<T>::update_connector_time(Connector<T>* connector)
 } // namespace sails
 
 #endif /* _CONNECTOR_H_ */
+
+
+
+
 

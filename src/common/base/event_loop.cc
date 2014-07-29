@@ -9,6 +9,16 @@ namespace common {
 
 //const int EventLoop::INIT_EVENTS = 1000;
 
+void emptyEvent(struct event& ev) {
+    ev.fd = 0;
+    ev.events = 0;
+    ev.cb = NULL;
+    
+    ev.data = NULL;
+    ev.stop_cb = NULL;
+    ev.next = NULL;
+}
+
 EventLoop::EventLoop() {
     events = (struct epoll_event*)malloc(sizeof(struct epoll_event)
 					 *INIT_EVENTS);
@@ -16,6 +26,7 @@ EventLoop::EventLoop() {
 					 *INIT_EVENTS);
     memset(anfds, 0, 1000*sizeof(struct ANFD));
     max_events = INIT_EVENTS;
+    stop = false;
 }
 
 EventLoop::~EventLoop() {
@@ -49,13 +60,14 @@ bool EventLoop::add_event(struct event*ev) {
 	    return false;
 	}
     }
-
+    printf("add event:%d\n", ev->fd);
     struct event *e = (struct event*)malloc(sizeof(struct event));
+    emptyEvent(*e);
     e->fd = ev->fd;
     e->events = ev->events;
     e->cb = ev->cb;
     e->data = ev->data;
-    e->next = NULL;
+    e->stop_cb = ev->stop_cb;
 
     int fd = e->fd;
 
@@ -122,6 +134,9 @@ bool EventLoop::delete_event(struct event* ev) {
 		    //can delete it from the list
 		    isdelete = 1;
 		    cur = cur->next;
+		    if (pre->next->stop_cb != NULL) {
+			pre->next->stop_cb(pre->next);
+		    }
 		    free(pre->next);
 		    pre->next = cur;
 		}
@@ -147,6 +162,7 @@ bool EventLoop::delete_event(struct event* ev) {
 
 bool EventLoop::event_stop(int fd) {
     if(anfds[fd].isused == 1) {
+	printf("event stop fd:%d\n", fd);
 	anfds[fd].isused = 0;
 	// detele event list
 	struct event* cur = anfds[fd].next;
@@ -154,6 +170,9 @@ bool EventLoop::event_stop(int fd) {
 	while(cur != NULL) {
 	    pre = cur;
 	    cur = cur->next;
+	    if (pre->stop_cb != NULL) {
+		pre->stop_cb(pre);
+	    }
 	    free(pre);
 	    pre = NULL;
 	}
@@ -173,7 +192,7 @@ bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
 }
 
 void EventLoop::start_loop() {
-    for(;;) {
+    while(!stop) {
 	int nfds = epoll_wait(epollfd, events, max_events, -1);
 	if(nfds == -1) {
 	    perror("start_loop, epoll wait");
@@ -194,6 +213,11 @@ void EventLoop::start_loop() {
 	    }
 	}
     }
+}
+
+void EventLoop::stop_loop() {
+    stop = true;
+    
 }
 
 void EventLoop::process_event(int fd, int events) {

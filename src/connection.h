@@ -14,8 +14,10 @@ namespace sails {
 //void read_data(int connfd);
 void read_data(common::event*, int revents);
 
+void event_stop_cb(common::event*);
+
 typedef struct ConnectionnHandleParam {
-    common::net::Connector<common::net::PacketCommon> *connector;
+    std::shared_ptr<common::net::Connector<common::net::PacketCommon>> connector;
     common::net::PacketCommon *packet;
     int conn_fd;
 } ConnectionnHandleParam;
@@ -25,19 +27,19 @@ public:
      static void handle_rpc(void *message);
 };
 
-class ConnectorDeleter {
-public:
-    ConnectorDeleter(common::net::Connector<common::net::PacketCommon> *connector);
-    ~ConnectorDeleter();
-private:
-    common::net::Connector<common::net::PacketCommon> *connector;
-};
-
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector);
 
-void delete_connector(
+void timeout_cb(
     common::net::Connector<common::net::PacketCommon> *connector);
+
+void close_cb(
+    common::net::Connector<common::net::PacketCommon> *connector);
+
+void delete_connector_cb(
+    common::net::Connector<common::net::PacketCommon> *connector);
+
+
 
 } //namespace sails
 

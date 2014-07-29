@@ -2,7 +2,7 @@ INCLUDE=-I../../ -I$(TOPDIR)../../deps/http-parser
 
 CC		= gcc
 CXX		= g++
-CFLAGS 		= -std=c++11 -O2 -L$(TOPDIR)base -pthread
+CFLAGS 		= -std=c++11 -O0 -g -L$(TOPDIR)base -pthread
 VPATH		= ${TOPDIR}/base
 DEPSLIBS 	= common_base
 

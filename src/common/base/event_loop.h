@@ -7,6 +7,7 @@ namespace sails {
 namespace common {
 
 typedef void (*event_cb)(struct event*, int revents);
+typedef void (*STOPEVENT_CB)(struct event*);
 
 struct event {
     int fd;
@@ -14,7 +15,10 @@ struct event {
     event_cb cb;
     void *data;
     struct event* next;
+    STOPEVENT_CB stop_cb;
 };
+
+void emptyEvent(struct event& ev);
 
 struct ANFD {
     int isused;
@@ -43,6 +47,7 @@ public:
     bool event_ctl(OperatorType op, struct event*);
     bool event_stop(int fd);
     void start_loop();
+    void stop_loop();
 private:
     bool add_event(struct event*);
     bool delete_event(struct event*);
@@ -53,6 +58,7 @@ private:
     struct epoll_event *events;
     struct ANFD *anfds;
     int max_events;
+    bool stop;
 };
 
 } // namespace common

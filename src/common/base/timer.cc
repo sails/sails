@@ -28,11 +28,13 @@ bool Timer::init(ExpiryAction action, void *data, int when=1) {
     timerfd_settime(timerfd, 0, new_value, NULL);
 
     sails::common::event ev;
+    emptyEvent(ev);
     ev.fd = timerfd;
     ev.events = sails::common::EventLoop::Event_READ;
     ev.cb = sails::common::Timer::read_timerfd_data;
     
     ev.data = this;
+    ev.stop_cb = NULL;
     ev.next = NULL;
 
     if(!ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){

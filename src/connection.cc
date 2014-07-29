@@ -25,31 +25,13 @@ extern common::log::Logger log;
 
 long drop_packet_num = 0;
 
-std::mutex connector_lock;
-
-
-void delete_connector(common::net::Connector<common::net::PacketCommon> *connector)
+void delete_connector_cb(common::net::Connector<common::net::PacketCommon> *connector)
 {
-    ev_loop.event_stop(connector->get_connector_fd());
-}
-
-ConnectorDeleter::ConnectorDeleter(common::net::Connector<common::net::PacketCommon> *connector) {
-	this->connector = connector;
-}
-
-ConnectorDeleter::~ConnectorDeleter() {
-    connector_lock.lock();
-    connector->extern_data--;
-    if (connector->isClosed() && connector->extern_data == 0) {
-	delete connector;
-	connector = NULL;
-    }
-    connector_lock.unlock();
+    printf("delete connector\n");
 }
 
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector) {
-
 
     if (connector->readable() < sizeof(common::net::PacketCommon)) {
 	return NULL;
@@ -63,7 +45,6 @@ common::net::PacketCommon* parser_cb(
 	}
 	return NULL;
     }
-
 
     if (packet != NULL) {
 	int packetlen = packet->len;
@@ -88,37 +69,51 @@ common::net::PacketCommon* parser_cb(
 	    return item;
 	}
     }
+    
     return NULL;
 }
 
+
+
+void timeout_cb(
+    common::net::Connector<common::net::PacketCommon> *connector) {
+    if (!connector->isClosed()) {
+	connector->close();
+    }
+}
+
+void close_cb(
+    common::net::Connector<common::net::PacketCommon> *connector) {
+    ev_loop.event_stop(connector->get_connector_fd());
+}
 //void read_data(int connfd) {
 void read_data(common::event* ev, int revents) {
     if(ev == NULL || ev->fd < 0) {
 	return;
     }
     int connfd = ev->fd;
-    common::net::Connector<common::net::PacketCommon> *connector = (common::net::Connector<common::net::PacketCommon> *)ev->data;
+    common::net::ConnectorAdapter<common::net::PacketCommon>* connectorAdapter = (common::net::ConnectorAdapter<common::net::PacketCommon>*)ev->data;
+    
+    std::shared_ptr<common::net::Connector<common::net::PacketCommon>> connector = connectorAdapter->getConnector();
 
-    if (connector == NULL) {
+    if (connector == NULL || connector.use_count() <= 0) {
 	return;
     }
-
-    connector_lock.lock();
-    connector->extern_data++;
-    connector_lock.unlock();
-    ConnectorDeleter deleter(connector);
 
     int n = connector->read();
 
     if(n == 0 || n == -1) { // n=0: client close or shutdown send
 	// n=-1: recv signal_pending before read data
 	perror("read connfd");
-        connector->close();
+	if (!connector->isClosed()) {
+	    connector->close();
+	}
+
     }else {
 	
 	connect_timer.update_connector_time(connector);// update timeout
 
-	connector->parser(); // maybe you want to close connect when parser invalid msg, so you can set connector is_closed to true
+	connector->parser();
 
 	if (! connector->isClosed()) {
 	    common::net::PacketCommon *packet = NULL;
@@ -129,6 +124,8 @@ void read_data(common::event* ev, int revents) {
 		}else if (packet->type.opcode == common::net::PACKET_PROTOBUF_CALL) {
 		    
 		    ConnectionnHandleParam *param = (ConnectionnHandleParam *)malloc(sizeof(ConnectionnHandleParam));
+		    memset(param, 0, sizeof(ConnectionnHandleParam));
+		    param->connector = NULL;
 		    param->connector = connector;
 		    param->packet = packet;
 		    param->conn_fd = connfd;
@@ -142,15 +139,19 @@ void read_data(common::event* ev, int revents) {
 			drop_packet_num++;
 			printf("drop_packet_num:%ld\n", drop_packet_num);
 		    }else {
-			connector_lock.lock();
-			connector->extern_data++;
-			connector_lock.unlock();
 		    }
 		}
 	    }
 	}
     }
 
+}
+
+void event_stop_cb(common::event* event) {
+    if (event->data != NULL) {
+	delete (common::net::ConnectorAdapter<common::net::PacketCommon>*)event->data;
+	event->data = NULL;
+    }
 }
 
 void Connection::handle_rpc(void *message) 
@@ -161,8 +162,7 @@ void Connection::handle_rpc(void *message)
     if(param == 0) {
 
     }else{
-	common::net::Connector<common::net::PacketCommon> *connector = param->connector;
-	ConnectorDeleter deleter(connector);
+	std::shared_ptr<common::net::Connector<common::net::PacketCommon>> connector = param->connector;
 	common::net::PacketCommon *request = param->packet;
 	int connfd = param->conn_fd;
 
