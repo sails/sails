@@ -97,6 +97,7 @@ private:
 };
 
 
+// for some callback with void *data can hold shared_ptr<>
 template<typename T>
 class ConnectorAdapter {
 public:
@@ -113,9 +114,8 @@ public:
     ConnectorTimerEntry(std::shared_ptr<Connector<T>> connector, EventLoop *ev_loop);
     ~ConnectorTimerEntry();
 
-    friend class Connector<T>;
 private:
-    std::shared_ptr<Connector<T>> connector;
+    std::weak_ptr<Connector<T>> connector;
     EventLoop *ev_loop;
 };
 
@@ -421,15 +421,15 @@ std::shared_ptr<Connector<T>> ConnectorAdapter<T>::getConnector() {
 
 template<typename T>
 ConnectorTimerEntry<T>::ConnectorTimerEntry(std::shared_ptr<Connector<T>> connector, EventLoop *ev_loop) {
-    this->connector = connector;
+    this->connector = std::weak_ptr<Connector<T>>(connector);
     this->ev_loop = ev_loop;
 }
 
 template<typename T>
 ConnectorTimerEntry<T>::~ConnectorTimerEntry() {
-    if(this->connector != NULL) {
+    if(this->connector.use_count() > 0) {
 	// close fd and delete connector
-	this->connector->set_timeout();
+	this->connector.lock()->set_timeout();
     }
 //    printf("delete connector timer entry\n");
 }

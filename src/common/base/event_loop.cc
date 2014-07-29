@@ -60,7 +60,7 @@ bool EventLoop::add_event(struct event*ev) {
 	    return false;
 	}
     }
-    printf("add event:%d\n", ev->fd);
+
     struct event *e = (struct event*)malloc(sizeof(struct event));
     emptyEvent(*e);
     e->fd = ev->fd;
@@ -162,7 +162,6 @@ bool EventLoop::delete_event(struct event* ev) {
 
 bool EventLoop::event_stop(int fd) {
     if(anfds[fd].isused == 1) {
-	printf("event stop fd:%d\n", fd);
 	anfds[fd].isused = 0;
 	// detele event list
 	struct event* cur = anfds[fd].next;
