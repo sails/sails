@@ -30,7 +30,7 @@ const int MAX_EVENTS = 1000;
 
 template<typename T> class Server;
 template<typename T> using HANDLE_CB = void (*)(std::shared_ptr<common::net::Connector<T>> connector, T *message);
-
+template<typename T> using ACCEPTAFTER_CB = void (*)(std::shared_ptr<common::net::Connector<T>> connector);
 template<typename T>
 class ConnectionnHandleParam {
 public:
@@ -58,6 +58,7 @@ public:
 	return Server<T>::pInstance_;
     }
     void init(int port=8000, int connector_timeout=10, int work_thread_num=4, int hanle_request_queue_size=1000);
+    void set_accept_after_cb(ACCEPTAFTER_CB<T> cb);
     void set_parser_cb(PARSER_CB<T> cb);
     void set_handle_cb(HANDLE_CB<T> cb);
 
@@ -68,6 +69,7 @@ private:
     static void accept_socket(common::event* e, int revents);
     static void read_data(common::event*, int revents);
 
+    ACCEPTAFTER_CB<T> accept_after_cb;
     PARSER_CB<T> parser_cb;
     HANDLE_CB<T> handle_cb;
     static void handle(void *message);
@@ -106,6 +108,7 @@ Server<T>::Server()
     this->work_thread_num = 0;
     this->hanle_request_queue_size = 0;
     this->listenfd = 0;
+    this->accept_after_cb = 0;
     this->parser_cb = 0;
     this->handle_cb = 0;
     this->drop_packet_num = 0;
@@ -173,6 +176,12 @@ void Server<T>::init(int port, int connector_timeout, int work_thread_num, int h
 
 }
 
+
+template<typename T>
+void Server<T>::set_accept_after_cb(ACCEPTAFTER_CB<T> cb) {
+    this->accept_after_cb = cb;
+}
+
 template<typename T>
 void Server<T>::set_parser_cb(PARSER_CB<T> cb) {
     this->parser_cb = cb;
@@ -232,7 +241,9 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 	if(!Server::getInstance()->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 	    //do noting, connector delete will close fd
 	}
-
+	if (Server::getInstance()->accept_after_cb != NULL) {
+	    Server::getInstance()->accept_after_cb(connector);
+	}
     }
 }
 
