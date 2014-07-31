@@ -8,7 +8,7 @@ INSTALL_PATH		= ../dist
 
 
 
-OBJECTS=sails.o connection.o \
+OBJECTS=sails.o \
 	handle_rpc.o \
 	module_load.o service_register.o \
 	config.o
@@ -27,7 +27,6 @@ sails:$(OBJECTS)
 	g++ -MM $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
-
 
 
 ########################client library###################################

@@ -300,6 +300,7 @@ void Server<T>::handle(void* message) {
 	    std::shared_ptr<common::net::Connector<T>> connector = param->connector;
 	    T * msg = param->packet;
 	    Server::getInstance()->handle_cb(connector, msg);
+	    free(msg);
 	}
 
         delete param;

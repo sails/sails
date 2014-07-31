@@ -249,6 +249,7 @@ bool EventLoop::array_needsize(int need_cnt)
 	do {
 	    newcnt += (newcnt >> 1) + 16;
 	}while(need_cnt > newcnt);
+
         struct ANFD* tempadfds = (struct ANFD*)realloc(anfds, sizeof(struct ANFD)*newcnt);
 	if(tempadfds == NULL) {
 	    return false;
@@ -259,6 +260,7 @@ bool EventLoop::array_needsize(int need_cnt)
 	if(tempevents == NULL) {
 	    return false;
 	}
+
 	events = tempevents;
 	
 	fprintf(stdin, "relloc %ld for epoll_event array\n", sizeof(struct epoll_event)*newcnt);
