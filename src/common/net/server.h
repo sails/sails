@@ -48,15 +48,16 @@ public:
 template<typename T>
 class Server {
 private:
-    Server(int port, int connector_timeout);
+    Server();
 public:
+    ~Server();
     static Server* getInstance() {
 	if (Server<T>::pInstance_ == 0) {
-	    Server<T>::pInstance_ = new Server(Server::port, Server::connector_timeout);
+	    Server<T>::pInstance_ = new Server();
 	}
 	return Server<T>::pInstance_;
     }
-    void init();
+    void init(int port=8000, int connector_timeout=10, int work_thread_num=4, int hanle_request_queue_size=1000);
     void set_parser_cb(PARSER_CB<T> cb);
     void set_handle_cb(HANDLE_CB<T> cb);
 
@@ -76,17 +77,14 @@ private:
     static void event_stop_cb(common::event* ev);
     static void delete_connector_cb(common::net::Connector<T>* connector);
 
-public:
-    static int port;
-    static int connector_timeout;
-    static int work_thread_num;
-    static int hanle_request_queue_size;
 private:
     static Server<T>* pInstance_;
     int listenfd;
-    EventLoop ev_loop;
-    ConnectorTimeout<T> connect_timer;
-    log::Logger log;
+    EventLoop* ev_loop;
+    ConnectorTimeout<T>* connect_timer;
+    int work_thread_num;
+    int hanle_request_queue_size;
+    log::Logger *log;
     long drop_packet_num;
 };
 
@@ -100,23 +98,13 @@ private:
 
 template<typename T>
 Server<T>* Server<T>::pInstance_ = 0;
-template<typename T>
-int Server<T>::port = 8000;
-template<typename T>
-int Server<T>::connector_timeout = 10;
-template<typename T>
-int Server<T>::work_thread_num = 4;
-template<typename T>
-int Server<T>::hanle_request_queue_size = 1000;
 
 
 template<typename T>
-Server<T>::Server(int port, int connector_timeout):
-    ev_loop(),
-    connect_timer(connector_timeout),
-    log(common::log::Logger::LOG_LEVEL_DEBUG,
-			"./log/sails.log", common::log::Logger::SPLIT_DAY){
-    this->port = port;
+Server<T>::Server()
+{
+    this->work_thread_num = 0;
+    this->hanle_request_queue_size = 0;
     this->listenfd = 0;
     this->parser_cb = 0;
     this->handle_cb = 0;
@@ -124,10 +112,27 @@ Server<T>::Server(int port, int connector_timeout):
 }
 
 template<typename T>
-void Server<T>::init() {
+Server<T>::~Server() {
+    delete ev_loop;
+    this->ev_loop = NULL;
+    delete connect_timer;
+    this->connect_timer = NULL;
+    delete log;
+    this->log = NULL;
+}
 
-    ev_loop.init();
-    connect_timer.init(&ev_loop);
+template<typename T>
+void Server<T>::init(int port, int connector_timeout, int work_thread_num, int hanle_request_queue_size) {
+
+    this->work_thread_num = work_thread_num;
+    this->hanle_request_queue_size = hanle_request_queue_size;
+    log = new log::Logger(common::log::Logger::LOG_LEVEL_DEBUG,
+			  "./log/sails.log", common::log::Logger::SPLIT_DAY);
+	
+    ev_loop = new EventLoop();
+    ev_loop->init();
+    connect_timer = new ConnectorTimeout<T>(connector_timeout);
+    connect_timer->init(ev_loop);
     
     if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	perror("create listen socket");
@@ -160,7 +165,7 @@ void Server<T>::init() {
     listen_ev.events = sails::common::EventLoop::Event_READ;
     listen_ev.cb = Server::accept_socket;
 
-    if(!ev_loop.event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
+    if(!ev_loop->event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
 				&listen_ev)) {
 	fprintf(stderr, "add listen fd to event loop fail");
         exit(EXIT_FAILURE);
@@ -180,16 +185,15 @@ void Server<T>::set_handle_cb(HANDLE_CB<T>  cb) {
 
 template<typename T>
 void Server<T>::start() {
-    ev_loop.start_loop();
+    ev_loop->start_loop();
 }
 
 template<typename T>
 void Server<T>::stop() {
-    ev_loop.stop_loop();
-    printf("on exit\n");
-    exit(EXIT_SUCCESS);
-
+    ev_loop->stop_loop();
 }
+
+
 
 
 template<typename T>
@@ -219,14 +223,14 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 	connector->set_invalid_msg_cb(NULL);
 	connector->set_close_cb(Server::close_cb);
 	connector->set_timeout_cb(Server::timeout_cb);
-	Server::getInstance()->connect_timer.update_connector_time(connector);
+	Server::getInstance()->connect_timer->update_connector_time(connector);
 
 
 	common::net::ConnectorAdapter<T>* connectorAdapter= new common::net::ConnectorAdapter<T>(connector);
 	
 	ev.data = connectorAdapter;
 	ev.stop_cb = event_stop_cb;
-	if(!Server::getInstance()->ev_loop.event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
+	if(!Server::getInstance()->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 	    //do noting, connector delete will close fd
 	}
 
@@ -260,7 +264,7 @@ void Server<T>::read_data(common::event* ev, int revents) {
 
     }else {
 	
-	Server::getInstance()->connect_timer.update_connector_time(connector);// update timeout
+	Server::getInstance()->connect_timer->update_connector_time(connector);// update timeout
 	connector->parser();
 	if (! connector->isClosed()) {
 	    T *packet = NULL;
@@ -271,7 +275,7 @@ void Server<T>::read_data(common::event* ev, int revents) {
 		param->packet = packet;
 		param->conn_fd = connfd;
 		// use thread pool to handle request
-		static common::ThreadPool parser_pool(Server::work_thread_num, Server::hanle_request_queue_size);	
+		static common::ThreadPool parser_pool(Server::getInstance()->work_thread_num, Server::getInstance()->hanle_request_queue_size);	
 		common::ThreadPoolTask task;
 		task.fun = Server::handle;
 		task.argument = param;
@@ -316,7 +320,7 @@ void Server<T>::timeout_cb(common::net::Connector<T> *connector) {
 
 template<typename T>
 void Server<T>::close_cb(common::net::Connector<T> *connector) {
-    Server::getInstance()->ev_loop.event_stop(connector->get_connector_fd());
+    Server::getInstance()->ev_loop->event_stop(connector->get_connector_fd());
 }
 
 template<typename T>

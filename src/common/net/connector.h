@@ -428,7 +428,6 @@ template<typename T>
 ConnectorTimerEntry<T>::~ConnectorTimerEntry() {
     if(this->connector.use_count() > 0) {
 	// close fd and delete connector
-	printf("connector use count:%ld\n", connector.use_count());
 	this->connector.lock()->set_timeout();
     }
 }
