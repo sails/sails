@@ -24,7 +24,7 @@ namespace net {
 template<typename T> class Connector;
 
 template<typename T> using PARSER_CB = T* (*)(Connector<T> *connector);
-template<typename T> using INVALID_MSG_CB = void (*)(Connector<T> *connector);
+
 template<typename T> using DELETE_CB = void (*)(Connector<T> *connector);
 
 template<typename T> using TIMEOUT_CB = void (*)(Connector<T> *connector);
@@ -67,8 +67,7 @@ public:
     bool haveSetTimer();
     
     void set_parser_cb(PARSER_CB<T> parser_cb);
-    void set_invalid_msg_cb(INVALID_MSG_CB<T> cb);
-    INVALID_MSG_CB<T> get_invalid_msg_cb();
+
     void set_delete_cb(DELETE_CB<T> cb);
     void set_timeout_cb(TIMEOUT_CB<T> cb);
     void set_close_cb(CLOSE_CB<T> close_cb);
@@ -84,7 +83,6 @@ protected:
     PARSER_CB<T> parser_cb;
     void push_recv_list(T *packet);
     std::list<T *> recv_list;
-    INVALID_MSG_CB<T> invalid_msg_cb;
     DELETE_CB<T> delete_cb;
     TIMEOUT_CB<T> timeout_cb;
     CLOSE_CB<T> close_cb;
@@ -162,7 +160,6 @@ private:
 template<typename T>
 Connector<T>::Connector(int conn_fd) {
     parser_cb = NULL;
-    invalid_msg_cb = NULL;
     delete_cb = NULL;
     timeout_cb = NULL;
     close_cb = NULL;
@@ -176,7 +173,6 @@ Connector<T>::Connector(int conn_fd) {
 template<typename T>
 Connector<T>::Connector() {
     parser_cb = NULL;
-    invalid_msg_cb = NULL;
     delete_cb = NULL;
     timeout_cb = NULL;
     close_cb = NULL;
@@ -245,17 +241,6 @@ int Connector<T>::get_connector_fd() {
 template<typename T>
 void Connector<T>::set_parser_cb(PARSER_CB<T> parser_cb) {
     this->parser_cb = parser_cb;
-}
-
-template<typename T>
-void Connector<T>::set_invalid_msg_cb(INVALID_MSG_CB<T> cb)
-{
-    this->invalid_msg_cb = cb;
-}
-
-template<typename T>
-INVALID_MSG_CB<T> Connector<T>::get_invalid_msg_cb() {
-    return this->invalid_msg_cb;
 }
 
 template<typename T>

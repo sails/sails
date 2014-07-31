@@ -14,6 +14,13 @@ Timer::Timer(EventLoop *ev_loop, int tick) {
     this->tick = tick;
     this->ev_loop = ev_loop;
     this->data = NULL;
+    self_evloop = 0;
+}
+
+Timer::Timer(int tick) {
+    this->tick = tick;
+    this->data = data;
+    self_evloop = 0;
 }
 
 bool Timer::init(ExpiryAction action, void *data, int when=1) {
@@ -36,6 +43,12 @@ bool Timer::init(ExpiryAction action, void *data, int when=1) {
     ev.data = this;
     ev.stop_cb = NULL;
     ev.next = NULL;
+
+    if (ev_loop == NULL) {
+	ev_loop = new EventLoop();
+	ev_loop->init();
+	self_evloop = 1;
+    }
 
     if(!ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 	printf("timerfd:%d\n", timerfd);
@@ -75,6 +88,10 @@ Timer::~Timer() {
     if(timerfd > 0) {
 	close(timerfd);
 	timerfd = 0;
+    }
+    if (self_evloop > 0) {
+	ev_loop->stop_loop();
+	delete ev_loop;
     }
     ev_loop = NULL;
     action = NULL;

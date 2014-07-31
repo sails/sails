@@ -220,7 +220,6 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 	std::shared_ptr<common::net::Connector<T>> connector (new common::net::Connector<T>(connfd));
 	connector->set_parser_cb(Server::getInstance()->parser_cb);
         connector->set_delete_cb(Server::delete_connector_cb);
-	connector->set_invalid_msg_cb(NULL);
 	connector->set_close_cb(Server::close_cb);
 	connector->set_timeout_cb(Server::timeout_cb);
 	Server::getInstance()->connect_timer->update_connector_time(connector);

@@ -13,6 +13,7 @@ class Timer {
 public:
     // set tick to zero, the timer expires just once
     Timer(EventLoop *ev_loop,  int tick = 1);
+    Timer(int tick);
     ~Timer();
     // set when to zero disarms the timer
     bool init(ExpiryAction action, void *data, int when);
@@ -26,6 +27,7 @@ private:
     int timerfd;
     struct itimerspec *new_value;
     EventLoop *ev_loop;
+    int self_evloop;
     ExpiryAction action;
     void *data;
     char temp_data[50];

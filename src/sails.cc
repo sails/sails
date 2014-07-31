@@ -81,9 +81,6 @@ common::net::PacketCommon* parser_cb(
     if (packet->type.opcode >= common::net::PACKET_MAX
 	|| packet->type.opcode <= common::net::PACKET_MIN) { // error, and empty all data
 	connector->retrieve(connector->readable());
-	if (connector->get_invalid_msg_cb() != NULL) {
-	    connector->get_invalid_msg_cb()(connector);
-	}
 	return NULL;
     }
 
