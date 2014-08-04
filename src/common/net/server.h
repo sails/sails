@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <memory>
 #include <thread>
+#include <list>
 #include <common/base/util.h>
 #include <common/base/string.h>
 #include <common/base/thread_pool.h>
@@ -30,7 +31,7 @@ const int MAX_EVENTS = 1000;
 
 template<typename T> class Server;
 template<typename T> using HANDLE_CB = void (*)(std::shared_ptr<common::net::Connector<T>> connector, T *message);
-template<typename T> using ACCEPTAFTER_CB = void (*)(std::shared_ptr<common::net::Connector<T>> connector);
+template<typename T> using ACCEPTAFTER_CB = void (*)(std::shared_ptr<common::net::Connector<T>> connector, struct sockaddr_in &local);
 template<typename T>
 class ConnectionnHandleParam {
 public:
@@ -61,6 +62,9 @@ public:
     void set_accept_after_cb(ACCEPTAFTER_CB<T> cb);
     void set_parser_cb(PARSER_CB<T> cb);
     void set_handle_cb(HANDLE_CB<T> cb);
+    void set_connector_close_cb(CLOSE_CB<T> cb);
+
+    void addTimer(ExpiryAction action, void *data, int when, int tick=1);
 
     void start();
     void stop();
@@ -72,7 +76,10 @@ private:
     ACCEPTAFTER_CB<T> accept_after_cb;
     PARSER_CB<T> parser_cb;
     HANDLE_CB<T> handle_cb;
+    CLOSE_CB<T> connector_close_cb;
+
     static void handle(void *message);
+    
     
     static void timeout_cb(common::net::Connector<T> *connector);
     static void close_cb(common::net::Connector<T> *connector);
@@ -88,6 +95,7 @@ private:
     int hanle_request_queue_size;
     log::Logger *log;
     long drop_packet_num;
+    std::list<Timer*> timerList;
 };
 
 
@@ -111,6 +119,7 @@ Server<T>::Server()
     this->accept_after_cb = 0;
     this->parser_cb = 0;
     this->handle_cb = 0;
+    this->connector_close_cb = 0;
     this->drop_packet_num = 0;
 }
 
@@ -122,6 +131,11 @@ Server<T>::~Server() {
     this->connect_timer = NULL;
     delete log;
     this->log = NULL;
+    while(!timerList.empty()) {
+	Timer* timer = timerList.front();
+	timerList.pop_front();
+	delete timer;
+    }
 }
 
 template<typename T>
@@ -188,8 +202,20 @@ void Server<T>::set_parser_cb(PARSER_CB<T> cb) {
 }
 
 template<typename T>
+void Server<T>::set_connector_close_cb(CLOSE_CB<T> cb) {
+    this->connector_close_cb = cb;
+}
+
+template<typename T>
 void Server<T>::set_handle_cb(HANDLE_CB<T>  cb) {
     this->handle_cb = cb;
+}
+
+template<typename T>
+void Server<T>::addTimer(ExpiryAction action, void *data, int when, int tick) {
+    Timer* timer = new Timer(this->ev_loop, tick);
+    timer->init(action, data, when);
+    this->timerList.push_back(timer);
 }
 
 template<typename T>
@@ -242,7 +268,7 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 	    //do noting, connector delete will close fd
 	}
 	if (Server::getInstance()->accept_after_cb != NULL) {
-	    Server::getInstance()->accept_after_cb(connector);
+	    Server::getInstance()->accept_after_cb(connector, local);
 	}
     }
 }
@@ -332,6 +358,11 @@ void Server<T>::timeout_cb(common::net::Connector<T> *connector) {
 template<typename T>
 void Server<T>::close_cb(common::net::Connector<T> *connector) {
     Server::getInstance()->ev_loop->event_stop(connector->get_connector_fd());
+    printf("close connector cb\n");
+    if (Server::getInstance()->connector_close_cb != 0) {
+	Server::getInstance()->connector_close_cb(connector);
+    }
+
 }
 
 template<typename T>

@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 {
     sails::sails_init(argc, argv);
     CommonServer* server = CommonServer::getInstance();
-    server->init();
+    server->init(config.get_listen_port(), 10, config.get_handle_thread_pool(), config.get_handle_request_queue_size());
     server->set_parser_cb(sails::parser_cb);
     server->set_handle_cb(sails::handle_fun);
     server->start();

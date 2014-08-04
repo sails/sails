@@ -341,12 +341,12 @@ void Connector<T>::parser() {
 
 template<typename T>
 void Connector<T>::push_recv_list(T *packet) {
-    if(recv_list.size() <= 20) {
+    if(recv_list.size() <= 50) {
 	recv_list.push_back(packet);
     }else {
 	char msg[100];
 	memset(msg, '\0', 100);
-	sprintf(msg, "connect fd %d unhandle recv list more than 20 and can't parser", connect_fd);
+	sprintf(msg, "connect fd %d unhandle recv list more than 50 and can't parser", connect_fd);
 	perror(msg);
     }
 }
