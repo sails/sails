@@ -236,39 +236,48 @@ void Server<T>::accept_socket(common::event* e, int revents) {
     if(revents & common::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
-	int connfd = accept(e->fd, 
-			    (struct sockaddr*)&local, 
-			    (socklen_t*)&addrlen);
-	if (connfd == -1) {
-	    perror("accept");
-	    exit(EXIT_FAILURE);
-	}
-	sails::common::setnonblocking(connfd);
 
-	sails::common::event ev;
-	emptyEvent(ev);
-	ev.fd = connfd;
-	ev.events = sails::common::EventLoop::Event_READ;
-	ev.cb = Server::read_data;
+	for (;;) {
+	    memset(&local, 0, addrlen);
 
-	// set timeout
-	std::shared_ptr<common::net::Connector<T>> connector (new common::net::Connector<T>(connfd));
-	connector->set_parser_cb(Server::getInstance()->parser_cb);
-        connector->set_delete_cb(Server::delete_connector_cb);
-	connector->set_close_cb(Server::close_cb);
-	connector->set_timeout_cb(Server::timeout_cb);
-	Server::getInstance()->connect_timer->update_connector_time(connector);
+	    int connfd = -1;
+	    do {
+	        connfd = accept(e->fd, 
+				(struct sockaddr*)&local, 
+				(socklen_t*)&addrlen);
+	    }while((connfd < 0) && (errno == EINTR));
+
+	    if (connfd > 0) {
+		sails::common::setnonblocking(connfd);
+
+		sails::common::event ev;
+		emptyEvent(ev);
+		ev.fd = connfd;
+		ev.events = sails::common::EventLoop::Event_READ;
+		ev.cb = Server::read_data;
+
+		// set timeout
+		std::shared_ptr<common::net::Connector<T>> connector (new common::net::Connector<T>(connfd));
+		connector->set_parser_cb(Server::getInstance()->parser_cb);
+		connector->set_delete_cb(Server::delete_connector_cb);
+		connector->set_close_cb(Server::close_cb);
+		connector->set_timeout_cb(Server::timeout_cb);
+		Server::getInstance()->connect_timer->update_connector_time(connector);
 
 
-	common::net::ConnectorAdapter<T>* connectorAdapter= new common::net::ConnectorAdapter<T>(connector);
+		common::net::ConnectorAdapter<T>* connectorAdapter= new common::net::ConnectorAdapter<T>(connector);
 	
-	ev.data = connectorAdapter;
-	ev.stop_cb = event_stop_cb;
-	if(!Server::getInstance()->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
-	    //do noting, connector delete will close fd
-	}
-	if (Server::getInstance()->accept_after_cb != NULL) {
-	    Server::getInstance()->accept_after_cb(connector, local);
+		ev.data = connectorAdapter;
+		ev.stop_cb = event_stop_cb;
+		if(!Server::getInstance()->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
+		    //do noting, connector delete will close fd
+		}
+		if (Server::getInstance()->accept_after_cb != NULL) {
+		    Server::getInstance()->accept_after_cb(connector, local);
+		}
+	    }else {
+		break;
+	    }
 	}
     }
 }
@@ -289,16 +298,47 @@ void Server<T>::read_data(common::event* ev, int revents) {
 	return;
     }
 
-    int n = connector->read();
+    bool readerror = false;
 
-    if(n == 0 || n == -1) { // n=0: client close or shutdown send
-	// n=-1: recv signal_pending before read data
-	perror("read connfd");
+    // read nonblock connfd
+    for(;;) {
+	int lasterror = 0;
+	int n = 0;
+	do {
+	    n = connector->read();
+	    lasterror = errno;
+	}while((n == -1) && (lasterror == EINTR)); // The  call  was interrupted by a signal before any data was read
+	
+
+	if (n > 0) {
+	    continue;
+	}else if (n == 0) { // client close or shutdown send, and there is no error,  errno will not reset, so don't print errno
+	    readerror = true;
+	     char errormsg[100];
+	    memset(errormsg, '\0', 100);
+	    sprintf(errormsg, "read connfd %d, return:%d", connfd, n);
+	    perror(errormsg);
+	    break;
+	}else if (n == -1) {
+	    if (lasterror == EAGAIN || lasterror == EWOULDBLOCK) { // no data
+		break;
+	    }else { // read fault
+		readerror = true;
+		char errormsg[100];
+		memset(errormsg, '\0', 100);
+		sprintf(errormsg, "read connfd %d, return:%d, errno:%d", connfd, n, lasterror);
+		perror(errormsg);
+		break;
+	    }
+	}
+    }
+    if (readerror) {
 	if (!connector->isClosed()) {
 	    connector->close();
 	}
+    }
 
-    }else {
+    else {
 	
 	Server::getInstance()->connect_timer->update_connector_time(connector);// update timeout
 	connector->parser();

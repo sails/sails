@@ -1,0 +1,4 @@
+2014-07-16 13:47:33 29 [debug]:get room infor:{"status": 0, "message": {"users": [{"username": null, "session": "f8a3871887cff694631d5bd10f292efb", "lag": null}, {"username": "2854289", "session": "f063d10dd0853b350dd29eb97460202c", "lag": "-1"}, {"username": "2854289", "session": "bfc5c3257c8079716d1b9b9fe6ac3646", "lag": "-1"}, {"username": "2854289", "session": "d8321db024d8f58a6e03fddbe78e92f6", "lag": "-1"}], "ip": "192.168.1.121", "game": "9100075", "roomid": "1", "port": "27312", "usercount": 4}}
+2014-07-16 13:47:33 29 [debug]:ip:192.168.1.121
+2014-07-16 13:47:33 29 [debug]:port:27312
+2014-07-16 13:47:33 29 [debug]:usercount:4
