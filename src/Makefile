@@ -1,8 +1,7 @@
-HTTP_PARSER 		= ../deps/http-parser
 JSON_CPP		= ../deps/json-cpp
 PROTOBUF		= ../deps/protobuf
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../lib
-INCLUDE			= -I$(HTTP_PARSER) -I$(JSON_CPP)/include -I$(PROTOBUF)/src -I./
+CFLAGS			= -std=c++11 -O0 -g -L../lib
+INCLUDE			= -I$(JSON_CPP)/include -I$(PROTOBUF)/src -I./
 
 INSTALL_PATH		= ../dist
 
@@ -27,17 +26,6 @@ sails:$(OBJECTS)
 	g++ -MM $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
-
-
-########################client library###################################
-
-clientcc=client_rpc_channel.cc client_rpc_controller.cc
-libclient.so:$(clientcc)
-	g++ -shared $(CFLAGS) $(INCLUDE) -fPIC -o libclient.so $(clientcc) -Wl,--whole-archive  -lsails -Wl,--no-whole-archive  -lprotobuf -lhttp_parser
-	mv libclient.so ../lib/libclient.so
-
-########################client library###################################
-
 
 clean:
 	rm *.o *.d
