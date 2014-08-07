@@ -3,7 +3,7 @@ PROTOBUF		= ../../deps/protobuf
 JSON_CPP		= ../../deps/json-cpp
 SRC=../../src
 CFLAGS=-std=c++11 -O0 -g
-INCLUDE=-I$(SRC) -I$(HTTP_PARSER) -I$(PROTOBUF)/src  -I$(JSON_CPP)/include
+INCLUDE=-I$(SRC) -I$(SRC)/client/cc -I$(HTTP_PARSER) -I$(PROTOBUF)/src  -I$(JSON_CPP)/include
 LIBPATH=../../lib
 
 client: client.o ping.pb.o

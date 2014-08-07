@@ -301,7 +301,7 @@ int Connector<T>::read() {
     this->fd_lock.lock();
     int read_count = 0;
     if (!is_closed && this->connect_fd > 0) {
-	char tmp[65536] = {'\0'};
+	char tmp[512] = {'\0'};
 	read_count = ::read(this->connect_fd, tmp, 65536);
 	if(read_count > 0) {
 	    this->in_buf.append(tmp, read_count);
