@@ -7,13 +7,13 @@
 namespace sails {
 
 
-class HandleRPC : public common::Handle<common::net::PacketCommon*, common::net::PacketCommon*>
+class HandleRPC : public common::Handle<common::net::PacketCommon*, common::net::ResponseContent*>
 {
 public:
     void do_handle(common::net::PacketCommon* request, 
-		   common::net::PacketCommon* response, 
-		   common::HandleChain<common::net::PacketCommon*, common::net::PacketCommon*> *chain);
-    void decode_protobuf(common::net::PacketRPC *brequest, common::net::PacketRPC *response, common::HandleChain<common::net::PacketCommon *, common::net::PacketCommon *> *chain);
+		   common::net::ResponseContent* response, 
+		   common::HandleChain<common::net::PacketCommon*, common::net::ResponseContent*> *chain);
+    void decode_protobuf(common::net::PacketRPC *brequest, common::net::ResponseContent *response, common::HandleChain<common::net::PacketCommon *, common::net::ResponseContent *> *chain);
     ~HandleRPC();
 };
 

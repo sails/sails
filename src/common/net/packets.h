@@ -41,6 +41,14 @@ typedef struct
     char data[1];
 } __attribute__((packed)) PacketRPC;
 
+
+
+
+typedef struct {
+    int len;
+    char *data;
+} ResponseContent ;
+
 } // namespace net
 } // namespace common
 } // namespace sails

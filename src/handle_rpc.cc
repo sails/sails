@@ -13,20 +13,20 @@ using namespace google::protobuf;
 namespace sails {
 
 void HandleRPC::do_handle(common::net::PacketCommon *request, 
-			      common::net::PacketCommon *response, 
-			      common::HandleChain<common::net::PacketCommon *, common::net::PacketCommon *> *chain)
+			      common::net::ResponseContent *response, 
+			      common::HandleChain<common::net::PacketCommon *, common::net::ResponseContent *> *chain)
 {
     if(request != NULL) {
 	if (request->type.opcode == common::net::PACKET_PROTOBUF_CALL ||
 	    request->type.opcode == common::net::PACKET_PROTOBUF_RET) {
 	    decode_protobuf((common::net::PacketRPC*)request, 
-			    (common::net::PacketRPC*)response, chain);
+			    (common::net::ResponseContent*)response, chain);
 	}
 	chain->do_handle(request, response);
     }
 }
 
-void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::PacketRPC *response, common::HandleChain<common::net::PacketCommon *, common::net::PacketCommon *> *chain)
+void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::ResponseContent *response, common::HandleChain<common::net::PacketCommon *, common::net::ResponseContent *> *chain)
 {
     string service_name(request->service_name);
     string method_name(request->method_name);
@@ -49,13 +49,12 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Pa
 	    string response_content = response_mg->SerializeAsString();
 
 	    const char* data = response_content.c_str();
+	    int len = response_content.length();
 
-	    int len = sizeof(common::net::PacketRPC)+response_content.length()-1;
-	    response->common.type.opcode = common::net::PACKET_PROTOBUF_RET;
+	    response->len = len;
+	    char *data_str = (char *)malloc(len);
+	    memcpy(data_str, data, len);
 
-	    response->common.len = len;
-	    memcpy(response->data, data, response_content.length());
-//	    cout << "response:" << response_content << endl;
 	    delete request_msg;
 	    delete response_mg;
 	}

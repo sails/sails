@@ -116,31 +116,34 @@ common::net::PacketCommon* parser_cb(
 
 }
 
-
-
 void handle_fun(std::shared_ptr<common::net::Connector<common::net::PacketCommon>> connector, common::net::PacketCommon *message) {
 
     int connfd = connector->get_connector_fd();
     common::net::PacketCommon *request = message;
 
-    int response_len = sizeof(common::net::PacketRPC)+2048;
-    common::net::PacketCommon *response = (common::net::PacketCommon*)malloc(response_len);
-    memset(response, 0, response_len);
+    common::net::ResponseContent content;
+    memset(&content, 0, sizeof(common::net::ResponseContent));
 
     common::HandleChain<common::net::PacketCommon*, 
-			common::net::PacketCommon*> handle_chain;
+		        common::net::ResponseContent*> handle_chain;
     HandleRPC proto_decode;
     handle_chain.add_handle(&proto_decode);
 
-    handle_chain.do_handle(request, response);
+    handle_chain.do_handle(request, &content);
 
-    if(response != NULL) {
-	// out put
-	int n = write(connfd, response, response->len);
+    if (content.len > 0 && content.data != NULL) {
+	int response_len = sizeof(common::net::PacketRPC)+content.len-1;
+	common::net::PacketRPC *response = (common::net::PacketRPC*)malloc(response_len);
+	memset(response, 0, response_len);
+	response->common.type.opcode = common::net::PACKET_PROTOBUF_RET;
+	response->common.len = response_len;
+	memcpy(response->data, content.data, content.len);
+
+	int n = write(connfd, response, response->common.len);
+	free(response);
     }
 
 
-    free(response);
 }
 
 } // namespace sails
