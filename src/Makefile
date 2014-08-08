@@ -1,6 +1,6 @@
 JSON_CPP		= ../deps/json-cpp
 PROTOBUF		= ../deps/protobuf
-CFLAGS			= -std=c++11 -O0 -g -L../lib
+CFLAGS			= -std=c++11 -O0 -g -L../lib -L./
 INCLUDE			= -I$(JSON_CPP)/include -I$(PROTOBUF)/src -I./
 
 INSTALL_PATH		= ../dist
@@ -13,7 +13,7 @@ OBJECTS=sails.o \
 	config.o
 
 sails:$(OBJECTS)
-	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -lsails -pthread -lhttp_parser -lprotobuf -ldl -ljson-cpp  -lsails
+	g++ $(CFLAGS) -Wl,-rpath,../lib/ -o sails $(OBJECTS) -lsails -pthread -lhttp_parser -lprotobuf -ldl -ljson-cpp  -lsails -lprofiler
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

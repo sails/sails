@@ -4,6 +4,7 @@
 #include "module_load.h"
 #include "handle_rpc.h"
 #include <signal.h>
+#include <gperftools/profiler.h>
 
 using namespace sails;
 
@@ -27,12 +28,13 @@ int register_service() {
 }
 
 void sails_exit() {
+    ProfilerStop();
     modules.clear();
     ModuleLoad::unload();
     printf("on exit\n");
     CommonServer::getInstance()->stop();
     delete CommonServer::getInstance();
-    exit(EXIT_SUCCESS);
+//    exit(EXIT_SUCCESS);
 }
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
@@ -73,7 +75,6 @@ void sails_init(int argc, char *argv[]) {
 
 common::net::PacketCommon* parser_cb(
     common::net::Connector<common::net::PacketCommon> *connector) {
-    
     if (connector->readable() < sizeof(common::net::PacketCommon)) {
 	return NULL;
     }
@@ -83,7 +84,6 @@ common::net::PacketCommon* parser_cb(
 	connector->retrieve(connector->readable());
 	return NULL;
     }
-
     if (packet != NULL) {
 	int packetlen = packet->len;
 	if (packetlen < sizeof(common::net::PacketCommon)) {
@@ -116,6 +116,10 @@ common::net::PacketCommon* parser_cb(
 
 }
 
+
+common::HandleChain<common::net::PacketCommon*, 
+		    common::net::ResponseContent*> handle_chain;
+
 void handle_fun(std::shared_ptr<common::net::Connector<common::net::PacketCommon>> connector, common::net::PacketCommon *message) {
 
     int connfd = connector->get_connector_fd();
@@ -125,7 +129,7 @@ void handle_fun(std::shared_ptr<common::net::Connector<common::net::PacketCommon
     memset(&content, 0, sizeof(common::net::ResponseContent));
 
     common::HandleChain<common::net::PacketCommon*, 
-		        common::net::ResponseContent*> handle_chain;
+		    common::net::ResponseContent*> handle_chain;
     HandleRPC proto_decode;
     handle_chain.add_handle(&proto_decode);
 
@@ -138,7 +142,7 @@ void handle_fun(std::shared_ptr<common::net::Connector<common::net::PacketCommon
 	response->common.type.opcode = common::net::PACKET_PROTOBUF_RET;
 	response->common.len = response_len;
 	memcpy(response->data, content.data, content.len);
-
+	
 	int n = write(connfd, response, response->common.len);
 	free(response);
     }
@@ -157,6 +161,8 @@ int main(int argc, char *argv[])
     server->init(config.get_listen_port(), 10, config.get_handle_thread_pool(), config.get_handle_request_queue_size());
     server->set_parser_cb(sails::parser_cb);
     server->set_handle_cb(sails::handle_fun);
+    ProfilerStart("sails.prof");
     server->start();
+    printf("end\n");
     return 0;
 }

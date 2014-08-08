@@ -23,16 +23,16 @@ int main(int argc, char *argv[])
     PingService::Stub stub(&channel);
 
     PingMessage request;
-    PingMessage response;
     
     // get time
     struct timeval t1;
     gettimeofday(&t1, NULL);
     request.set_time(t1.tv_sec*1000+int(t1.tv_usec/1000));
     for (int i = 0; i < 100000; i++) {
+	PingMessage response;
 	Closure* callback = NewCallback(&DoneCallback, &response);
 	stub.ping(&controller, &request, &response, callback);
-//	std::cout << response.DebugString() << std::endl;
+	std::cout << response.DebugString() << std::endl;
     }    
 
     google::protobuf::ShutdownProtobufLibrary();

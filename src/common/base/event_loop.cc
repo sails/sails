@@ -194,8 +194,11 @@ void EventLoop::start_loop() {
     while(!stop) {
 	int nfds = epoll_wait(epollfd, events, max_events, -1);
 	if(nfds == -1) {
-	    perror("start_loop, epoll wait");
-	    exit(EXIT_FAILURE);
+	    perror("epoll wait");
+	    if (errno == EINTR) {
+		continue;
+	    }
+	    break;
 	}
 	for(int n = 0; n < nfds; ++n) {
 	    int fd = events[n].data.fd;

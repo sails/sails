@@ -54,7 +54,7 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Re
 	    response->len = len;
 	    char *data_str = (char *)malloc(len);
 	    memcpy(data_str, data, len);
-
+	    response->data = data_str;
 	    delete request_msg;
 	    delete response_mg;
 	}
