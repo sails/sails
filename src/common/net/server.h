@@ -92,29 +92,6 @@ private:
 };
 
 
-template<typename T>
-class ServerAdapter {
-public:
-    ServerAdapter(std::shared_ptr<Server<T>> server);
-    std::shared_ptr<Server<T>> getServer();
-private:
-    std::shared_ptr<Server<T>> server;
-};
-
-template<typename T>
-ServerAdapter<T>::ServerAdapter(std::shared_ptr<Server<T>> server) {
-    this->server = server;
-}
-
-template<typename T>
-std::shared_ptr<Server<T>> ServerAdapter<T>::getServer() {
-    return this->server;    
-}
-
-
-
-
-
 
 
 template<typename T>
@@ -188,7 +165,11 @@ void Server<T>::init(int port, int connector_timeout, int work_thread_num, int h
     listen_ev.fd = listenfd;
     listen_ev.events = sails::common::EventLoop::Event_READ;
     listen_ev.cb = Server::accept_socket;
-    ServerAdapter<T>* serverAdapter = new ServerAdapter<T>(std::shared_ptr<Server<T>>(this));
+
+    SharedPtrAdapter<Server<T>>* serverAdapter = (SharedPtrAdapter<Server<T>> *)malloc( sizeof(SharedPtrAdapter<Server<T>>) );
+    memset(serverAdapter, 0, sizeof(SharedPtrAdapter<Server<T>>));
+    serverAdapter->ptr = std::shared_ptr<Server<T>>(this);
+
     listen_ev.data = serverAdapter;
 
     if(!ev_loop->event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
@@ -245,8 +226,8 @@ void Server<T>::accept_socket(common::event* e, int revents) {
     if(revents & common::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
-	ServerAdapter<T>* serverAdapter = (ServerAdapter<T>*)e->data;
-	std::shared_ptr<Server<T>> server = serverAdapter->getServer();
+        SharedPtrAdapter<Server<T>>* serverAdapter = (SharedPtrAdapter<Server<T>>*)e->data;
+	std::shared_ptr<Server<T>> server = serverAdapter->ptr;
 	for (;;) {
 	    memset(&local, 0, addrlen);
 
@@ -276,7 +257,10 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 	        server->connect_timer->update_connector_time(connector);
 
 
-		common::net::ConnectorAdapter<T>* connectorAdapter= new common::net::ConnectorAdapter<T>(connector);
+		SharedPtrAdapter<Connector<T>>* connectorAdapter
+		    = (SharedPtrAdapter<Connector<T>> *)malloc(sizeof(SharedPtrAdapter<Connector<T>>));
+		memset(connectorAdapter, 0, sizeof(SharedPtrAdapter<Connector<T>>));
+		connectorAdapter->ptr = connector;
 	
 		ev.data = connectorAdapter;
 		ev.stop_cb = event_stop_cb;
@@ -300,8 +284,8 @@ void Server<T>::read_data(common::event* ev, int revents) {
 	return;
     }
     int connfd = ev->fd;
-    common::net::ConnectorAdapter<T>* connectorAdapter = (common::net::ConnectorAdapter<T>*)ev->data;
-    std::shared_ptr<common::net::Connector<T>> connector = connectorAdapter->getConnector();
+    common::net::SharedPtrAdapter<common::net::Connector<T>>* connectorAdapter = (common::net::SharedPtrAdapter<common::net::Connector<T>>*)ev->data;
+    std::shared_ptr<common::net::Connector<T>> connector = connectorAdapter->ptr;
 
 
     if (connector == NULL || connector.use_count() <= 0) {
@@ -418,7 +402,7 @@ void Server<T>::close_cb(common::net::Connector<T> *connector) {
 template<typename T>
 void Server<T>::event_stop_cb(common::event* ev) {
     if (ev->data != NULL) {
-	delete (common::net::ConnectorAdapter<T>*)ev->data;
+	free(ev->data);
         ev->data = NULL;
     }
 }

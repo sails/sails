@@ -104,13 +104,9 @@ private:
 
 // for some callback with void *data can hold shared_ptr<>
 template<typename T>
-class ConnectorAdapter {
-public:
-    ConnectorAdapter(std::shared_ptr<Connector<T>> connector);
-    std::shared_ptr<Connector<T>> getConnector();
-private:
-    std::shared_ptr<Connector<T>> connector;
-};
+struct SharedPtrAdapter {
+    std::shared_ptr<T> ptr;
+} ;
 
 
 template<typename T>
@@ -405,18 +401,6 @@ int Connector<T>::send() {
     this->fd_lock.unlock();
     return ret;
 
-}
-
-
-
-template<typename T>
-ConnectorAdapter<T>::ConnectorAdapter(std::shared_ptr<Connector<T>> connector) {
-    this->connector = connector;
-}
-
-template<typename T>
-std::shared_ptr<Connector<T>> ConnectorAdapter<T>::getConnector() {
-    return this->connector;
 }
 
 
