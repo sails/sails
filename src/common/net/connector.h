@@ -21,6 +21,7 @@ namespace sails {
 namespace common {
 namespace net {
 
+template<typename T> class Server;
 template<typename T> class Connector;
 
 template<typename T> using PARSER_CB = T* (*)(Connector<T> *connector);
@@ -32,6 +33,7 @@ template<typename T> using CLOSE_CB = void (*)(Connector<T> *connector);
 
 template<typename T> class ConnectorTimerEntry;
 template<typename T> class ConnectorTimeout;
+
 
 template<typename T>
 class Connector {
@@ -60,6 +62,9 @@ public:
     int get_connector_fd();
     T* get_next_packet();
 
+    std::shared_ptr<Server<T>> getServer();
+    void setServer(std::shared_ptr<Server<T>>);
+
     void set_timeout();
     bool timeout();
     void setTimerEntry(std::weak_ptr<ConnectorTimerEntry<T>> entry);
@@ -87,12 +92,14 @@ protected:
     TIMEOUT_CB<T> timeout_cb;
     CLOSE_CB<T> close_cb;
 private:
+    std::shared_ptr<Server<T>> server;
     bool is_closed;
     bool is_timeout;
     bool has_set_timer;
     std::weak_ptr<ConnectorTimerEntry<T>> timer_entry;
 
 };
+
 
 
 // for some callback with void *data can hold shared_ptr<>
@@ -159,6 +166,7 @@ private:
 
 template<typename T>
 Connector<T>::Connector(int conn_fd) {
+    server = NULL;
     parser_cb = NULL;
     delete_cb = NULL;
     timeout_cb = NULL;
@@ -172,6 +180,7 @@ Connector<T>::Connector(int conn_fd) {
 
 template<typename T>
 Connector<T>::Connector() {
+    server = NULL;
     parser_cb = NULL;
     delete_cb = NULL;
     timeout_cb = NULL;
@@ -218,6 +227,16 @@ bool Connector<T>::connect(const char *ip, uint16_t port, bool keepalive) {
     }
 
     return true;
+}
+
+template<typename T>
+std::shared_ptr<Server<T>> Connector<T>::getServer() {
+    return this->server;
+}
+
+template<typename T>
+void Connector<T>::setServer(std::shared_ptr<Server<T>> server) {
+    this->server = server;
 }
 
 template<typename T>

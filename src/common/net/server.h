@@ -48,16 +48,10 @@ public:
 
 template<typename T>
 class Server {
-private:
-    Server();
 public:
+    Server();
     ~Server();
-    static Server* getInstance() {
-	if (Server<T>::pInstance_ == 0) {
-	    Server<T>::pInstance_ = new Server();
-	}
-	return Server<T>::pInstance_;
-    }
+
     void init(int port=8000, int connector_timeout=10, int work_thread_num=4, int hanle_request_queue_size=1000);
     void set_accept_after_cb(ACCEPTAFTER_CB<T> cb);
     void set_parser_cb(PARSER_CB<T> cb);
@@ -87,7 +81,6 @@ private:
     static void delete_connector_cb(common::net::Connector<T>* connector);
 
 private:
-    static Server<T>* pInstance_;
     int listenfd;
     EventLoop* ev_loop;
     ConnectorTimeout<T>* connect_timer;
@@ -99,15 +92,29 @@ private:
 };
 
 
-
-
-
-
-
-
+template<typename T>
+class ServerAdapter {
+public:
+    ServerAdapter(std::shared_ptr<Server<T>> server);
+    std::shared_ptr<Server<T>> getServer();
+private:
+    std::shared_ptr<Server<T>> server;
+};
 
 template<typename T>
-Server<T>* Server<T>::pInstance_ = 0;
+ServerAdapter<T>::ServerAdapter(std::shared_ptr<Server<T>> server) {
+    this->server = server;
+}
+
+template<typename T>
+std::shared_ptr<Server<T>> ServerAdapter<T>::getServer() {
+    return this->server;    
+}
+
+
+
+
+
 
 
 template<typename T>
@@ -181,6 +188,8 @@ void Server<T>::init(int port, int connector_timeout, int work_thread_num, int h
     listen_ev.fd = listenfd;
     listen_ev.events = sails::common::EventLoop::Event_READ;
     listen_ev.cb = Server::accept_socket;
+    ServerAdapter<T>* serverAdapter = new ServerAdapter<T>(std::shared_ptr<Server<T>>(this));
+    listen_ev.data = serverAdapter;
 
     if(!ev_loop->event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
 				&listen_ev)) {
@@ -236,7 +245,8 @@ void Server<T>::accept_socket(common::event* e, int revents) {
     if(revents & common::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
-
+	ServerAdapter<T>* serverAdapter = (ServerAdapter<T>*)e->data;
+	std::shared_ptr<Server<T>> server = serverAdapter->getServer();
 	for (;;) {
 	    memset(&local, 0, addrlen);
 
@@ -258,22 +268,23 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 
 		// set timeout
 		std::shared_ptr<common::net::Connector<T>> connector (new common::net::Connector<T>(connfd));
-		connector->set_parser_cb(Server::getInstance()->parser_cb);
+		connector->setServer(server);
+		connector->set_parser_cb(server->parser_cb);
 		connector->set_delete_cb(Server::delete_connector_cb);
 		connector->set_close_cb(Server::close_cb);
 		connector->set_timeout_cb(Server::timeout_cb);
-		Server::getInstance()->connect_timer->update_connector_time(connector);
+	        server->connect_timer->update_connector_time(connector);
 
 
 		common::net::ConnectorAdapter<T>* connectorAdapter= new common::net::ConnectorAdapter<T>(connector);
 	
 		ev.data = connectorAdapter;
 		ev.stop_cb = event_stop_cb;
-		if(!Server::getInstance()->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
+		if(!server->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 		    //do noting, connector delete will close fd
 		}
-		if (Server::getInstance()->accept_after_cb != NULL) {
-		    Server::getInstance()->accept_after_cb(connector, local);
+		if (server->accept_after_cb != NULL) {
+		    server->accept_after_cb(connector, local);
 		}
 	    }else {
 		break;
@@ -290,7 +301,6 @@ void Server<T>::read_data(common::event* ev, int revents) {
     }
     int connfd = ev->fd;
     common::net::ConnectorAdapter<T>* connectorAdapter = (common::net::ConnectorAdapter<T>*)ev->data;
-    
     std::shared_ptr<common::net::Connector<T>> connector = connectorAdapter->getConnector();
 
 
@@ -340,7 +350,7 @@ void Server<T>::read_data(common::event* ev, int revents) {
 
     else {
 	
-	Server::getInstance()->connect_timer->update_connector_time(connector);// update timeout
+        connector->getServer()->connect_timer->update_connector_time(connector);// update timeout
 	connector->parser();
 	if (! connector->isClosed()) {
 	    T *packet = NULL;
@@ -351,12 +361,12 @@ void Server<T>::read_data(common::event* ev, int revents) {
 		param->packet = packet;
 		param->conn_fd = connfd;
 		// use thread pool to handle request
-		static common::ThreadPool parser_pool(Server::getInstance()->work_thread_num, Server::getInstance()->hanle_request_queue_size);	
+		static common::ThreadPool parser_pool(connector->getServer()->work_thread_num, connector->getServer()->hanle_request_queue_size);	
 		common::ThreadPoolTask task;
 		task.fun = Server::handle;
 		task.argument = param;
 		if (parser_pool.add_task(task) == -1) {
-		    Server<T>::getInstance()->drop_packet_num++;
+		    connector->getServer()->drop_packet_num++;
 		}else {
 		}
 	    }
@@ -370,12 +380,12 @@ template<typename T>
 void Server<T>::handle(void* message) {
     ConnectionnHandleParam<T> *param = NULL;
     param = (ConnectionnHandleParam<T> *)message;
-	
+    
     if (param != NULL){
-	if (Server::getInstance() != NULL && Server::getInstance()->handle_cb != NULL) {
-	    std::shared_ptr<common::net::Connector<T>> connector = param->connector;
+	std::shared_ptr<common::net::Connector<T>> connector = param->connector;
+	if (connector->getServer() != NULL && connector->getServer()->handle_cb != NULL) {
 	    T * msg = param->packet;
-	    Server::getInstance()->handle_cb(connector, msg);
+	    connector->getServer()->handle_cb(connector, msg);
 	    free(msg);
 	}
 
@@ -397,10 +407,10 @@ void Server<T>::timeout_cb(common::net::Connector<T> *connector) {
 
 template<typename T>
 void Server<T>::close_cb(common::net::Connector<T> *connector) {
-    Server::getInstance()->ev_loop->event_stop(connector->get_connector_fd());
+    connector->getServer()->ev_loop->event_stop(connector->get_connector_fd());
     printf("close connector cb\n");
-    if (Server::getInstance()->connector_close_cb != 0) {
-	Server::getInstance()->connector_close_cb(connector);
+    if (connector->getServer()->connector_close_cb != 0) {
+        connector->getServer()->connector_close_cb(connector);
     }
 
 }
@@ -425,13 +435,3 @@ void Server<T>::delete_connector_cb(common::net::Connector<T>* connector) {
 } // namepsace sails
 
 #endif /* SERVER_H */
-
-
-
-
-
-
-
-
-
-

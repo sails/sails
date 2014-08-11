@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	PingMessage response;
 	Closure* callback = NewCallback(&DoneCallback, &response);
 	stub.ping(&controller, &request, &response, callback);
-	std::cout << response.DebugString() << std::endl;
+//	std::cout << response.DebugString() << std::endl;
     }    
 
     google::protobuf::ShutdownProtobufLibrary();
