@@ -11,7 +11,7 @@ typedef struct {
 
 
 typedef sails::common::net::Server<EchoStruct> CommonServer;
-
+CommonServer server;
 
 
 
@@ -50,11 +50,11 @@ void handle_fun(std::shared_ptr<common::net::Connector<EchoStruct>> connector, E
 
 int main(int argc, char *argv[])
 {
-    CommonServer* server = CommonServer::getInstance();
-    server->init();
-    server->set_parser_cb(parser);
-    server->set_handle_cb(handle_fun);
-    server->start();
+    server.init(); //default listen 8000 port
+    server.set_parser_cb(parser);
+    server.set_handle_cb(handle_fun);
+    server.start();
+
     return 0;
 }
 
