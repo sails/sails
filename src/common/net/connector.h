@@ -82,6 +82,8 @@ public:
 
 
     void *data;
+
+    void push_recv_list(T *packet);
 protected:
     sails::common::Buffer in_buf;
     sails::common::Buffer out_buf;
@@ -89,7 +91,6 @@ protected:
     std::mutex fd_lock;
 
     PARSER_CB<T> parser_cb;
-    void push_recv_list(T *packet);
     std::list<T *> recv_list;
     DELETE_CB<T> delete_cb;
     TIMEOUT_CB<T> timeout_cb;
@@ -285,15 +286,18 @@ void Connector<T>::set_close_cb(CLOSE_CB<T> close_cb)
 template<typename T>
 void Connector<T>::close()
 {
-    this->fd_lock.lock();
-    if (!is_closed && this->connect_fd > 0) {
-	::close(this->connect_fd);
+    if (!is_closed) {
 	is_closed = true;
-	if (close_cb != NULL) {
-	    close_cb(this);
+	this->fd_lock.lock();
+	if (this->connect_fd > 0) {
+	    ::close(this->connect_fd);
+	    if (close_cb != NULL) {
+		close_cb(this);
+	    }
 	}
+	this->fd_lock.unlock();
     }
-    this->fd_lock.unlock();
+
 }
 
 template<typename T>

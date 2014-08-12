@@ -52,7 +52,7 @@ public:
     Server();
     ~Server();
 
-    void init(int port=8000, int connector_timeout=10, int work_thread_num=4, int hanle_request_queue_size=1000);
+    void init(int port=8000, int connector_timeout=10, int work_thread_num=4, int hanle_request_queue_size=1000, int message_type=1);
     void set_accept_after_cb(ACCEPTAFTER_CB<T> cb);
     void set_parser_cb(PARSER_CB<T> cb);
     void set_handle_cb(HANDLE_CB<T> cb);
@@ -92,6 +92,7 @@ private:
     log::Logger *log;
     long drop_packet_num;
     std::list<Timer*> timerList;
+    int message_type; // 1:struct, 2:class
 };
 
 
@@ -108,6 +109,7 @@ Server<T>::Server()
     this->handle_cb = 0;
     this->connector_close_cb = 0;
     this->drop_packet_num = 0;
+    this->message_type = 1;
 }
 
 template<typename T>
@@ -126,9 +128,10 @@ Server<T>::~Server() {
 }
 
 template<typename T>
-void Server<T>::init(int port, int connector_timeout, int work_thread_num, int hanle_request_queue_size) {
+void Server<T>::init(int port, int connector_timeout, int work_thread_num, int hanle_request_queue_size, int message_type) {
 
     this->work_thread_num = work_thread_num;
+    this->message_type = message_type;
     this->hanle_request_queue_size = hanle_request_queue_size;
     log = new log::Logger(common::log::Logger::LOG_LEVEL_DEBUG,
 			  "./log/sails.log", common::log::Logger::SPLIT_DAY);
@@ -377,7 +380,12 @@ void Server<T>::handle(void* message) {
 	if (connector->getServer() != NULL && connector->getServer()->handle_cb != NULL) {
 	    T * msg = param->packet;
 	    connector->getServer()->handle_cb(connector, msg);
-	    free(msg);
+	    if (connector->getServer()->message_type == 1) {
+		free(msg);
+	    }else if (connector->getServer()->message_type ==  2) {
+		delete msg;
+	    }
+
 	}
 
         delete param;
@@ -409,6 +417,10 @@ template<typename T>
 void Server<T>::connector_event_stop_cb(common::event* ev) {
     if (ev->data != NULL) {
 	common::net::SharedPtrAdapter<common::net::Connector<T>>* connectorAdapter = (common::net::SharedPtrAdapter<common::net::Connector<T>>*)ev->data;
+	if (!connectorAdapter->ptr->isClosed()) {
+	    connectorAdapter->ptr->close();
+	}
+
 	delete connectorAdapter;
         ev->data = NULL;
     }
@@ -417,7 +429,6 @@ void Server<T>::connector_event_stop_cb(common::event* ev) {
 template<typename T>
 void Server<T>::listen_event_stop_cb(common::event* ev) {
     if (ev->data != NULL) {
-	printf("delete listen event\n");
         ev->data = NULL;
     }
 }
