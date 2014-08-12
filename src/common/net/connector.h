@@ -286,17 +286,14 @@ void Connector<T>::set_close_cb(CLOSE_CB<T> close_cb)
 template<typename T>
 void Connector<T>::close()
 {
-    if (!is_closed) {
-	is_closed = true; // can't inside lock, because is has to be used to prevent multiple calls in one thread
-	                  // connector.close -> close_cb -> event.stop-> event.stop_cb -> connector.close
+    if (!is_closed && this->connect_fd > 0) {
+	is_closed = true; // connector.close -> close_cb -> event.stop-> event.stop_cb -> connector.close
 	                  // if server don't close connector and receive SIGINT, will 
 	                  // call event.stop_all_even: event.stop_all ->event.stop -> event.stop_cb -> connector.close
 	this->fd_lock.lock();
-	if (this->connect_fd > 0) {
-	    ::close(this->connect_fd);
-	    if (close_cb != NULL) {
-		close_cb(this);
-	    }
+	::close(this->connect_fd);
+	if (close_cb != NULL) {
+	    close_cb(this);
 	}
 	this->fd_lock.unlock();
     }
