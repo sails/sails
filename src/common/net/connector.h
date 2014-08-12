@@ -21,6 +21,9 @@ namespace sails {
 namespace common {
 namespace net {
 
+
+#define READBYTES 512
+
 template<typename T> class Server;
 template<typename T> class Connector;
 
@@ -62,8 +65,8 @@ public:
     int get_connector_fd();
     T* get_next_packet();
 
-    std::shared_ptr<Server<T>> getServer();
-    void setServer(std::shared_ptr<Server<T>>);
+    Server<T>* getServer();
+    void setServer(Server<T>*);
 
     void set_timeout();
     bool timeout();
@@ -92,7 +95,7 @@ protected:
     TIMEOUT_CB<T> timeout_cb;
     CLOSE_CB<T> close_cb;
 private:
-    std::shared_ptr<Server<T>> server;
+    Server<T> *server;
     bool is_closed;
     bool is_timeout;
     bool has_set_timer;
@@ -104,7 +107,11 @@ private:
 
 // for some callback with void *data can hold shared_ptr<>
 template<typename T>
-struct SharedPtrAdapter {
+class SharedPtrAdapter {
+public:
+    ~SharedPtrAdapter() {
+	ptr = NULL;
+    }
     std::shared_ptr<T> ptr;
 } ;
 
@@ -189,7 +196,6 @@ Connector<T>::Connector() {
 
 template<typename T>
 Connector<T>::~Connector() {
-
     if (delete_cb != NULL) {
 	delete_cb(this);
     }
@@ -226,12 +232,12 @@ bool Connector<T>::connect(const char *ip, uint16_t port, bool keepalive) {
 }
 
 template<typename T>
-std::shared_ptr<Server<T>> Connector<T>::getServer() {
+Server<T>* Connector<T>::getServer() {
     return this->server;
 }
 
 template<typename T>
-void Connector<T>::setServer(std::shared_ptr<Server<T>> server) {
+void Connector<T>::setServer(Server<T>* server) {
     this->server = server;
 }
 
@@ -316,8 +322,8 @@ int Connector<T>::read() {
     this->fd_lock.lock();
     int read_count = 0;
     if (!is_closed && this->connect_fd > 0) {
-	char tmp[512] = {'\0'};
-	read_count = ::read(this->connect_fd, tmp, 65536);
+	char tmp[READBYTES] = {'\0'};
+	read_count = ::read(this->connect_fd, tmp, READBYTES);
 	if(read_count > 0) {
 	    this->in_buf.append(tmp, read_count);
 	}

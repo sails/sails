@@ -116,6 +116,13 @@ bool EventLoop::add_event(struct event*ev) {
     return true;
 }
 
+
+void EventLoop::delete_all_event() {
+    for (int i = 0; i < max_events; i++) {
+	event_stop(i);
+    }
+}
+
 bool EventLoop::delete_event(struct event* ev) {
     int fd = ev->fd;
     if(fd < 0 || fd > max_events) {

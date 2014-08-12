@@ -63,6 +63,8 @@ public:
     void start();
     void stop();
 
+    int getListenFd();
+
 private:
     static void accept_socket(common::event* e, int revents);
     static void read_data(common::event*, int revents);
@@ -77,7 +79,8 @@ private:
     
     static void timeout_cb(common::net::Connector<T> *connector);
     static void close_cb(common::net::Connector<T> *connector);
-    static void event_stop_cb(common::event* ev);
+    static void connector_event_stop_cb(common::event* ev);
+    static void listen_event_stop_cb(common::event* ev);
     static void delete_connector_cb(common::net::Connector<T>* connector);
 
 private:
@@ -165,12 +168,9 @@ void Server<T>::init(int port, int connector_timeout, int work_thread_num, int h
     listen_ev.fd = listenfd;
     listen_ev.events = sails::common::EventLoop::Event_READ;
     listen_ev.cb = Server::accept_socket;
+    listen_ev.stop_cb = listen_event_stop_cb;
 
-    SharedPtrAdapter<Server<T>>* serverAdapter = (SharedPtrAdapter<Server<T>> *)malloc( sizeof(SharedPtrAdapter<Server<T>>) );
-    memset(serverAdapter, 0, sizeof(SharedPtrAdapter<Server<T>>));
-    serverAdapter->ptr = std::shared_ptr<Server<T>>(this);
-
-    listen_ev.data = serverAdapter;
+    listen_ev.data = this;
 
     if(!ev_loop->event_ctl(sails::common::EventLoop::EVENT_CTL_ADD,
 				&listen_ev)) {
@@ -216,8 +216,13 @@ void Server<T>::start() {
 template<typename T>
 void Server<T>::stop() {
     ev_loop->stop_loop();
+    ev_loop->delete_all_event();
 }
 
+template<typename T>
+int Server<T>::getListenFd() {
+    return this->listenfd;
+}
 
 
 
@@ -226,8 +231,7 @@ void Server<T>::accept_socket(common::event* e, int revents) {
     if(revents & common::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
-        SharedPtrAdapter<Server<T>>* serverAdapter = (SharedPtrAdapter<Server<T>>*)e->data;
-	std::shared_ptr<Server<T>> server = serverAdapter->ptr;
+        Server* server = (Server*)e->data;
 	for (;;) {
 	    memset(&local, 0, addrlen);
 
@@ -257,13 +261,11 @@ void Server<T>::accept_socket(common::event* e, int revents) {
 	        server->connect_timer->update_connector_time(connector);
 
 
-		SharedPtrAdapter<Connector<T>>* connectorAdapter
-		    = (SharedPtrAdapter<Connector<T>> *)malloc(sizeof(SharedPtrAdapter<Connector<T>>));
-		memset(connectorAdapter, 0, sizeof(SharedPtrAdapter<Connector<T>>));
+		SharedPtrAdapter<Connector<T>>* connectorAdapter = new SharedPtrAdapter<Connector<T>>();
 		connectorAdapter->ptr = connector;
-	
+
 		ev.data = connectorAdapter;
-		ev.stop_cb = event_stop_cb;
+		ev.stop_cb = connector_event_stop_cb;
 		if(!server->ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 		    //do noting, connector delete will close fd
 		}
@@ -305,7 +307,12 @@ void Server<T>::read_data(common::event* ev, int revents) {
 	
 
 	if (n > 0) {
-	    continue;
+	    if (n < READBYTES) { // no data
+		break;
+	    }else {
+		continue;
+	    }
+
 	}else if (n == 0) { // client close or shutdown send, and there is no error,  errno will not reset, so don't print errno
 	    readerror = true;
 	     char errormsg[100];
@@ -392,7 +399,6 @@ void Server<T>::timeout_cb(common::net::Connector<T> *connector) {
 template<typename T>
 void Server<T>::close_cb(common::net::Connector<T> *connector) {
     connector->getServer()->ev_loop->event_stop(connector->get_connector_fd());
-    printf("close connector cb\n");
     if (connector->getServer()->connector_close_cb != 0) {
         connector->getServer()->connector_close_cb(connector);
     }
@@ -400,12 +406,22 @@ void Server<T>::close_cb(common::net::Connector<T> *connector) {
 }
 
 template<typename T>
-void Server<T>::event_stop_cb(common::event* ev) {
+void Server<T>::connector_event_stop_cb(common::event* ev) {
     if (ev->data != NULL) {
-	free(ev->data);
+	common::net::SharedPtrAdapter<common::net::Connector<T>>* connectorAdapter = (common::net::SharedPtrAdapter<common::net::Connector<T>>*)ev->data;
+	delete connectorAdapter;
         ev->data = NULL;
     }
 }
+
+template<typename T>
+void Server<T>::listen_event_stop_cb(common::event* ev) {
+    if (ev->data != NULL) {
+	printf("delete listen event\n");
+        ev->data = NULL;
+    }
+}
+
 template<typename T>
 void Server<T>::delete_connector_cb(common::net::Connector<T>* connector) {
     printf("delete connector\n");

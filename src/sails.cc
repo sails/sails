@@ -29,12 +29,10 @@ int register_service() {
 }
 
 void sails_exit() {
-    ProfilerStop();
     modules.clear();
     ModuleLoad::unload();
     printf("on exit\n");
     rpcserver.stop();
-//    exit(EXIT_SUCCESS);
 }
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
@@ -162,6 +160,7 @@ int main(int argc, char *argv[])
     rpcserver.set_handle_cb(sails::handle_fun);
     ProfilerStart("sails.prof");
     rpcserver.start();
+    ProfilerStop();
     printf("end\n");
     return 0;
 }

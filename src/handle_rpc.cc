@@ -12,6 +12,8 @@ using namespace google::protobuf;
 
 namespace sails {
 
+thread_local char data_str[MAX_CONTENT_LEN];
+
 void HandleRPC::do_handle(common::net::PacketCommon *request, 
 			      common::net::ResponseContent *response, 
 			      common::HandleChain<common::net::PacketCommon *, common::net::ResponseContent *> *chain)
@@ -52,8 +54,7 @@ void HandleRPC::decode_protobuf(common::net::PacketRPC *request, common::net::Re
 	    int len = response_content.length();
 
 	    response->len = len;
-	    char *data_str = (char *)malloc(len);
-	    memcpy(data_str, data, len);
+	    memcpy(data_str, data, len);// don't need memset
 	    response->data = data_str;
 	    delete request_msg;
 	    delete response_mg;

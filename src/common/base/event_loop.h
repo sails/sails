@@ -48,6 +48,7 @@ public:
     bool event_stop(int fd);
     void start_loop();
     void stop_loop();
+    void delete_all_event();
 private:
     bool add_event(struct event*);
     bool delete_event(struct event*);

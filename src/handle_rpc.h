@@ -6,6 +6,7 @@
 
 namespace sails {
 
+#define MAX_CONTENT_LEN  1024
 
 class HandleRPC : public common::Handle<common::net::PacketCommon*, common::net::ResponseContent*>
 {
