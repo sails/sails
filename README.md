@@ -74,6 +74,7 @@ performance
 ===========
 
 test computer:
+--------------
 
 * cpu  :   T6400  @ 2.00GHz, cpu num:1, cpu cores:2
 
@@ -129,6 +130,7 @@ and in the server two thread to handle message, in this case will reach 9000 tps
 31000 tps
 
 test computer2:
+---------------
 
 * cpu  :   E5-2630  @ 2.30GHz, cpu cores:8
 
