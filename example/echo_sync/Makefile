@@ -6,7 +6,7 @@ INCLUDE=-I$(SRC) -I$(SRC)/client/cc -I$(HTTP_PARSER) -I$(PROTOBUF)/src
 LIBPATH=../../lib
 
 client: client.o addressbook.pb.o
-	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -pthread -lclient  -lprotobuf -lhttp_parser
+	g++ $(CFLAGS) -Wl,-rpath,$(LIBPATH) -L $(LIBPATH) client.o addressbook.pb.o -o client -L$(SRC) -pthread -lclient  -lprotobuf
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
