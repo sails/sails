@@ -1,6 +1,6 @@
-#include <common/net/server.h>
+//#include <common/net/server.h>
 #include <common/net/packets.h>
-
+#include <unistd.h>
 
 using namespace sails;
 
@@ -9,7 +9,7 @@ typedef struct {
     char msg[100];
 } __attribute__((packed)) EchoStruct;
 
-
+/*
 typedef sails::common::net::Server<EchoStruct> CommonServer;
 CommonServer server;
 
@@ -59,6 +59,39 @@ int main(int argc, char *argv[])
 }
 
 
+*/
+
+#include <common/net/net_thread.h>
+#include <common/net/epoll_server.h>
+
+int main(int argc, char *argv[])
+{
+    sails::common::net::EpollServer<EchoStruct> server;
+    server.createEpoll();
+    server.setEmptyConnTimeout(10);
+    server.bind(8000);
+    server.startNetThread();
+/*
+    sails::common::net::NetThread<EchoStruct> net_thread;
+    net_thread.create_event_loop();
+    net_thread.bind(8000);
+    net_thread.create_connector_timeout(10);
+    net_thread.run();
+
+
+
+    sails::common::net::NetThread<EchoStruct> net_thread1;
+    net_thread1.create_event_loop();
+    net_thread1.bind(8001);
+    net_thread1.create_connector_timeout(10);
+    net_thread1.run();
+*/
+    while(1) {
+	sleep(2);
+    }
+    server.stopNetThread();
+    return 0;
+}
 
 
 

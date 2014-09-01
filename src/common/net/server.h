@@ -58,8 +58,6 @@ public:
     void set_handle_cb(HANDLE_CB<T> cb);
     void set_connector_close_cb(CLOSE_CB<T> cb);
 
-    void addTimer(ExpiryAction action, void *data, int when, int tick=1);
-
     void start();
     void stop();
 
@@ -83,10 +81,10 @@ private:
     static void listen_event_stop_cb(common::event* ev);
     static void delete_connector_cb(common::net::Connector<T>* connector);
 
+    void addTimer(ExpiryAction action, void *data, int when, int tick=1);
 private:
-    int listenfd;
-    EventLoop* ev_loop;
-    ConnectorTimeout<T>* connect_timer;
+    NetThread<T> *net_thread;
+
     int work_thread_num;
     int hanle_request_queue_size;
     log::Logger *log;

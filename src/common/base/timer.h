@@ -20,7 +20,7 @@ public:
     bool disarms();
 public:
 
-    static void read_timerfd_data(common::event*, int revents);
+    static void read_timerfd_data(common::event*, int revents, void* owner);
     void pertick_processing();
 private:
     int tick;

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 namespace sails {
 namespace common {
@@ -11,16 +13,17 @@ namespace common {
 //const int EventLoop::INIT_EVENTS = 1000;
 
 void emptyEvent(struct event& ev) {
+    memset(&ev, 0, sizeof(struct event));
     ev.fd = 0;
     ev.events = 0;
     ev.cb = NULL;
     
-    ev.data = NULL;
+    ev.data.ptr = 0;
     ev.stop_cb = NULL;
     ev.next = NULL;
 }
 
-EventLoop::EventLoop() {
+EventLoop::EventLoop(void* owner) {
     events = (struct epoll_event*)malloc(sizeof(struct epoll_event)
 					 *INIT_EVENTS);
     anfds = (struct ANFD*)malloc(sizeof(struct ANFD)
@@ -28,6 +31,9 @@ EventLoop::EventLoop() {
     memset(anfds, 0, 1000*sizeof(struct ANFD));
     max_events = INIT_EVENTS;
     stop = false;
+    shutdownfd = socket(AF_INET, SOCK_STREAM, 0);
+    assert(shutdownfd>0);
+    this->owner = owner;
 }
 
 EventLoop::~EventLoop() {
@@ -53,6 +59,13 @@ void EventLoop::init() {
 	anfds[i].events = 0;
 	anfds[i].next = NULL;
     }
+
+    // shutdown epoll
+    struct epoll_event ev = {};
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.fd = shutdownfd;
+    assert(epoll_ctl(epollfd, EPOLL_CTL_ADD, shutdownfd, &ev) == 0);
+
 }
 bool EventLoop::add_event(struct event*ev) {
     if(ev->fd >= max_events) {
@@ -90,7 +103,7 @@ bool EventLoop::add_event(struct event*ev) {
 
     if(need_add_to_epoll) {
 	struct epoll_event epoll_ev = {};
-	short events = 0;
+        unsigned int events = 0;
 	epoll_ev.data.fd = ev->fd;
 	if(ev->events & Event_READ) {
 	    events = events | EPOLLIN | EPOLLET;
@@ -143,7 +156,7 @@ bool EventLoop::delete_event(struct event* ev) {
 		    isdelete = 1;
 		    cur = cur->next;
 		    if (pre->next->stop_cb != NULL) {
-			pre->next->stop_cb(pre->next);
+			pre->next->stop_cb(pre->next, owner);
 		    }
 		    free(pre->next);
 		    pre->next = cur;
@@ -168,6 +181,7 @@ bool EventLoop::delete_event(struct event* ev) {
     return true;
 }
 
+
 bool EventLoop::event_stop(int fd) {
     if(anfds[fd].isused == 1) {
 	anfds[fd].isused = 0;
@@ -178,7 +192,7 @@ bool EventLoop::event_stop(int fd) {
 	    pre = cur;
 	    cur = cur->next;
 	    if (pre->stop_cb != NULL) {
-		pre->stop_cb(pre);
+		pre->stop_cb(pre, owner);
 	    }
 	    free(pre);
 	    pre = NULL;
@@ -208,8 +222,13 @@ void EventLoop::start_loop() {
 	    }
 	    break;
 	}
+
+	//对于没有
 	for(int n = 0; n < nfds; ++n) {
 	    int fd = events[n].data.fd;
+	    if (shutdownfd == fd) { //因为fd未连接,所以会发生一个epollhup事件,因为fd是et模式,所以只会触发一次,由于没有设置stop flag,所以没有影响
+		continue;
+	    }
 	    if(anfds[fd].isused == 1) {
 		// find events for fd and callback
 		int ev = 0;
@@ -227,7 +246,13 @@ void EventLoop::start_loop() {
 
 void EventLoop::stop_loop() {
     stop = true;
-    
+    if (shutdownfd > 0) {
+	struct epoll_event epoll_ev = {};
+        unsigned int events = EPOLLOUT; //通知epoll wait醒来,只要fd可写,都会触发一次,也可以通过这种方法来通知发送队列中还有数据可写,达到类似条件变量的效果,但是优点是基于事件机制,不用线程阻塞.
+	epoll_ev.data.fd = shutdownfd;
+	epoll_ev.events = events;
+	epoll_ctl(epollfd, EPOLL_CTL_MOD, this->shutdownfd, &epoll_ev);
+    }
 }
 
 void EventLoop::process_event(int fd, int events) {
@@ -241,7 +266,7 @@ void EventLoop::process_event(int fd, int events) {
 	struct event* io_w = anfds[fd].next;
 	while(io_w != NULL && io_w->cb != NULL) {
 	    if(io_w->events & events && io_w->fd == fd) {
-		io_w->cb(io_w, io_w->events);
+		io_w->cb(io_w, io_w->events, owner);
 	    }
 	    if(anfds[fd].isused) { // call back may be delete
 		io_w = io_w->next;

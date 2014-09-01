@@ -1,7 +1,7 @@
 TOPDIR:=../
 
 TARGET := libcommon_net.a
-LOCAL_OBJ= http.o
+LOCAL_OBJ= http.o connector_list.o connector.o
 
 all : $(TARGET)
 

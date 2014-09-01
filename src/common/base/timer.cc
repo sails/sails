@@ -40,12 +40,12 @@ bool Timer::init(ExpiryAction action, void *data, int when=1) {
     ev.events = sails::common::EventLoop::Event_READ;
     ev.cb = sails::common::Timer::read_timerfd_data;
     
-    ev.data = this;
+    ev.data.ptr = this;
     ev.stop_cb = NULL;
     ev.next = NULL;
 
     if (ev_loop == NULL) {
-	ev_loop = new EventLoop();
+	ev_loop = new EventLoop(this);
 	ev_loop->init();
 	self_evloop = 1;
     }
@@ -69,9 +69,9 @@ bool Timer::disarms()
     }
 }
 
-void Timer::read_timerfd_data(common::event* ev, int revents)
+void Timer::read_timerfd_data(common::event* ev, int revents, void* owner)
 {
-    Timer *timer = (Timer*)ev->data;
+    Timer *timer = (Timer*)ev->data.ptr;
     if(timer != NULL) {
 	memset(timer->temp_data, '\0', 50);
 	int n = read(ev->fd, timer->temp_data, sizeof(uint64_t));
