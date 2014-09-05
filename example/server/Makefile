@@ -1,11 +1,20 @@
-INCLUDE			= -I../../src/
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../../lib
+CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../../lib -I./ -I../../src/
 
-main:main.o
-	g++  $(CFLAGS) -Wl,-rpath,../../lib/ -o main main.o -lsails -pthread -lprotobuf -ldl -ljson-cpp  -lsails
+OBJECTS = server.o
 
-test:test.o
-	g++  $(CFLAGS) -Wl,-rpath,../../lib/ -o test test.o -lsails -pthread -lprotobuf -ldl -ljson-cpp  -lsails
+server:$(OBJECTS)
+	g++  $(CFLAGS) -Wl,-rpath,../../lib/ -o server $(OBJECTS) -lsails -pthread -lprotobuf -ldl -ljson-cpp  -lsails
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
+
+-include $(OBJECTS:.o=.d) # $(OBJECTS.o=.d)replace all *.o to *.d
+
+%.d: %.cc
+	set -e; rm -f $@; \
+	g++ -MM $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+clean:
+	rm *.o *.d

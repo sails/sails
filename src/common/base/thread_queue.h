@@ -20,7 +20,7 @@ public:
     // 从头部获取数据, 没有数据则等待.
     // @param millsecond   阻塞等待时间(ms)
     //                     0 表示不阻塞  -1 永久等待
-    bool pop_front(T& t, size_t millsecond = 0);
+    bool pop_front(T& t, int millsecond = 0);
 
     // 通知等待在队列上面的线程都醒过来
     void notifyT();
@@ -41,20 +41,20 @@ public:
     // millsecond  阻塞等待时间(ms)
     //             0 表示不阻塞 -1 为则永久等待
     // 有数据返回true, 无数据返回false
-    bool swap(queue_type &q, size_t millsecond = 0);
+    bool swap(queue_type &q, int millisecond = 0);
 
     // 队列大小.
-    size_t size() const;
+    size_t size();
 
     // 清空队列
     void clear();
 
     // 是否数据为空.
-    bool empty() const;
+    bool empty();
 
     // 等待
     void wait(std::unique_lock<std::mutex>& locker);
-    bool timedWait(size_t millsecond, std::unique_lock<std::mutex>& locker);
+    bool timedWait(int millisecond, std::unique_lock<std::mutex>& locker);
 
 private:
     // 队列
@@ -62,7 +62,7 @@ private:
     // 队列大小
     size_t              _size;
     // 互斥量
-    std::mutex          mutex;
+    std::mutex          queue_mutex;
     std::condition_variable     notify;
     bool                isTerminate;
 };
@@ -75,8 +75,8 @@ template<typename T, typename D> void ThreadQueue<T, D>::wait(std::unique_lock<s
     }
 }
 
-template<typename T, typename D> bool ThreadQueue<T, D>:: timedWait(size_t millsecond, std::unique_lock<std::mutex>& locker) {
-    notify.wait(locker, std::chrono::duration<int, std::milli>(millsecond));
+template<typename T, typename D> bool ThreadQueue<T, D>:: timedWait(int millisecond, std::unique_lock<std::mutex>& locker) {
+    notify.wait_for(locker, std::chrono::milliseconds(millisecond));
     if (_queue.size() > 0) {
 	return true;
     }
@@ -84,22 +84,22 @@ template<typename T, typename D> bool ThreadQueue<T, D>:: timedWait(size_t mills
 }
 
 
-template<typename T, typename D> bool ThreadQueue<T, D>::pop_front(T& t, size_t millsecond)
+template<typename T, typename D> bool ThreadQueue<T, D>::pop_front(T& t, int millisecond)
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
     if (_queue.empty())
     {
-        if(millsecond == 0)
+        if(millisecond == 0)
         {
             return false;
         }
-        if(millsecond == (size_t)-1)
+        if(millisecond == (size_t)-1)
         {
 	    wait(locker);
         }
         else
         {
-	    timedWait(locker, millsecond);
+	    timedWait(millisecond, locker);
         }
     }
 
@@ -119,13 +119,13 @@ template<typename T, typename D> bool ThreadQueue<T, D>::pop_front(T& t, size_t 
 
 template<typename T, typename D> void ThreadQueue<T, D>::notifyT()
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
     this->notify.notify_all();
 }
 
 template<typename T, typename D> void ThreadQueue<T, D>::push_back(const T& t)
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
     this->notify.notify_one();
 
     _queue.push_back(t);
@@ -134,7 +134,7 @@ template<typename T, typename D> void ThreadQueue<T, D>::push_back(const T& t)
 
 template<typename T, typename D> void ThreadQueue<T, D>::push_back(const queue_type &qt)
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
 
     typename queue_type::const_iterator it = qt.begin();
     typename queue_type::const_iterator itEnd = qt.end();
@@ -149,7 +149,7 @@ template<typename T, typename D> void ThreadQueue<T, D>::push_back(const queue_t
 
 template<typename T, typename D> void ThreadQueue<T, D>::push_front(const T& t)
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
 
     this->notify.notify_one();
 
@@ -160,7 +160,7 @@ template<typename T, typename D> void ThreadQueue<T, D>::push_front(const T& t)
 
 template<typename T, typename D> void ThreadQueue<T, D>::push_front(const queue_type &qt)
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
 
     typename queue_type::const_iterator it = qt.begin();
     typename queue_type::const_iterator itEnd = qt.end();
@@ -174,24 +174,24 @@ template<typename T, typename D> void ThreadQueue<T, D>::push_front(const queue_
     }
 }
 
-template<typename T, typename D> bool ThreadQueue<T, D>::swap(queue_type &q, size_t millsecond)
+template<typename T, typename D> bool ThreadQueue<T, D>::swap(queue_type &q, int millisecond)
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
 
     if (_queue.empty())
     {
-        if(millsecond == 0)
+        if(millisecond == 0)
         {
             return false;
         }
-        if(millsecond == (size_t)-1)
+        if(millisecond == (size_t)-1)
         {
             wait(locker);
         }
         else
         {
             //超时了
-            if(!timedWait(millsecond, locker))
+            if(!timedWait(millisecond, locker))
             {
                 return false;
             }
@@ -209,23 +209,23 @@ template<typename T, typename D> bool ThreadQueue<T, D>::swap(queue_type &q, siz
     return true;
 }
 
-template<typename T, typename D> size_t ThreadQueue<T, D>::size() const
+template<typename T, typename D> size_t ThreadQueue<T, D>::size()
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
     //return _queue.size();
     return _size;
 }
 
 template<typename T, typename D> void ThreadQueue<T, D>::clear()
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
     _queue.clear();
     _size = 0;
 }
 
-template<typename T, typename D> bool ThreadQueue<T, D>::empty() const
+template<typename T, typename D> bool ThreadQueue<T, D>::empty() 
 {
-    std::unique_lock<std::mutex> locker(mutex);
+    std::unique_lock<std::mutex> locker(queue_mutex);
     return _queue.empty();
 }
 

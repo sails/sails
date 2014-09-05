@@ -40,13 +40,13 @@ private:
     Connector& operator=(const Connector&);
 
 public:
-    bool connect(const char *ip, uint16_t port, bool keepalive);
+    bool connect(const char* ip, uint16_t port, bool keepalive);
     int read();
     const char* peek();
     void retrieve(int len);
     int readable();
 
-    int write(char* data, int len);
+    int write(const char* data, int len);
     int send();
 
     void close();

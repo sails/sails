@@ -2,7 +2,12 @@
 #define EPOLL_SERVER_H
 
 #include <common/base/thread_queue.h>
+#include <common/net/handle_thread.h>
 #include <common/net/net_thread.h>
+#include <common/net/dispatcher_thread.h>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 namespace sails {
 namespace common {
@@ -11,15 +16,7 @@ namespace net {
 template<typename T>
 class EpollServer {
 public:
-    ////////////////////////////////////////////////////////////////////////////
 
-
-    typedef ThreadQueue<TagRecvData*, std::deque<TagRecvData*>> recv_queue;
-    typedef ThreadQueue<TagSendData*, std::deque<TagSendData*>> send_queue;
-    typedef recv_queue::queue_type recv_queue_type;
-
-    ////////////////////////////////////////////////////////////////////////////
-    
     // 构造函数
     EpollServer(unsigned int NetThreadNum = 1);
     
@@ -43,26 +40,76 @@ public:
 
     // 关闭连接
     void close(int uid);
+
+    // 增加连接
+    void addConnector(std::shared_ptr<common::net::Connector> connector, int fd);
     
+    // 选择网络线程
+    NetThread<T>* getNetThreadOfFd(int fd) {
+	return netThreads[fd % netThreads.size()];
+    }
+    
+    void parseImp(std::shared_ptr<common::net::Connector> connector);
     // 解析数据包
-    virtual void parse() {
-	printf(" need implement parser method in subclass\n");}
+    virtual T* parse(std::shared_ptr<common::net::Connector> connector) {
+	printf(" need implement parser method in subclass\n");
+    }
+
     
-    // 处理队列中的数据包
-    void handle();
+    bool add_handle(HandleThread<T> *handle);
+
+    // 开始运行处理线程
+    bool startHandleThread();
+
+    // 分发线程等待数据
+    void dipacher_wait();
+
+    // 通知分发线程有数据
+    void notify_dispacher();
+
+    // 得到接收队列个数,用于dispacher线程循环的从队列中得到数据
+    int getRecvQueueNum();
+
+    // 得到接收到的数据数
+    size_t getRecvDataNum();
+
+    // 从io线程队列中得到数据包,用于dispacher线程
+    // index指io线程的标志
+    TagRecvData<T>* getRecvPacket(int index);
+
+    // 处理线程数
+    int getHandleNum() {
+	return handleThreads.size();
+    }
+
+    // 向处理线程中加入消息
+    void addHandleData(TagRecvData<T>*data, int handleIndex);
+    
 
     // 发送数据
-    void send(const std::string &s, const std::string &ip, uint16_t port, int uid);
+    void send(const std::string &s, const std::string &ip, uint16_t port, int uid, int fd);
 
     void process_pipe(common::event* e, int revents);
+
+    friend class HandleThread<T>;
+
 private:
 
     // 网络线程
     std::vector<NetThread<T>*> netThreads;
+    
+    // 逻辑处理线程
+    std::vector<HandleThread<T>*> handleThreads;
 
+    // 消息分发线程
+    DispatcherThread<T>* dispacher_thread;
 
     // 网络线程数目
     unsigned int netThreadNum;
+
+    // io线程将数据入队时通过dispacher线程分发
+    std::mutex dispacher_mutex;
+    std::condition_variable dispacher_notify;
 
     // 服务是否停止
     bool bTerminate;
@@ -90,6 +137,7 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
 	NetThread<T> *netThread = new NetThread<T>(this);
 	netThreads.push_back(netThread);
     }
+    bTerminate = true;
 }
 
 
@@ -139,14 +187,101 @@ bool EpollServer<T>::stopNetThread() {
 
 
 template<typename T>
+void EpollServer<T>::addConnector(std::shared_ptr<common::net::Connector> connector, int fd) {
+    NetThread<T>* netThread = getNetThreadOfFd(fd);
+    netThread->add_connector(connector);
+}
+
+
+template<typename T>
 void EpollServer<T>::process_pipe(common::event* e, int revents) {
     char buf[100]= {'\0'};
     read(e->fd, buf, 100);
     printf("get a pile msg :%s\n", buf);
 }
 
+template<typename T>
+void EpollServer<T>::parseImp(std::shared_ptr<common::net::Connector> connector) {
+    T* packet = NULL;
+    while((packet = this->parse(connector)) != NULL) {
+	TagRecvData<T>* data = new TagRecvData<T>();
+	data->uid = connector->getId();
+	data->data = packet;
+	data->ip = connector->getIp();
+	data->port= connector->getPort();
+	data->fd = connector->get_connector_fd();
+	
+	NetThread<T>* netThread = getNetThreadOfFd(connector->get_connector_fd());
+        netThread->addRecvList(data);
+    }
+}
+
+template<typename T>
+bool EpollServer<T>::add_handle(HandleThread<T> *handle) {
+    handleThreads.push_back(handle);
+}
+
+template<typename T>
+bool EpollServer<T>::startHandleThread() {
+    for (HandleThread<T> *handle : handleThreads) {
+	handle->run();
+    }
+    dispacher_thread = new DispatcherThread<T>(this);
+    dispacher_thread->run();
+}
+
+template<typename T>
+void EpollServer<T>::addHandleData(TagRecvData<T>*data, int handleIndex) {
+    handleThreads[handleIndex]->addForHandle(data);
+}
 
 
+template<typename T>
+void EpollServer<T>::dipacher_wait() {
+    std::unique_lock<std::mutex> locker(dispacher_mutex);
+    size_t dataSize = 0;
+    while(dataSize == 0 && bTerminate) {
+        dispacher_notify.wait(locker);
+	dataSize = getRecvDataNum();
+    }
+}
+
+
+template<typename T>
+void EpollServer<T>::notify_dispacher() {
+    std::unique_lock<std::mutex> locker(dispacher_mutex);
+    dispacher_notify.notify_one();
+}
+
+template<typename T>
+int EpollServer<T>::getRecvQueueNum() {
+    return netThreads.size();
+}
+
+
+template<typename T>
+size_t EpollServer<T>::getRecvDataNum() {
+    size_t num = 0;
+    for (int i = 0; i < netThreads.size(); i++) {
+	num = num + netThreads[i]->get_recvqueue_size();
+    }
+    return num;
+}
+
+template<typename T>
+TagRecvData<T>* EpollServer<T>::getRecvPacket(int index) {
+    TagRecvData<T> *data = NULL;
+    if (netThreads.size() >= index) {	
+        netThreads[index]->getRecvData(data, 0); //不阻塞
+    }
+    return data;
+}
+
+template<typename T>
+void EpollServer<T>::send(const std::string &s, const std::string &ip, uint16_t port, int uid, int fd) {
+    NetThread<T>* netThread = getNetThreadOfFd(fd);
+    netThread->send(ip, port,uid, s);
+}
 
 } // net
 } // common

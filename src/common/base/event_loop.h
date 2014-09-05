@@ -39,14 +39,12 @@ public:
     static const int INIT_EVENTS = 1000;
     enum OperatorType {
 	EVENT_CTL_ADD = 1,
-	EVENT_CTL_DEL = 2
+	EVENT_CTL_DEL = 2,
+	EVENT_CTL_MOD = 3
     };
     enum Events {
 	Event_READ = 1,
 	Event_WRITE = 2
-    };
-    enum EventsData {
-	
     };
 
     EventLoop(void *owner);
@@ -60,9 +58,9 @@ public:
     void delete_all_event();
 private:
     void *owner;
-    bool add_event(struct event*);
-    bool delete_event(struct event*);
-    bool mod_event(struct event*);
+    bool add_event(struct event*, bool ctl_epoll = true);
+    bool delete_event(struct event*, bool ctl_epoll = true);
+    bool mod_event(struct event*, bool ctl_epoll = true);
     void process_event(int fd, int events);
     bool array_needsize(int need_cnt);
     void init_events(int start, int count);

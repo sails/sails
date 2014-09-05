@@ -67,7 +67,7 @@ void EventLoop::init() {
     assert(epoll_ctl(epollfd, EPOLL_CTL_ADD, shutdownfd, &ev) == 0);
 
 }
-bool EventLoop::add_event(struct event*ev) {
+bool EventLoop::add_event(struct event*ev, bool ctl_epoll) {
     if(ev->fd >= max_events) {
 	// malloc new events and anfds
 	if(!array_needsize(ev->fd+1)) {
@@ -101,7 +101,7 @@ bool EventLoop::add_event(struct event*ev) {
 	anfds[fd].next = e;
     }
 
-    if(need_add_to_epoll) {
+    if(need_add_to_epoll && ctl_epoll) {
 	struct epoll_event epoll_ev = {};
         unsigned int events = 0;
 	epoll_ev.data.fd = ev->fd;
@@ -109,7 +109,7 @@ bool EventLoop::add_event(struct event*ev) {
 	    events = events | EPOLLIN | EPOLLET;
 	}
 	if(ev->events & Event_WRITE) {
-	    events = events | EPOLLOUT;
+	    events = events | EPOLLOUT | EPOLLET;
 	}
 	epoll_ev.events = events;
 	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, ev->fd, &epoll_ev) == -1) {
@@ -136,7 +136,7 @@ void EventLoop::delete_all_event() {
     }
 }
 
-bool EventLoop::delete_event(struct event* ev) {
+bool EventLoop::delete_event(struct event* ev, bool ctl_epoll) {
     int fd = ev->fd;
     if(fd < 0 || fd > max_events) {
 	return false;
@@ -177,8 +177,75 @@ bool EventLoop::delete_event(struct event* ev) {
 		    anfds[fd].next = temp;
 		}
 	}
+	if (ctl_epoll) {
+	    // delete from epoll
+	    struct epoll_event epoll_ev = {};
+	    unsigned int events = 0;
+	    epoll_ev.data.fd = ev->fd;
+	    if(ev->events & Event_READ) {
+		events = events | EPOLLIN | EPOLLET;
+	    }
+	    if(ev->events & Event_WRITE) {
+		events = events | EPOLLOUT | EPOLLET;
+	    }
+	    epoll_ev.events = events;
+	    if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &epoll_ev) == -1)
+	    {
+		perror("delete event from epoll");
+	    }
+	}
     }
     return true;
+}
+
+
+bool EventLoop::mod_event(struct event*ev, bool ctl_epoll) {
+    // 删除fd上绑定的所有struct event事件,然后再绑定新的事件,修改epoll event
+    int fd = ev->fd;
+    if (fd < 0 || fd > max_events) {
+	return false;
+    }
+
+    
+    if(anfds[fd].isused == 1) {
+	anfds[fd].isused = 0;
+	// detele event list
+	struct event* cur = anfds[fd].next;
+	struct event* pre = NULL;
+	while(cur != NULL) {
+	    pre = cur;
+	    cur = cur->next;
+	    if (pre->stop_cb != NULL) {
+		pre->stop_cb(pre, owner);
+	    }
+	    free(pre);
+	    pre = NULL;
+	}
+	// add a new event
+	if(add_event(ev, false)) {
+	    if (ctl_epoll) {
+		// delete from epoll
+		struct epoll_event epoll_ev = {};
+		unsigned int events = 0;
+		epoll_ev.data.fd = ev->fd;
+		if(ev->events & Event_READ) {
+		    events = events | EPOLLIN | EPOLLET;
+		}
+		if(ev->events & Event_WRITE) {
+		    events = events | EPOLLOUT | EPOLLET;
+		}
+		epoll_ev.events = events;
+		if (epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &epoll_ev) == -1)
+		{
+		    perror("in mod_event call epoll_ctl with EPOLL_CTL_MOD");
+		}
+	    }
+	}else {
+	    perror("in mod event call add event");
+	}
+	
+    }
+
 }
 
 
@@ -198,6 +265,11 @@ bool EventLoop::event_stop(int fd) {
 	    pre = NULL;
 	}
     }
+    // delete all epoll event
+    if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL)) {
+	perror("event stop and delete fd from epoll");
+    }
+
     return true;
 }
 
@@ -207,9 +279,13 @@ bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
 	return this->add_event(ev);
     }else if(op == EventLoop::EVENT_CTL_DEL) {
 	return this->delete_event(ev);
+    }else if(op == EventLoop::EVENT_CTL_MOD) {
+	return this->mod_event(ev);
+    }else {
+	perror("event_ctl can't know the value of op");
     }
     
-    return true;
+    return false;
 }
 
 void EventLoop::start_loop() {

@@ -181,7 +181,7 @@ void Connector::parser() {
 }
 
  
-int Connector::write(char* data, int len) {
+int Connector::write(const char* data, int len) {
     int ret = 0;
     if(len > 0 && data != NULL) {
 	out_buf.append(data, len);
@@ -201,6 +201,8 @@ int Connector::send() {
 		this->out_buf.retrieve(ret);
 	    }
 	}
+    }else {
+	this->out_buf.retrieve_all();
     }
     return ret;
 

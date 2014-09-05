@@ -1,6 +1,6 @@
 JSON_CPP		= ../deps/json-cpp
 PROTOBUF		= ../deps/protobuf
-CFLAGS			= -std=c++11 -O0 -g -L../lib -L./
+CFLAGS			= -std=c++11 -O0 -g -L../lib -L./ 
 INCLUDE			= -I$(JSON_CPP)/include -I$(PROTOBUF)/src -I./
 
 INSTALL_PATH		= ../dist
@@ -23,7 +23,7 @@ sails:$(OBJECTS)
 
 %.d: %.cc
 	set -e; rm -f $@; \
-	g++ -MM $(CFLAGS) $< > $@.$$$$; \
+	g++ -MM $(CFLAGS) $(INCLUDE) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 

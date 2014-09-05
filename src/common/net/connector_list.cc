@@ -37,10 +37,12 @@ void ConnectorList::init(uint32_t size)
     vConn = new std::shared_ptr<Connector>[total+1];
 
     magic_num = time(NULL);
+
     magic_num = (((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24 );
+
     //free从1开始分配, 这个值为uid, 0保留为管道用
     for(uint32_t i = 1; i <= total; i++)
-    {
+    { 
 	vConn[i] = NULL;
 
 	free.push_back(i);
