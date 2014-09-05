@@ -15,6 +15,6 @@ DEPSLIBS 	= common_base
 
 %.d: %.cc
 	set -e; rm -f $@; \
-	g++ -MM $(CFLAGS) $< > $@.$$$$; \
+	g++ -MM $(CFLAGS) $(INCLUDE) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$

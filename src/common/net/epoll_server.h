@@ -27,7 +27,9 @@ public:
     void createEpoll();
 
     // 设置空连接超时时间
-    void setEmptyConnTimeout(int timeout);
+    void setEmptyConnTimeout(int timeout) { connectorTimeout = timeout;}
+
+    int getEmptyConnTimeout() { return connectorTimeout;}
 
     // 绑定一个网络线程去监听端口
     void bind(int port);
@@ -37,9 +39,6 @@ public:
 
     // 终止网络线程
     bool stopNetThread();
-
-    // 关闭连接
-    void close(int uid);
 
     // 增加连接
     void addConnector(std::shared_ptr<common::net::Connector> connector, int fd);
@@ -89,6 +88,9 @@ public:
     // 发送数据
     void send(const std::string &s, const std::string &ip, uint16_t port, int uid, int fd);
 
+    //关闭连接
+    void close_connector(const std::string &ip, uint16_t port, int uid, int fd);
+
     void process_pipe(common::event* e, int revents);
 
     friend class HandleThread<T>;
@@ -116,6 +118,9 @@ private:
 
     // 业务线程是否启动
     bool handleStarted;
+
+    // 空链超时时间
+    int connectorTimeout;
 };
 
 
@@ -138,6 +143,7 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
 	netThreads.push_back(netThread);
     }
     bTerminate = true;
+    connectorTimeout = 0;
 }
 
 
@@ -151,13 +157,6 @@ template<typename T>
 void EpollServer<T>::createEpoll() {
     for (size_t i = 0; i < this->netThreadNum; i++) {
 	netThreads[i]->create_event_loop();
-    }
-}
-
-template<typename T>
-void EpollServer<T>::setEmptyConnTimeout(int timeout) {
-    for (int i = 0; i < netThreadNum; i++) {
-	netThreads[i]->setEmptyConnTimeout(timeout);
     }
 }
 
@@ -280,7 +279,18 @@ TagRecvData<T>* EpollServer<T>::getRecvPacket(int index) {
 template<typename T>
 void EpollServer<T>::send(const std::string &s, const std::string &ip, uint16_t port, int uid, int fd) {
     NetThread<T>* netThread = getNetThreadOfFd(fd);
-    netThread->send(ip, port,uid, s);
+    if (netThread != NULL) {
+	netThread->send(ip, port,uid, s);
+    }
+
+}
+
+template<typename T>
+void EpollServer<T>::close_connector(const std::string &ip, uint16_t port, int uid, int fd) {
+    NetThread<T>* netThread = getNetThreadOfFd(fd);
+    if (netThread != NULL) {
+	netThread->close_connector(ip, port,uid, fd);
+    }
 }
 
 } // net

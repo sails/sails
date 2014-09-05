@@ -91,7 +91,12 @@ public:
 
     // 创建一个connector超时管理器
     void setEmptyConnTimeout(int connector_read_timeout=10);
+
+    static void timeoutCb(common::net::Connector* connector);
+
+    static void startEvLoop(NetThread<T>* netThread);
     
+
     void run();
 
     void terminate();
@@ -127,6 +132,9 @@ public:
 
     // 发送数据,把data放入一个send list中,然后再触发epoll的可写事件
     void send(const std::string &ip, uint16_t port,int uid, const std::string &data);
+    
+    // 关闭连接
+    void close_connector(const std::string &ip, uint16_t port, int uid, int fd);
     
     // 获取服务
     EpollServer<T>* getServer();
@@ -174,7 +182,6 @@ NetThread<T>::NetThread(EpollServer<T> *server) {
     connector_list.init(10000);
     connect_timer = NULL;
     notify = socket(AF_INET, SOCK_STREAM, 0);
-    printf("notify fd:%d\n", notify);
 }
 
 
@@ -233,8 +240,6 @@ int NetThread<T>::bind(int port) {
     ::bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     sails::common::setnonblocking(listenfd);
 
-    printf("listen fd:%d\n", listenfd);
-
     if(listen(listenfd, 10) < 0) {
 	perror("listen");
 	exit(EXIT_FAILURE);
@@ -258,7 +263,6 @@ int NetThread<T>::bind(int port) {
 
 template <typename T>
 void NetThread<T>::accept_socket_cb(common::event* e, int revents, void* owner) {
-    printf("call accept socket cb \n");
     if (owner != NULL) {
 	NetThread<T>* net_thread = (NetThread<T>*)owner;
 	net_thread->accept_socket(e, revents);
@@ -268,10 +272,11 @@ void NetThread<T>::accept_socket_cb(common::event* e, int revents, void* owner) 
 
 template <typename T>
 void NetThread<T>::accept_socket(common::event* e, int revents) {
-    printf("call accept socket\n");
     if(revents & common::EventLoop::Event_READ) {
 	struct sockaddr_in local;
 	int addrlen = sizeof(struct sockaddr_in);
+	
+	//循环accept,因为使用的是epoll,当多个连接同时连上时,只通知一次
 	for (;;) {
 	    memset(&local, 0, addrlen);
 
@@ -280,9 +285,8 @@ void NetThread<T>::accept_socket(common::event* e, int revents) {
 	        connfd = accept(e->fd, 
 				(struct sockaddr*)&local, 
 				(socklen_t*)&addrlen);
-	    }while((connfd < 0) && (errno == EINTR));
+	    }while((connfd < 0) && (errno == EINTR));// 被中断
 
-	    printf("connectfd %d\n", connfd);
 	    if (connfd > 0) {
 		sails::common::setnonblocking(connfd);
 
@@ -296,6 +300,7 @@ void NetThread<T>::accept_socket(common::event* e, int revents) {
 		inet_ntop(AF_INET, &(local.sin_addr), sAddr, 20);
 		std::string ip = sAddr;
 		connector->setIp(ip);
+		connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
 		server->addConnector(connector, connfd);
 
@@ -313,7 +318,8 @@ void NetThread<T>::accept_socket(common::event* e, int revents) {
 // 增加connector
 template <typename T>
 void NetThread<T>::add_connector(std::shared_ptr<common::net::Connector> connector) {
-
+    
+    connector->owner = this;
     connector_list.add(connector);
     connect_timer->update_connector_time(connector);
     
@@ -326,7 +332,6 @@ void NetThread<T>::add_connector(std::shared_ptr<common::net::Connector> connect
     ev.cb = NetThread<T>::read_data_cb;
     ev.data.u32 = connector->getId();
     
-    printf("add connector\n");
     if(!ev_loop->event_ctl(common::EventLoop::EVENT_CTL_ADD, &ev)){
 	connector_list.del(connector->getId());
     }
@@ -383,6 +388,7 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 
 	if (n > 0) {
 	    totalNum+=n;
+	    printf("read %d bytes\n", totalNum);
 	    if (totalNum >= 4096) { // 大于4k就开始解析,防止数据过多
 		this->server->parseImp(connector);
 	    }
@@ -415,7 +421,7 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 
     if (readerror) {
 	if (!connector->isClosed()) {
-	    connector->close();
+	    close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
 	}
     }
 
@@ -423,7 +429,6 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 	
         connect_timer->update_connector_time(connector);// update timeout
 	this->server->parseImp(connector);
-	printf("connector:%d, read:%s\n", connector->get_connector_fd(), connector->peek());
     }
     
 }
@@ -432,25 +437,27 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 
 template <typename T>
 void NetThread<T>::read_pipe_cb(common::event* e, int revents, void* owner) {
-    printf("read pipe cb\n");
     NetThread<T>* net_thread = NULL;
     if (owner != NULL) {
 	net_thread = (NetThread<T>*)owner;
 	if (net_thread == NULL) {
 	    return ;
 	}
+    }else {
+	return;
     }
 
     TagSendData* data = NULL;
     do {
 	data = NULL;
 	net_thread->sendlist.pop_front(data, 0);
-	
+
 	if (data != NULL) {
-	    char cmd = data->cmd;
 	    int uid = data->uid;
 	    std::string ip = data->ip;
 	    uint16_t port = data->port;
+
+	    char cmd = data->cmd;
 	    if (cmd == 's') {
 		std::shared_ptr<Connector> connector = net_thread->connector_list.get(uid);
 		if (connector != NULL) {
@@ -458,6 +465,15 @@ void NetThread<T>::read_pipe_cb(common::event* e, int revents, void* owner) {
 		    if (connector->getPort() == port && connector->getIp() == ip) {
 			connector->write( data->buffer.c_str(), data->buffer.length());
 			connector->send();
+		    }
+		}
+	    }else if (cmd == 'c') {
+		std::shared_ptr<Connector> connector = net_thread->connector_list.get(uid);
+		if (connector != NULL) {
+		    if (connector->getPort() == port && connector->getIp() == ip) {			// 从event loop中删除
+			net_thread->ev_loop->event_stop(connector->get_connector_fd());
+			connector->close();
+			net_thread->connector_list.del(uid);
 		    }
 		}
 	    }
@@ -471,9 +487,18 @@ void NetThread<T>::read_pipe_cb(common::event* e, int revents, void* owner) {
 
 template <typename T>
 void NetThread<T>::setEmptyConnTimeout(int connector_read_timeout) {
-    connect_timer = new ConnectorTimeout(connector_read_timeout);
+    int timeout = connector_read_timeout>0?connector_read_timeout:10;
+    connect_timer = new ConnectorTimeout(timeout);
     connect_timer->init(ev_loop);
 
+}
+
+template <typename T>
+void NetThread<T>::timeoutCb(common::net::Connector* connector) {
+    if (connector != NULL && connector->owner != NULL) {
+	NetThread<T>* netThread = (NetThread<T>*)connector->owner;
+	netThread->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
+    }
 }
 
 template <typename T>
@@ -481,13 +506,15 @@ EpollServer<T>* NetThread<T>::getServer() {
     return this->server;
 }
 
-void startEvLoop(EventLoop* ev_loop) {
-    ev_loop->start_loop();
+template <typename T>
+void NetThread<T>::startEvLoop(NetThread<T>* netThread) {
+    netThread->setEmptyConnTimeout();
+    netThread->ev_loop->start_loop();
 }
 
 template <typename T>
 void NetThread<T>::run() {
-    thread = new std::thread(startEvLoop, ev_loop);
+    thread = new std::thread(startEvLoop, this);
     status = NetThread::RUNING;
 }
 
@@ -513,7 +540,6 @@ void NetThread<T>::getRecvData(TagRecvData<T>* &data, int millisecond) {
 
 template <typename T>
 void NetThread<T>::send(const std::string &ip, uint16_t port, int uid,const std::string &s) {
-    printf("send data\n");
     TagSendData* data = new TagSendData();
     data->cmd = 's';
     data->uid = uid;
@@ -530,6 +556,27 @@ void NetThread<T>::send(const std::string &ip, uint16_t port, int uid,const std:
     notify_ev.cb = NetThread<T>::read_pipe_cb;
     ev_loop->event_ctl(sails::common::EventLoop::EVENT_CTL_MOD, &notify_ev);
 }
+
+template <typename T>
+void NetThread<T>::close_connector(const std::string &ip, uint16_t port, int uid, int fd) {
+    TagSendData* data = new TagSendData();
+    data->cmd = 'c';
+    data->uid = uid;
+    data->ip = ip;
+    data->port = port;
+    sendlist.push_back(data);
+
+    // 通知epoll_wait
+    sails::common::event notify_ev;
+    emptyEvent(notify_ev);
+    notify_ev.fd = notify;
+    notify_ev.events = sails::common::EventLoop::Event_WRITE;
+    notify_ev.cb = NetThread<T>::read_pipe_cb;
+    ev_loop->event_ctl(sails::common::EventLoop::EVENT_CTL_MOD, &notify_ev);
+}
+
+
+
 
 
 template <typename T>

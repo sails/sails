@@ -34,10 +34,13 @@ public:
     }
     
     void handle(const sails::common::net::TagRecvData<EchoStruct> &recvData) {
-	printf("uid:%u, ip:%s, port:%d, msg:%s\n", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
+//	    server->close_connector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
+
+	printf("uid:%u, ip:%s, port:%d, msg:%s", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
 	sails::common::net::TagSendData *sendData = new sails::common::net::TagSendData();
 	std::string buffer = std::string(recvData.data->msg);
 	server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+
 	
     }
 };
@@ -56,7 +59,7 @@ int main(int argc, char *argv[])
     TestServer server;
     server.createEpoll();
 
-    server.setEmptyConnTimeout(10);
+//    server.setEmptyConnTimeout(10);
     server.bind(8000);
     server.startNetThread();
     

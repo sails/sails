@@ -12,9 +12,10 @@ Connector::Connector(int conn_fd) {
     this->ip = "";
     this->listen_fd = 0;
     has_set_timer = false;
-    data = NULL;
     is_closed = false;
     is_timeout = false;
+    timeoutCB = NULL;
+    owner = NULL;
 }
 
  
@@ -23,9 +24,10 @@ Connector::Connector() {
     listen_fd = 0;
     connect_fd = 0;
     has_set_timer = false;
-    data = NULL;
     is_closed = false;
     is_timeout = false;
+    timeoutCB = NULL;
+    owner = NULL;
 }
 
  
@@ -66,6 +68,10 @@ bool Connector::connect(const char *ip, uint16_t port, bool keepalive) {
  
 void Connector::set_timeout() {
     this->is_timeout = true;
+    printf("time out...............\n");
+    if (timeoutCB != NULL) {
+	timeoutCB(this);
+    }
 }
 
  
@@ -73,6 +79,9 @@ bool Connector::timeout() {
     return is_timeout;
 }
 
+void Connector::setTimeoutCB(TimeoutCB cb) {
+    this->timeoutCB = cb;
+}
 
 void Connector::setId(uint32_t id) {
     this->id = id;
@@ -168,19 +177,6 @@ void Connector::retrieve(int len) {
 }
 
  
-void Connector::parser() {
-/*
-    if (this->parser_cb != NULL) {
-	T* packet = NULL;
-	while ((packet = this->parser_cb(this)) != NULL) {
-	    push_recv_list(packet);
-	    packet = NULL;
-	}
-    }
-*/
-}
-
- 
 int Connector::write(const char* data, int len) {
     int ret = 0;
     if(len > 0 && data != NULL) {
@@ -221,7 +217,9 @@ ConnectorTimerEntry::ConnectorTimerEntry(std::shared_ptr<Connector> connector, E
 ConnectorTimerEntry::~ConnectorTimerEntry() {
     if(this->connector.use_count() > 0) {
 	// close fd and delete connector
-	this->connector.lock()->set_timeout();
+	if (this->connector.use_count() > 0) {
+	    this->connector.lock()->set_timeout();
+	}
     }
 }
 

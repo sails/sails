@@ -22,6 +22,7 @@ namespace common {
 namespace net {
 
 
+
 #define READBYTES 512
 
 class Connector;
@@ -29,6 +30,9 @@ class Connector;
 class ConnectorTimerEntry;
 class ConnectorTimeout;
 
+
+
+typedef void (*TimeoutCB)(Connector* connector);
 
 class Connector {
 public:
@@ -52,7 +56,6 @@ public:
     void close();
     bool isClosed();
 
-    void parser();
     
     void setId(uint32_t id);
     uint32_t getId();
@@ -68,11 +71,13 @@ public:
 
     void set_timeout();
     bool timeout();
+
+    void setTimeoutCB(TimeoutCB cb);
     void setTimerEntry(std::weak_ptr<ConnectorTimerEntry> entry);
     std::weak_ptr<ConnectorTimerEntry> getTimerEntry();
     bool haveSetTimer();
 
-    void *data;
+    void *owner; // 为了当回调时能找到对应的拥有者
 
 protected:
     sails::common::Buffer in_buf;
@@ -87,6 +92,7 @@ private:
     int  closeType;			// 0:表示客户端主动关闭；1:服务端主动关闭;2:连接超时服务端主动关闭
     bool is_closed;			// 是否已经关闭
     bool is_timeout;
+    TimeoutCB timeoutCB;
     bool has_set_timer;		// 是否设置了超时管理器
     std::weak_ptr<ConnectorTimerEntry> timer_entry; // 超时管理项
 
