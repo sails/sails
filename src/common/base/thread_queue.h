@@ -14,7 +14,7 @@ namespace common {
 template<typename T, typename D = std::deque<T> >
 class ThreadQueue {
 public:
-    ThreadQueue():_size(0) {}
+    ThreadQueue():_size(0) { _maxSize = 100000;}
 public:
     typedef D queue_type;
     // 从头部获取数据, 没有数据则等待.
@@ -46,6 +46,9 @@ public:
     // 队列大小.
     size_t size();
 
+    // 设置队列最大大小
+    void setMaxSize(size_t maxSize);
+
     // 清空队列
     void clear();
 
@@ -59,6 +62,8 @@ public:
 private:
     // 队列
     queue_type          _queue;
+
+    size_t              _maxSize;
     // 队列大小
     size_t              _size;
     // 互斥量
@@ -214,6 +219,11 @@ template<typename T, typename D> size_t ThreadQueue<T, D>::size()
     std::unique_lock<std::mutex> locker(queue_mutex);
     //return _queue.size();
     return _size;
+}
+
+
+template<typename T, typename D> void ThreadQueue<T, D>::setMaxSize(size_t maxSize) {
+    _maxSize = maxSize;
 }
 
 template<typename T, typename D> void ThreadQueue<T, D>::clear()

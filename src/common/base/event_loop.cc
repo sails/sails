@@ -264,11 +264,13 @@ bool EventLoop::event_stop(int fd) {
 	    free(pre);
 	    pre = NULL;
 	}
+
+	 // delete all epoll event
+	if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL)) {
+	    perror("event stop and delete fd from epoll");
+	}
     }
-    // delete all epoll event
-    if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL)) {
-	perror("event stop and delete fd from epoll");
-    }
+   
 
     return true;
 }

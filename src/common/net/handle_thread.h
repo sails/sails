@@ -32,6 +32,10 @@ public:
     // 线程处理方法
     virtual void run();
     
+    void terminate();
+    
+    void join();
+
 public:
 
     // 对象初始化
@@ -49,11 +53,7 @@ public:
 protected:
     
     static void runThread(HandleThread<T>* handle);
-    
-    void terminate();
-    
-    void join();
-    
+        
     // 具体的处理逻辑
     virtual void handleImp();
 
@@ -151,6 +151,8 @@ template <typename T>
 void HandleThread<T>::join() {
     thread->join();
     status = HandleThread<T>::STOPING;
+    delete thread;
+    thread = NULL;
 }
 
 

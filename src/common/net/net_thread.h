@@ -193,9 +193,16 @@ NetThread<T>::~NetThread() {
 	delete thread;
 	thread = NULL;
     }
+    if (connect_timer != NULL) {
+	delete connect_timer;
+	connect_timer = NULL;
+    }
+
     if (ev_loop != NULL) {
 	delete ev_loop;
+	ev_loop = NULL;
     }
+
 }
 
 
@@ -584,6 +591,8 @@ void NetThread<T>::join() {
     if (thread != NULL) {
 	thread->join();
 	status = NetThread::STOPING;
+	delete thread;
+	thread = NULL;
     }
 }
 

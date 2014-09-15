@@ -22,7 +22,7 @@ public:
     };
 
     void run();
-    void terminte();
+    void terminate();
     void join();
 
     static void dispatch(DispatcherThread<T>* dispacher);
@@ -60,6 +60,7 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
 	dispacher->server->dipacher_wait(); //会一直wait直到有数据
 	
 	int recvQueueNum = dispacher->server->getRecvQueueNum();
+	printf("get notify \n");
 	for (int i = 0; i < recvQueueNum; i++) {
 	    TagRecvData<T>* data = NULL;
 	    do {
@@ -77,6 +78,21 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
     }
 }
 
+template<typename T>
+void DispatcherThread<T>::terminate() {
+    continueRun = false;
+    server->notify_dispacher();
+}
+
+template<typename T>
+void DispatcherThread<T>::join() {
+    if (thread != NULL) {
+	thread->join();
+	status = DispatcherThread<T>::STOPING;
+	delete thread;
+	thread = NULL;
+    }
+}
 
 } // namespace net
 } // namespace common

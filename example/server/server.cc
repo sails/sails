@@ -1,5 +1,6 @@
 #include <common/net/epoll_server.h>
 #include <common/net/connector.h>
+#include <signal.h>
 
 typedef struct {
     char msg[100];
@@ -8,7 +9,10 @@ typedef struct {
 
 class TestServer : public sails::common::net::EpollServer<EchoStruct> {
 public:
-    TestServer() : sails::common::net::EpollServer<EchoStruct>(1) {
+    TestServer(int netThreadNum) : sails::common::net::EpollServer<EchoStruct>(netThreadNum) {
+	
+    }
+    ~TestServer() {
 	
     }
 
@@ -18,11 +22,11 @@ public:
 	    return NULL;
 	}
 
-	    EchoStruct *data = (EchoStruct*)malloc(sizeof(EchoStruct));
-	    memset(data, '\0', sizeof(EchoStruct));
-	    strncpy(data->msg, connector->peek(), read_able);
-	    connector->retrieve(read_able);
-	    return data;
+	EchoStruct *data = (EchoStruct*)malloc(sizeof(EchoStruct));
+	memset(data, '\0', sizeof(EchoStruct));
+	strncpy(data->msg, connector->peek(), read_able);
+	connector->retrieve(read_able);
+	return data;
     }
 };
 
@@ -48,7 +52,21 @@ public:
 
 
 
+bool isRun = true;
+TestServer server(2);
+HandleImpl handle(&server);
 
+void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
+    switch(signo) {
+	case SIGINT:
+	{
+	    printf("stop netthread\n");
+	    server.stopNetThread();
+	    server.stopHandleThread();
+	    isRun = false;
+	}
+    }
+}
 
 
 
@@ -56,21 +74,31 @@ public:
 int main(int argc, char *argv[])
 {
 
-    TestServer server;
+    // signal kill
+    struct sigaction act;
+    act.sa_sigaction = sails_signal_handle;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    if(sigaction(SIGINT, &act, NULL) == -1) {
+	perror("sigaction error");
+	exit(EXIT_FAILURE);
+    }
+
+
+
     server.createEpoll();
 
 //    server.setEmptyConnTimeout(10);
     server.bind(8000);
     server.startNetThread();
     
-    HandleImpl handle(&server);
     server.add_handle(&handle);
     server.startHandleThread();
 
-    while(1) {
+    while(isRun) {
 	sleep(2);
     }
-    server.stopNetThread();
+    
 
 
     return 0;

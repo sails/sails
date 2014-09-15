@@ -21,7 +21,7 @@ public:
     EpollServer(unsigned int NetThreadNum = 1);
     
     // 析构函数
-    ~EpollServer();
+    virtual ~EpollServer();
 
     // 创建epoll
     void createEpoll();
@@ -59,6 +59,8 @@ public:
 
     // 开始运行处理线程
     bool startHandleThread();
+    // 终止处理线程
+    bool stopHandleThread();
 
     // 分发线程等待数据
     void dipacher_wait();
@@ -149,7 +151,11 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
 
 template<typename T>
 EpollServer<T>::~EpollServer() {
-
+    printf("delete server\n");
+    for (size_t i = 0; i < this->netThreadNum; i++) {
+	delete netThreads[i];
+    }
+    printf("delete server\n");
 }
 
 
@@ -229,6 +235,25 @@ bool EpollServer<T>::startHandleThread() {
     dispacher_thread->run();
 }
 
+
+template<typename T>
+bool EpollServer<T>::stopHandleThread() {
+    printf("stop handle thread\n");
+    for (int i = 0; i < handleThreads.size(); i++) {
+        handleThreads[i]->terminate();
+        handleThreads[i]->join();
+	handleThreads[i] = NULL;
+
+    }
+
+    printf("stop dispacher thread\n");
+    dispacher_thread->terminate();
+    dispacher_thread->join();
+    delete dispacher_thread;
+    dispacher_thread = NULL;
+    printf(" end stop dispacher\n");
+}
+
 template<typename T>
 void EpollServer<T>::addHandleData(TagRecvData<T>*data, int handleIndex) {
     handleThreads[handleIndex]->addForHandle(data);
@@ -239,10 +264,8 @@ template<typename T>
 void EpollServer<T>::dipacher_wait() {
     std::unique_lock<std::mutex> locker(dispacher_mutex);
     size_t dataSize = 0;
-    while(dataSize == 0 && bTerminate) {
-        dispacher_notify.wait(locker);
-	dataSize = getRecvDataNum();
-    }
+    dispacher_notify.wait(locker);
+
 }
 
 
