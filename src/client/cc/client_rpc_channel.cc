@@ -16,7 +16,6 @@ namespace sails {
 
 RpcChannelImp::RpcChannelImp(string ip, int port):ip(ip),port(port) {
     assert(connector.connect(ip.c_str(), 8000, true));
-    connector.set_parser_cb(RpcChannelImp::parser_cb);
 }
 
 void RpcChannelImp::CallMethod(const MethodDescriptor* method, 
@@ -31,8 +30,8 @@ void RpcChannelImp::CallMethod(const MethodDescriptor* method,
     }
 }
 
-common::net::PacketCommon* RpcChannelImp::parser_cb(
-    common::net::Connector<common::net::PacketCommon> *connector) {
+common::net::PacketCommon* RpcChannelImp::parser(
+    common::net::Connector *connector) {
 
     if (connector->readable() < sizeof(common::net::PacketCommon)) {
 	return NULL;
@@ -77,20 +76,28 @@ int RpcChannelImp::sync_call(const google::protobuf::MethodDescriptor *method,
     connector.send();
     int n = connector.read();
     if(n > 0) {
-	connector.parser();
+
+	bool continueParse = false;
+	do {
+	    continueParse = false;
+	    common::net::PacketCommon *resp = RpcChannelImp::parser(&connector);
+	    
+	    if (resp != NULL) {
+		continueParse = true;
+		char *body = ((common::net::PacketRPC*)resp)->data;
+		string str_body(body, resp->len-sizeof(common::net::PacketRPC)+1);
+		if(strlen(body) > 0) {
+		    // protobuf message
+		    response->ParseFromString(str_body);
+		}
+		delete(resp);
+	    }
+
+
+	}while(continueParse);
+//	
     }
 
-    common::net::PacketCommon *resp = NULL;
-    while((resp=connector.get_next_packet()) != NULL) {
-	char *body = ((common::net::PacketRPC*)resp)->data;
-	string str_body(body, resp->len-sizeof(common::net::PacketRPC)+1);
-	if(strlen(body) > 0) {
-	    // protobuf message
-	    response->ParseFromString(str_body);
-	}
-	delete(resp);
-    }
-	
     return 0;
 }
 

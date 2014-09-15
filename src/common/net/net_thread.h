@@ -395,7 +395,6 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 
 	if (n > 0) {
 	    totalNum+=n;
-	    printf("read %d bytes\n", totalNum);
 	    if (totalNum >= 4096) { // 大于4k就开始解析,防止数据过多
 		this->server->parseImp(connector);
 	    }
@@ -554,7 +553,6 @@ void NetThread<T>::send(const std::string &ip, uint16_t port, int uid,const std:
     data->ip = ip;
     data->port = port;
     sendlist.push_back(data);
-
     // 通知epoll_wait
     sails::common::event notify_ev;
     emptyEvent(notify_ev);

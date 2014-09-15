@@ -60,7 +60,6 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
 	dispacher->server->dipacher_wait(); //会一直wait直到有数据
 	
 	int recvQueueNum = dispacher->server->getRecvQueueNum();
-	printf("get notify \n");
 	for (int i = 0; i < recvQueueNum; i++) {
 	    TagRecvData<T>* data = NULL;
 	    do {

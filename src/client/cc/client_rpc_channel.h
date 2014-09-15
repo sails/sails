@@ -23,10 +23,10 @@ public:
 		  const google::protobuf::Message* request,
 		  google::protobuf::Message* response);
 
-    static common::net::PacketCommon* parser_cb(
-	common::net::Connector<common::net::PacketCommon> *connector);
+    static common::net::PacketCommon* parser(
+	common::net::Connector *connector);
 private:
-    common::net::Connector<common::net::PacketCommon> connector;
+    common::net::Connector connector;
     std::string ip;
     int port;
 };

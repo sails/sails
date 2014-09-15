@@ -8,10 +8,10 @@ namespace sails {
 
 class ModuleLoad {
 public:
-    static void load(std::string modulepath);
-    static void unload();
-
-    static std::list<void*> modules;
+    void load(std::string modulepath);
+    void unload();
+private:
+    std::list<void*> modules;
 };
 
 } //namespace sails

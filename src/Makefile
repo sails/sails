@@ -8,6 +8,7 @@ INSTALL_PATH		= ../dist
 
 
 OBJECTS=sails.o \
+	server.o \
 	handle_rpc.o \
 	module_load.o service_register.o \
 	config.o
