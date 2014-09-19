@@ -26,6 +26,7 @@ struct TagRecvData
     std::string     ip;            // 远程连接的ip
     uint16_t        port;          // 远程连接的端口
     int             fd;
+    int             extId;         // 补充参数
 };
 
 struct TagSendData
@@ -310,7 +311,8 @@ void NetThread<T>::accept_socket(common::event* e, int revents) {
 		connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
 		server->addConnector(connector, connfd);
-
+		
+		server->create_connector_cb(connector);
 		
 	    }else {
 		break;

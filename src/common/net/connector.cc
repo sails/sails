@@ -147,7 +147,7 @@ bool Connector::haveSetTimer() {
 
  
 int Connector::read() {
-    std::unique_lock<std::mutex> locker(this->mutex);
+//    std::unique_lock<std::mutex> locker(this->mutex);
     int read_count = 0;
     if (!is_closed && this->connect_fd > 0) {
 	char tmp[READBYTES] = {'\0'};
@@ -187,7 +187,7 @@ int Connector::write(const char* data, int len) {
 
  
 int Connector::send() {
-    std::unique_lock<std::mutex> locker(this->mutex);
+//    std::unique_lock<std::mutex> locker(this->mutex);
     int ret = 0;
     if (!is_closed && this->connect_fd > 0) {
 	int write_able = this->out_buf.readable();

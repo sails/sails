@@ -150,5 +150,22 @@ url_encode(const char *source_str, char *encode_str)
 }
 
 
+
+std::vector<std::string> split(std::string& str,const char* c)
+{
+    char *cstr, *p;
+    std::vector<std::string> res;
+    cstr = new char[str.size()+1];
+    strcpy(cstr,str.c_str());
+    p = strtok(cstr,c);
+    while(p!=NULL)
+    {
+        res.push_back(p);
+        p = strtok(NULL,c);
+    }
+    return res;
+}
+
+
 } // namespace common
 } // namespace sails

@@ -8,7 +8,7 @@
 using namespace sails;
 
 bool isRun = true;
-Server server(2);
+Server server(1);
 HandleImpl handle(&server);
 
 
@@ -52,10 +52,11 @@ void sails_init(int argc, char *argv[]) {
 int main(int argc, char *argv[])
 {
     sails_init(argc, argv);
-
+    ProfilerStart("sails.prof");
     while(isRun) {
 	sleep(2);
     }
+    ProfilerStop();
     
     return 0;
 }

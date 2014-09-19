@@ -130,6 +130,9 @@ template<typename T, typename D> void ThreadQueue<T, D>::notifyT()
 
 template<typename T, typename D> void ThreadQueue<T, D>::push_back(const T& t)
 {
+    if (_size >= _maxSize) {
+	return;
+    }
     std::unique_lock<std::mutex> locker(queue_mutex);
     this->notify.notify_one();
 

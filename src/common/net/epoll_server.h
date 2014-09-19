@@ -47,8 +47,11 @@ public:
     NetThread<T>* getNetThreadOfFd(int fd) {
 	return netThreads[fd % netThreads.size()];
     }
+
+
+    virtual void create_connector_cb(std::shared_ptr<common::net::Connector> connector);
     
-    void parseImp(std::shared_ptr<common::net::Connector> connector);
+    virtual void parseImp(std::shared_ptr<common::net::Connector> connector);
     // 解析数据包
     virtual T* parse(std::shared_ptr<common::net::Connector> connector) {
 	printf(" need implement parser method in subclass\n");
@@ -219,6 +222,11 @@ void EpollServer<T>::parseImp(std::shared_ptr<common::net::Connector> connector)
 	NetThread<T>* netThread = getNetThreadOfFd(connector->get_connector_fd());
         netThread->addRecvList(data);
     }
+}
+
+template<typename T>
+void EpollServer<T>::create_connector_cb(std::shared_ptr<common::net::Connector> connector) {
+    printf("create connector cb\n");
 }
 
 template<typename T>

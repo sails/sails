@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <string.h>
 #include <assert.h>
+#include <vector>
+#include <string>
 
 namespace sails {
 namespace common {
@@ -24,6 +26,7 @@ int last_index_of(const char* src, char c);
 
 char* url_encode(const char *source_str, char *encode_str);
 
+std::vector<std::string> split(std::string& str,const char* c);
 
 } // namespace common  
 } // namespace sails
