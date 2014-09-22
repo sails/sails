@@ -448,7 +448,7 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
 void HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
     uint32_t playerId = recvData.extId;
     Player* player = ((Server*)server)->getPlayer(playerId);
-    if (player != NULL && player->gameCode.length()> 0) {
+    if (player != NULL && player->gameCode.length()> 0 && player->ip == recvData.ip && player->port == recvData.port) {
 	GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
 	if (gameWorld != NULL) {
 	    gameWorld->disConnectPlayer(playerId,player->roomCode);
