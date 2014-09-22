@@ -428,9 +428,8 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
     }
 
     if (readerror) {
-	if (!connector->isClosed()) {
-	    close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
-	}
+	// 客户端主动close
+	this->server->closed_connect_cb(connector);
     }
 
     else {
@@ -476,12 +475,15 @@ void NetThread<T>::read_pipe_cb(common::event* e, int revents, void* owner) {
 		    }
 		}
 	    }else if (cmd == 'c') {
+		
 		std::shared_ptr<Connector> connector = net_thread->connector_list.get(uid);
 		if (connector != NULL) {
 		    if (connector->getPort() == port && connector->getIp() == ip) {			// 从event loop中删除
 			net_thread->ev_loop->event_stop(connector->get_connector_fd());
 			connector->close();
+			connector->data.u64 = 0;
 			net_thread->connector_list.del(uid);
+//			printf("connect use count :%d\n", connector.use_count());
 		    }
 		}
 	    }
@@ -566,6 +568,7 @@ void NetThread<T>::send(const std::string &ip, uint16_t port, int uid,const std:
 
 template <typename T>
 void NetThread<T>::close_connector(const std::string &ip, uint16_t port, int uid, int fd) {
+    printf("call close connector\n");
     TagSendData* data = new TagSendData();
     data->cmd = 'c';
     data->uid = uid;
