@@ -93,8 +93,11 @@ public:
     // 发送数据
     void send(const std::string &s, const std::string &ip, uint16_t port, int uid, int fd);
 
-    //关闭连接
+    // 关闭连接
     void close_connector(const std::string &ip, uint16_t port, int uid, int fd);
+
+    // 当epoll读到0个数据时，客户端主动close
+    virtual void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
 
     void process_pipe(common::event* e, int revents);
 
@@ -322,6 +325,14 @@ void EpollServer<T>::close_connector(const std::string &ip, uint16_t port, int u
     if (netThread != NULL) {
 	netThread->close_connector(ip, port,uid, fd);
     }
+}
+
+template<typename T>
+void EpollServer<T>::closed_connect_cb(std::shared_ptr<common::net::Connector> connector) {
+    if (!connector->isClosed()) {
+	close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
+    }
+
 }
 
 } // net
