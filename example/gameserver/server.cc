@@ -32,25 +32,48 @@ GameWorld* Server::createGameWorld(std::string& gameCode) {
     return gameWorld;
 }
 
-void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector) {
+
+void Server::sendDisConnectDataToHandle(std::shared_ptr<common::net::Connector> connector) {
     uint32_t playerId = connector->data.u32;
-    
-    if (playerId > 0) {
-	// 删除用户
-        deletePlayer(playerId);
+    if (playerId <= 0) {
+	return;
     }
-    // 关闭连接
-    connector->data.u32 = 0;
-    this->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
+    // 向handle线程发送消息
+    SceNetAdhocctlDisconnectPacketS2C* disdata = new SceNetAdhocctlDisconnectPacketS2C();
+    disdata->base.opcode = OPCODE_DISCONNECT;
+    disdata->ip = HandleImpl::getIp(connector->getIp());
+    disdata->mac = HandleImpl::getMacStruct("EE:EE:EE:EE:EE");
+
+    common::net::TagRecvData<SceNetAdhocctlPacketBase> *data = new common::net::TagRecvData<SceNetAdhocctlPacketBase>();
+    data->uid = connector->getId();
+    data->data = (sails::SceNetAdhocctlPacketBase*)disdata;
+    data->ip = connector->getIp();
+    data->port= connector->getPort();
+    data->fd = connector->get_connector_fd();
+
+    int fd = data->fd;
+    int handleNum = getHandleNum();
+    int selectedHandle = fd % handleNum;
+    addHandleData(data, selectedHandle);
+
 }
 
 
+
+void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector) {
+
+    sendDisConnectDataToHandle(connector);
+
+    // 关闭连接
+    connector->data.u32 = 0;
+    this->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
+
+}
+
 void Server::closed_connect_cb(std::shared_ptr<common::net::Connector> connector) {
-    uint32_t playerId = connector->data.u32;
-    if (playerId > 0) {
-	// 删除用户
-        deletePlayer(playerId);
-    }
+    printf("closed_connect_cb\n");
+    sendDisConnectDataToHandle(connector);
+
     // 关闭连接
     connector->data.u32 = 0;
     this->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
@@ -79,7 +102,10 @@ void Server::deletePlayer(uint32_t playerId) {
 
 int Server::getPlayerState(uint32_t playerId) {
     Player* player = playerList.get(playerId);
-    return player->userState;
+    if (player != NULL) {
+	return player->userState;
+    }
+    return USER_STATE_DIC_CONN;
 }
 
 void Server::create_connector_cb(std::shared_ptr<common::net::Connector> connector) {

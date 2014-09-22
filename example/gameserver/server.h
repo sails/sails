@@ -32,11 +32,13 @@ public:
     // 数据解析
     void parseImp(std::shared_ptr<common::net::Connector> connector);
     SceNetAdhocctlPacketBase* parse(std::shared_ptr<sails::common::net::Connector> connector);
+
+    void sendDisConnectDataToHandle(std::shared_ptr<common::net::Connector> connector);
     
-    // 非法数据处理(直接移除用户,关闭连接)
+    // 非法数据处理(直接移除用户,关闭连接),关于player的数据操作放到handle线程里,防止多线程操作player的问题.创建一个disconnector的数据包
     void invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector);
 
-    // 客户端主动close
+    // 客户端主动close, 创建一个disconnector的数据包
     void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
 
     
