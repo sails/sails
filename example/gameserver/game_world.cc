@@ -124,6 +124,21 @@ std::list<std::string> GameWorld::getSessions() {
     return sessionList;
 }
 
+std::list<std::string> getGameWorldList();
+
+std::map<std::string, std::list<std::string>> GameWorld::getPlayerNameMap() {
+    std::map<std::string, std::list<std::string>> nameMap;
+    std::map<std::string, GameRoom*>::iterator it;
+    for (it = roomMap.begin(); it != roomMap.end(); it++) {
+	GameRoom* room = it->second;
+	if (room != NULL) {
+	    std::list<std::string> roomList = room->getPlayerNames();
+	    nameMap.insert(std::pair<std::string, std::list<std::string>>(room->getRoomCode(), roomList));
+	}
+    }
+    return nameMap;
+}
+
 Server* GameWorld::getServer() {
     return server;
 }

@@ -217,6 +217,20 @@ std::list<std::string> GameRoom::getRoomSessions() {
     return sessions;
 }
 
+
+std::list<std::string> GameRoom::getPlayerNames() {
+    std::unique_lock<std::mutex> locker(playerMutex);
+    std::list<std::string> names;
+    for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+	Player* peer = iter->second;
+	if (peer != NULL) {
+	    names.push_back(peer->playerName);
+	}
+    }
+    return names;
+}
+
+
 } // namespace sails
 
 

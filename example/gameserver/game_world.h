@@ -34,6 +34,7 @@ public:
     void transferMessage(std::string& roomCode, std::string&ip, std::string& mac, std::string& message);
 
     std::list<std::string> getSessions();
+    std::map<std::string, std::list<std::string>> getPlayerNameMap();
     
     Server* getServer();
 private:

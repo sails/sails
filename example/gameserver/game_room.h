@@ -30,6 +30,9 @@ public:
     void transferMessage(std::string&ip, std::string& mac, std::string& message);
 
     std::list<std::string> getRoomSessions();
+
+    std::list<std::string> getPlayerNames();
+    
     
 private:
     std::string roomCode;

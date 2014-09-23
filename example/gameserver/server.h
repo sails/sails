@@ -54,6 +54,11 @@ public:
     
     std::list<std::string> getPlayerSession();
 
+    std::list<std::string> getGameWorldList();
+
+    // 得到游戏组里用户
+    std::map<std::string, std::list<std::string>> getPlayerNameMap(std::string& gameCode);
+
 private:
     std::mutex* getPlayerMutex(uint32_t playerId);
 private:

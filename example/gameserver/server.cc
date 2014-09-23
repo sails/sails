@@ -79,7 +79,7 @@ void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> c
 }
 
 void Server::closed_connect_cb(std::shared_ptr<common::net::Connector> connector) {
-    printf("closed_connect_cb\n");
+    psplog.info("closed_connect_cb");
     uint32_t playerId = connector->data.u32;
     sendDisConnectDataToHandle(playerId, connector->getIp(), connector->getPort(), connector->get_connector_fd(), connector->getId());
 
@@ -104,7 +104,7 @@ void Server::deletePlayer(uint32_t playerId) {
 		gameWorld->disConnectPlayer(playerId, player->roomCode);
 	    }
 	}
-	printf("delete player\n");
+	psplog.info("delete player");
 	delete player;
     }
 }
@@ -118,12 +118,11 @@ int Server::getPlayerState(uint32_t playerId) {
 }
 
 void Server::create_connector_cb(std::shared_ptr<common::net::Connector> connector) {
-    printf("new player\n");
+//    printf("new player\n");
 
     uint32_t uid = createPlayer(connector->getIp(), connector->getPort(), connector->get_connector_fd(), connector->getId());
 
     connector->data.u32 = uid;
-    printf("player id:%u\n", uid);
 
 }
 
@@ -206,12 +205,10 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
     // Group Connect Packet
     else if(packet->opcode == OPCODE_CONNECT)
     {
-	printf("start parse connect data\n");
 	// Enough Data available
-	printf("user state logged in\n");
+	psplog.info("user state logged in");
 	if(read_able >= sizeof(SceNetAdhocctlConnectPacketC2S))
 	{
-	    printf("new connect packet\n");
 	    // Cast Packet
 	    packet_len = sizeof(SceNetAdhocctlConnectPacketC2S);
 	    packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
@@ -305,6 +302,24 @@ std::list<std::string> Server::getPlayerSession() {
     return sessions;
 }
 
+
+std::list<std::string> Server::getGameWorldList() {
+    std::list<std::string> gameCodeList;
+    for (auto game: gameWorldMap) {
+	gameCodeList.push_back(game.first);
+    }
+    return gameCodeList;
+}
+
+std::map<std::string, std::list<std::string>> Server::getPlayerNameMap(std::string& gameCode) {
+    std::map<std::string, std::list<std::string>> map;
+    GameWorld* game = getGameWorld(gameCode);
+    if (game != NULL) {
+	map = game->getPlayerNameMap();
+    }
+    return map;
+}
+
 Server::~Server() {
 
 }
@@ -335,22 +350,20 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
 	break;
     }
     case OPCODE_LOGIN: {
-	printf("get login data\n");
+	psplog.info("get login data");
 	login_user_data(recvData);
 	break;
     }
     case OPCODE_CONNECT: {
-	printf("get connect data\n");
-	printf("get user state:%d\n", ((Server*)server)->getPlayerState(playerId));
+	psplog.info("get connect data");
 	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_LOGGED_IN) {
 	    connect_user(recvData);
 	}
 	break;
     }
     case OPCODE_DISCONNECT: {
-	printf("disconnect\n");
+	psplog.info("disconnect");
 	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_LOGGED_IN) {
-	    printf("get user\n");
 	    // Leave Game Gro0x00000000019527a0up
 	    disconnect_user(recvData);
 	}
@@ -391,7 +404,6 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
 
     SceNetAdhocctlLoginPacketC2S * data = (SceNetAdhocctlLoginPacketC2S*)recvData.data;
     uint32_t playerId = recvData.extId;
-    printf("user login\n");
     // 找到对应的游戏
 
     int valid_product_code = 1;
@@ -426,7 +438,7 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
 	    player->gameCode = gameCode;
 	    player->session = session;
 
-	    printf("player game code :%s\n", gameCode.c_str());
+	    psplog.info("player game code :%s", gameCode.c_str());
 	    return;
 	}
     }
@@ -464,7 +476,6 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
     // Valid Group Name
     if(valid_group_name == 1)
     {
-	printf("check roomCode ok\n");
 	Player* player = ((Server*)server)->getPlayer(playerId);
 
 	if (player != NULL && player->gameCode.length()> 0) {
@@ -495,7 +506,6 @@ void HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdh
 
 
 void HandleImpl::logout_user(uint32_t playerId) {
-    printf("call logout user\n");
     Player* player = ((Server*)server)->getPlayer(playerId);
     if (player != NULL) {
 	server->close_connector(player->ip, player->port, player->connectorUid, player->fd);
@@ -662,7 +672,7 @@ std::string HandleImpl::game_product_override(SceNetAdhocctlProductCode * produc
 	crosslink = crosslinks_iter->second;
 	
 	// Log Crosslink
-	printf("Crosslinked %s to %s.\n", productid,  crosslink.c_str());
+	psplog.info("Crosslinked %s to %s.", productid,  crosslink.c_str());
 	    
 	// Set Crosslinked Flag
 	crosslinked = 1;
@@ -740,7 +750,7 @@ bool post_message(const char* url, const char* data, std::string &result)
 	    result += std::string(login_result.ptr, login_result.len);
 	    ret = true;
 	}else {
-	    printf("post url:%s\n", url);
+	    psplog.info("post url:%s", url);
 	}
 
 	if (login_result.len > 0 && login_result.ptr != NULL) {
@@ -844,7 +854,7 @@ void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
     case SIGINT:
     {
-	printf("stop netthread\n");
+        printf("stop netthread\n");
 	server.stopNetThread();
 	server.stopHandleThread();
 	isRun = false;
@@ -880,6 +890,7 @@ int main(int argc, char *argv[])
 
     // 统计
     time_t lastUpdteSession = 0;
+    time_t lastLogStatTime = 0;
     time_t now = 0;
     while(isRun) {
 	now = time(NULL);
@@ -889,8 +900,22 @@ int main(int argc, char *argv[])
 	if (now - lastUpdteSession >= 30) { // 30s
 	    lastUpdteSession = now;
 	    std::list<std::string> sessions = server.getPlayerSession();
+	    sails::psplog.info("playerNum:%d", sessions.size());
 	    std::thread t(sails::update_sessions, sessions);
 	    t.detach();
+	}
+
+	// 统计
+	if (now - lastLogStatTime >= 60) { // 60s
+	    lastLogStatTime = now;
+	    std::list<std::string> gameList = server.getGameWorldList();
+	    for (std::string& gameCode: gameList) {
+		std::map<std::string, std::list<std::string>> roomsMap = server.getPlayerNameMap(gameCode);
+		for (auto roominfo: roomsMap) {
+		    sails::psplog.info("game %s, room name %s, playerNum:%d", gameCode.c_str(), roominfo.first.c_str(), roominfo.second.size());
+		}
+
+	    }
 	}
 	sleep(2);
     }
@@ -899,6 +924,12 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
+
+
+
+
 
 
 
