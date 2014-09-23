@@ -26,7 +26,7 @@ struct TagRecvData
     std::string     ip;            // 远程连接的ip
     uint16_t        port;          // 远程连接的端口
     int             fd;
-    int             extId;         // 补充参数
+    uint32_t        extId;         // 补充参数
 };
 
 struct TagSendData

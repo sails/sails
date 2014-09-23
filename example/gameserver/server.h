@@ -9,6 +9,7 @@
 #include <common/net/packets.h>
 #include "game_world.h"
 #include "game_packets.h"
+#include "config.h"
 
 namespace sails {
 
@@ -33,7 +34,7 @@ public:
     void parseImp(std::shared_ptr<common::net::Connector> connector);
     SceNetAdhocctlPacketBase* parse(std::shared_ptr<sails::common::net::Connector> connector);
 
-    void sendDisConnectDataToHandle(std::shared_ptr<common::net::Connector> connector);
+    void sendDisConnectDataToHandle(uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid);
     
     // 非法数据处理(直接移除用户,关闭连接),关于player的数据操作放到handle线程里,防止多线程操作player的问题.创建一个disconnector的数据包
     void invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector);
@@ -51,6 +52,7 @@ public:
     int getPlayerState(uint32_t playerId);
     void setPlayerState(int32_t playerId, int state);
     
+    std::list<std::string> getPlayerSession();
 
 private:
     std::mutex* getPlayerMutex(uint32_t playerId);
@@ -95,6 +97,12 @@ public:
     void transfer_message(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
 
 
+    // 用户session 校验,如果不成功,则向handle线程发送退出命令
+    void player_session_check(uint32_t playerId, std::string ip, int port, int fd, uint32_t uid, std::string session);
+    
+
+    
+
     // mac地址转化
     static std::string getMacStr(SceNetEtherAddr& macAddr);
     static SceNetEtherAddr getMacStruct(std::string macstr);
@@ -113,19 +121,25 @@ private:
 };
 
 
+extern Config config;
+
+// session 校验与更新相关
+
+struct ptr_string {
+  char *ptr;
+  size_t len;
+};
+
+size_t read_callback(void *buffer, size_t size, size_t nmemb, void *userp);
+
+bool post_message(const char* url, const char* data, std::string &result);
+
+bool check_session(std::string session);
+
+bool update_session_timeout(std::string session);
+
 
 } // namespace sails
 
 
 #endif /* SERVER_H */
-
-
-
-
-
-
-
-
-
-
-

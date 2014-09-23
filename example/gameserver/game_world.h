@@ -32,6 +32,8 @@ public:
     void spreadMessage(std::string& roomCode, std::string& message);
 
     void transferMessage(std::string& roomCode, std::string&ip, std::string& mac, std::string& message);
+
+    std::list<std::string> getSessions();
     
     Server* getServer();
 private:

@@ -1,0 +1,10 @@
+{
+    "listen_port":27312,
+    "max_connfd":2000,
+    "handle_thread_pool":3,
+    "handle_request_queue_size":1000,
+    
+    "store_api_url":"192.168.1.121:9000",
+    "local_ip":"192.168.1.121",
+    "game_code":"ULUS10391"
+}

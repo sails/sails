@@ -177,6 +177,7 @@ std::string GameRoom::getRoomHostMac() {
 
 
 void GameRoom::spreadMessage(std::string& message) {
+    std::unique_lock<std::mutex> locker(playerMutex);
     for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
 	Player* peer = iter->second;
 	if (peer != NULL) {
@@ -188,6 +189,7 @@ void GameRoom::spreadMessage(std::string& message) {
 
 
 void GameRoom::transferMessage(std::string&ip, std::string& mac, std::string& message) {
+    std::unique_lock<std::mutex> locker(playerMutex);
     for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
 	Player* peer = iter->second;
 	if (peer != NULL) {
@@ -197,6 +199,22 @@ void GameRoom::transferMessage(std::string&ip, std::string& mac, std::string& me
 	    }
 	}
     }
+}
+
+
+
+std::list<std::string> GameRoom::getRoomSessions() {
+    std::unique_lock<std::mutex> locker(playerMutex);
+    std::list<std::string> sessions;
+    for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+	Player* peer = iter->second;
+	if (peer != NULL) {
+	    if (peer->session.length() > 0) {
+		sessions.push_back(peer->session);
+	    }
+	}
+    }
+    return sessions;
 }
 
 } // namespace sails

@@ -1,9 +1,9 @@
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../../lib -I./ -I../../src/
+CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../../lib -I./ -I../../src/ -I../../deps/json-cpp/include/
 
-OBJECTS = server.o game_world.o game_room.o player.o product.o
+OBJECTS = server.o game_world.o game_room.o player.o product.o config.o
 
 server:$(OBJECTS)
-	g++  $(CFLAGS) -Wl,-rpath,../../lib/ -o server $(OBJECTS) -lsails -pthread -lprotobuf -ldl -ljson-cpp  -lsails
+	g++  $(CFLAGS) -Wl,-rpath,../../lib/ -o server $(OBJECTS) -lsails -pthread -lprotobuf -ldl -ljson-cpp  -lsails  -lcurl
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

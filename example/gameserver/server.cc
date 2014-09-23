@@ -2,10 +2,18 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <common/base/string.h>
+#include <common/log/logging.h>
 #include "product.h"
+#include <curl/curl.h>
 
 
 namespace sails {
+
+sails::Config config("./gameserver.json");
+sails::common::log::Logger psplog(common::log::Logger::LOG_LEVEL_DEBUG,
+				  "./log/psp.log", common::log::Logger::SPLIT_DAY);
+
+
 
 Server::Server(int netThreadNum) : sails::common::net::EpollServer<SceNetAdhocctlPacketBase>(netThreadNum){
     playerList.init(50);
@@ -33,25 +41,25 @@ GameWorld* Server::createGameWorld(std::string& gameCode) {
 }
 
 
-void Server::sendDisConnectDataToHandle(std::shared_ptr<common::net::Connector> connector) {
-    uint32_t playerId = connector->data.u32;
+
+void Server::sendDisConnectDataToHandle(uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid) {
     if (playerId <= 0) {
 	return;
     }
     // 向handle线程发送消息
     SceNetAdhocctlDisconnectPacketS2C* disdata = new SceNetAdhocctlDisconnectPacketS2C();
     disdata->base.opcode = OPCODE_DISCONNECT;
-    disdata->ip = HandleImpl::getIp(connector->getIp());
+    disdata->ip = HandleImpl::getIp(ip);
     disdata->mac = HandleImpl::getMacStruct("EE:EE:EE:EE:EE");
 
     common::net::TagRecvData<SceNetAdhocctlPacketBase> *data = new common::net::TagRecvData<SceNetAdhocctlPacketBase>();
-    data->uid = connector->getId();
+    data->uid = uid;
     data->data = (sails::SceNetAdhocctlPacketBase*)disdata;
-    data->ip = connector->getIp();
-    data->port= connector->getPort();
-    data->fd = connector->get_connector_fd();
+    data->ip = ip;
+    data->port= port;
+    data->fd = fd;
+    data->extId = playerId;
 
-    int fd = data->fd;
     int handleNum = getHandleNum();
     int selectedHandle = fd % handleNum;
     addHandleData(data, selectedHandle);
@@ -61,8 +69,8 @@ void Server::sendDisConnectDataToHandle(std::shared_ptr<common::net::Connector> 
 
 
 void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector) {
-
-    sendDisConnectDataToHandle(connector);
+    uint32_t playerId = connector->data.u32;
+    sendDisConnectDataToHandle(playerId, connector->getIp(), connector->getPort(), connector->get_connector_fd(), connector->getId());
 
     // 关闭连接
     connector->data.u32 = 0;
@@ -72,7 +80,8 @@ void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> c
 
 void Server::closed_connect_cb(std::shared_ptr<common::net::Connector> connector) {
     printf("closed_connect_cb\n");
-    sendDisConnectDataToHandle(connector);
+    uint32_t playerId = connector->data.u32;
+    sendDisConnectDataToHandle(playerId, connector->getIp(), connector->getPort(), connector->get_connector_fd(), connector->getId());
 
     // 关闭连接
     connector->data.u32 = 0;
@@ -132,7 +141,7 @@ uint32_t Server::createPlayer(std::string ip, int port, int fd, uint32_t connect
     player->connectorUid = connectUid;
 
     playerList.add(player, uid);
-    
+
     return uid;
 }
 
@@ -146,14 +155,15 @@ void Server::parseImp(std::shared_ptr<common::net::Connector> connector) {
 	data->port= connector->getPort();
 	data->fd = connector->get_connector_fd();
 	data->extId = connector->data.u32;
-	
+
 	common::net::NetThread<SceNetAdhocctlPacketBase>* netThread = getNetThreadOfFd(connector->get_connector_fd());
-        netThread->addRecvList(data);
+	netThread->addRecvList(data);
     }
 
 }
+
 SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Connector> connector) {
-    
+
     if (connector->readable() <= 0) {
 	return NULL;
     }
@@ -182,7 +192,7 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
     {
 	uint32_t playerId = connector->data.u32;
 	if (getPlayerState(playerId) == USER_STATE_WAITING) {
-	    	// Enough Data available
+	    // Enough Data available
 	    if(read_able >= sizeof(SceNetAdhocctlLoginPacketC2S))
 	    {
 		packet_len = sizeof(SceNetAdhocctlLoginPacketC2S);
@@ -192,7 +202,7 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	    }
 	}
     }
-					
+
     // Group Connect Packet
     else if(packet->opcode == OPCODE_CONNECT)
     {
@@ -209,7 +219,7 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	    memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
 	}
     }
-					
+
     // Group Disconnect Packet
     else if(packet->opcode == OPCODE_DISCONNECT)
     {
@@ -218,7 +228,7 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	memset(packet_new, 0, packet_len);
 	memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
     }
-					
+
     // Network Scan Packet
     else if(packet->opcode == OPCODE_SCAN)
     {
@@ -239,7 +249,7 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	    memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
 	}
     }
-					
+
     // game data transfer
     else if (packet->opcode == OPCODE_GAME_DATA) {
 	if(read_able >= sizeof(SceNetAdhocctlGameDataPacketC2C)) {
@@ -247,29 +257,29 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	    SceNetAdhocctlGameDataPacketC2C *packet_raw = (SceNetAdhocctlGameDataPacketC2C*)connector->peek();
 	    if(read_able >= (sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1)) {
 		packet_len = sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1;
-		    
-	     
+
+
 		//first search user by ip and mac
 		packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
 		memset(packet_new, 0, packet_len);
 		memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
-		
+
 		std::string ip = connector->getIp();
 		SceNetAdhocctlGameDataPacketC2C *temp = (SceNetAdhocctlGameDataPacketC2C*)packet;
 	    }
 	}
     }
-    
-// Invalid Opcode
+
+    // Invalid Opcode
     else
     {
 	// Notify User
 	std::string ip = connector->getIp();
-//	printf("Invalid Opcode 0x%02X in Logged-In State from %s (MAC: %02X:%02X:%02X:%02X:%02X:%02X - IP:%s).\n", user->rx[0], (char *)user->resolver.name.data, user->resolver.mac.data[0], user->resolver.mac.data[1], user->resolver.mac.data[2], user->resolver.mac.data[3], user->resolver.mac.data[4], user->resolver.mac.data[5], ip.c_str());
+	//	printf("Invalid Opcode 0x%02X in Logged-In State from %s (MAC: %02X:%02X:%02X:%02X:%02X:%02X - IP:%s).\n", user->rx[0], (char *)user->resolver.name.data, user->resolver.mac.data[0], user->resolver.mac.data[1], user->resolver.mac.data[2], user->resolver.mac.data[3], user->resolver.mac.data[4], user->resolver.mac.data[5], ip.c_str());
 
 	invalid_msg_handle(connector);
     }
-	
+
     if (packet_len > 0) {
 	connector->retrieve(packet_len);
     }
@@ -280,8 +290,23 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 }
 
 
+std::list<std::string> Server::getPlayerSession() {
+    std::list<std::string> sessions;
+    std::map<std::string, GameWorld*>::iterator iter;
+    for (iter = gameWorldMap.begin(); iter != gameWorldMap.end(); iter++) {
+	if (iter->second != NULL) {
+	    GameWorld* game = iter->second;
+	    std::list<std::string> gameSessions = game->getSessions();
+	    for (std::string& session: gameSessions) {
+		sessions.push_back(session);
+	    }
+	}
+    }
+    return sessions;
+}
+
 Server::~Server() {
-    
+
 }
 
 
@@ -295,7 +320,7 @@ Server::~Server() {
 
 
 HandleImpl::HandleImpl(sails::common::net::EpollServer<SceNetAdhocctlPacketBase>* server): sails::common::net::HandleThread<SceNetAdhocctlPacketBase>(server) {
-    
+
 }
 
 
@@ -325,9 +350,11 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
     case OPCODE_DISCONNECT: {
 	printf("disconnect\n");
 	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_LOGGED_IN) {
+	    printf("get user\n");
 	    // Leave Game Gro0x00000000019527a0up
 	    disconnect_user(recvData);
 	}
+	logout_user(playerId);
 	break;
     }
     case OPCODE_SCAN: {
@@ -352,9 +379,9 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
 	break;
     }
     default: {
-	
+
     }
-	
+
     }
 }
 
@@ -373,10 +400,19 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
 	// Valid Characters
 	if(!((data->game.data[i] >= 'A' && data->game.data[i] <= 'Z') || (data->game.data[i] >= '0' && data->game.data[i] <= '9'))) valid_product_code = 0;
     }
-	
+
     // mac地址合法
     if(valid_product_code == 1 && memcmp(&data->mac, "\xFF\xFF\xFF\xFF\xFF\xFF", sizeof(data->mac)) != 0 && memcmp(&data->mac, "\x00\x00\x00\x00\x00\x00", sizeof(data->mac)) != 0 && data->name.data[0] != 0)
     {
+
+	// session 校验,为了让它不阻塞主逻辑,这里新建一个线程支校验,当不通过时,向handle线程发送一条disconnect命令
+	std::string ip = recvData.ip;
+	std::string session(data->session);
+
+	std::thread sessionCheckThread(&HandleImpl::player_session_check, this, playerId, ip, recvData.port, recvData.fd, recvData.uid, session);
+	sessionCheckThread.detach();
+	 
+	 
 
 	std::string gameCode = game_product_override(&data->game);
 	GameWorld* gameWorld = ((Server*)server)->getGameWorld(gameCode);
@@ -388,6 +424,7 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
 	    player->mac = HandleImpl::getMacStr(data->mac);
 	    player->userState =  USER_STATE_LOGGED_IN;
 	    player->gameCode = gameCode;
+	    player->session = session;
 
 	    printf("player game code :%s\n", gameCode.c_str());
 	    return;
@@ -398,7 +435,7 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
     // 删除用户
     ((Server*)server)->deletePlayer(playerId);
     server->close_connector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
-    
+
 }
 
 
@@ -442,7 +479,7 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
 
     // 不合法
     logout_user(playerId);
-    
+
 }
 
 void HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
@@ -458,9 +495,13 @@ void HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdh
 
 
 void HandleImpl::logout_user(uint32_t playerId) {
+    printf("call logout user\n");
     Player* player = ((Server*)server)->getPlayer(playerId);
-    server->close_connector(player->ip, player->port, player->connectorUid, player->fd);
-    ((Server*)server)->deletePlayer(playerId);
+    if (player != NULL) {
+	server->close_connector(player->ip, player->port, player->connectorUid, player->fd);
+	((Server*)server)->deletePlayer(playerId);
+
+    }
 }
 
 void HandleImpl::send_scan_results(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
@@ -473,20 +514,20 @@ void HandleImpl::send_scan_results(const sails::common::net::TagRecvData<SceNetA
 	    for (std::string& roomCode : roomList) {
 		// Scan Result Packet
 		SceNetAdhocctlScanPacketS2C packet;
-		
+
 		// Clear Memory
 		memset(&packet, 0, sizeof(packet));
 		// Set Opcode
 		packet.base.opcode = OPCODE_SCAN;
-			
+
 		// Set Group Name
 		packet.group = getRoomName(roomCode);
 		// Iterate Players in Network Group
 		packet.mac = HandleImpl::getMacStruct(gameWorld->getRoomHostMac(roomCode));
-			
+
 		// Send Group Packet
 		std::string buffer = std::string((char*)&packet, sizeof(packet));
-	        server->send(buffer, player->ip, player->port, player->connectorUid, player->fd);
+		server->send(buffer, player->ip, player->port, player->connectorUid, player->fd);
 	    }
 
 	    // Notify Player of End of Scan
@@ -503,7 +544,7 @@ void HandleImpl::spread_message(const sails::common::net::TagRecvData<SceNetAdho
 
     SceNetAdhocctlChatPacketC2S * packet = (SceNetAdhocctlChatPacketC2S *)recvData.data;
     std::string message(packet->message, 64);
-    
+
     if (player!= NULL && player->gameCode.length() > 0) {
 	GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
 	if (gameWorld != NULL) {
@@ -519,8 +560,8 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
     uint32_t playerId = recvData.extId;
     Player* player = ((Server*)server)->getPlayer(playerId);
 
-//    printf("get transfer message from ip:%s, port :%d\n", player->ip.c_str(), player->port);
-    
+    //    printf("get transfer message from ip:%s, port :%d\n", player->ip.c_str(), player->port);
+
     SceNetAdhocctlGameDataPacketC2C *packet = (SceNetAdhocctlGameDataPacketC2C*)recvData.data;
 
     std::string peerIp = HandleImpl::getIpstr(packet->ip);
@@ -528,7 +569,7 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
 
     packet->ip = HandleImpl::getIp(player->ip);
     std::string message((char*)packet, sizeof(SceNetAdhocctlGameDataPacketC2C)+packet->len-1);
-    
+
     if (player->gameCode.length() > 0) {
 	GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
 	if (gameWorld != NULL) {
@@ -537,6 +578,13 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
     }
 }
 
+
+
+void HandleImpl::player_session_check(uint32_t playerId, std::string ip, int port, int fd, uint32_t uid, std::string session) {
+      if ( !check_session(session) ) {
+      ((Server*)server)->sendDisConnectDataToHandle(playerId, ip, port, fd, uid);
+      }
+}
 
 
 
@@ -642,6 +690,144 @@ std::string HandleImpl::game_product_override(SceNetAdhocctlProductCode * produc
 }
 
 
+
+
+
+
+
+
+///////////////////// session /////////////////////////////////////////
+
+
+
+size_t read_callback(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+    struct ptr_string *data = (struct ptr_string*)userp;
+    size_t new_len = data->len + size*nmemb;
+    char *ptr = (char *)malloc(new_len+1);
+    memset(ptr, 0, new_len+1);
+    memcpy(ptr, data->ptr, data->len);
+    memcpy(ptr+data->len, buffer, size*nmemb);
+    free(data->ptr);
+    data->ptr = ptr;
+    data->len = new_len;
+    data->ptr[new_len] = '\0';
+    return size*nmemb;
+}
+
+bool post_message(const char* url, const char* data, std::string &result)
+{
+    bool ret = false;
+    curl_global_init(CURL_GLOBAL_ALL);
+    CURL *curl = curl_easy_init();
+    if (curl != NULL) {
+
+
+	struct ptr_string login_result;
+	login_result.len = 0;
+	login_result.ptr = NULL;
+
+
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	curl_easy_setopt(curl, CURLOPT_POST, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, read_callback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &login_result);
+
+	CURLcode res;
+	res = curl_easy_perform(curl);
+	if(res == CURLE_OK) {
+	    result += std::string(login_result.ptr, login_result.len);
+	    ret = true;
+	}else {
+	    printf("post url:%s\n", url);
+	}
+
+	if (login_result.len > 0 && login_result.ptr != NULL) {
+	    login_result.len = 0;
+	    free(login_result.ptr);
+	    login_result.ptr = NULL;
+	}
+    }
+    
+    
+    curl_easy_cleanup(curl);
+    curl_global_cleanup();
+    return ret;
+}
+
+
+bool check_session(std::string session) {
+    std::string url = config.get_store_api_url()+"/session";
+    int port = config.get_listen_port();
+    std::string ip = config.get_local_ip();
+    char param[100] = {'\0'};
+    if (ip.compare("127.0.0.1") == 0) {
+        psplog.error("server ip config error");
+	return false;
+    }
+    std::string result;
+    sprintf(param, "method=CHECK&ip=%s&port=%d&session=%s", ip.c_str(), port, session.c_str());
+    
+    psplog.debug("post param:%s", param);
+    if ( post_message(url.c_str(), param, result) ) {
+        psplog.debug("get check infor:%s", result.c_str());
+	Json::Reader reader;
+	Json::Value root;
+	if (reader.parse(result, root)) {
+	    int status = root["status"].asInt();
+	    if (status == 0) { // call right
+		
+		Json::Value message = root["message"];
+		if (!message.empty()) {
+		    Json::Value::Members member = message.getMemberNames();
+		    for (Json::Value::Members::iterator iter = member.begin(); iter != member.end(); ++iter) {
+			if (session.compare(*iter) == 0 && !message[*iter].empty()) {
+			    int in_room = message[*iter].asInt();
+			    if (in_room == 1) {
+				return true;
+			    }
+			}
+		    }
+		}
+	    }
+	}
+    }
+    return false;;
+}
+
+
+bool update_session_timeout(std::string session) {
+
+    std::string url = config.get_store_api_url()+"/session";
+    char param[100] = {'\0'};
+    std::string result;
+    sprintf(param, "method=REFRESH&session=%s", session.c_str());
+    
+    psplog.debug("post param:%s", param);
+    if ( post_message(url.c_str(), param, result) ) {
+        psplog.debug("get update session infor:%s", result.c_str());
+	Json::Reader reader;
+	Json::Value root;
+	if (reader.parse(result, root)) {
+	    int status = root["status"].asInt();
+	    if (status == 0) { // call right
+	    }else {
+	        psplog.error("update session timeout and return error");
+	    }
+	}
+    }
+}
+
+void update_sessions (std::list<std::string> sessions) {
+    for (std::string& session: sessions) {
+	update_session_timeout(session);
+//	printf("updae session :%s\n", session.c_str());
+    }
+}
+
+//////////////////////////session////////////////////////////////////////
+
 } // namespace sails
 
 
@@ -656,13 +842,13 @@ sails::HandleImpl handle(&server);
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
-	case SIGINT:
-	{
-	    printf("stop netthread\n");
-	    server.stopNetThread();
-	    server.stopHandleThread();
-	    isRun = false;
-	}
+    case SIGINT:
+    {
+	printf("stop netthread\n");
+	server.stopNetThread();
+	server.stopHandleThread();
+	isRun = false;
+    }
     }
 }
 
@@ -685,13 +871,27 @@ int main(int argc, char *argv[])
     server.createEpoll();
 
 //    server.setEmptyConnTimeout(10);
-    server.bind(27312);
+    server.bind(sails::config.get_listen_port());
     server.startNetThread();
     
     server.add_handle(&handle);
     server.startHandleThread();
 
+
+    // 统计
+    time_t lastUpdteSession = 0;
+    time_t now = 0;
     while(isRun) {
+	now = time(NULL);
+
+
+	// 更新session
+	if (now - lastUpdteSession >= 30) { // 30s
+	    lastUpdteSession = now;
+	    std::list<std::string> sessions = server.getPlayerSession();
+	    std::thread t(sails::update_sessions, sessions);
+	    t.detach();
+	}
 	sleep(2);
     }
     
@@ -699,3 +899,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
+
+

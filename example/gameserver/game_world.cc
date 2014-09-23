@@ -108,6 +108,22 @@ void GameWorld::transferMessage(std::string& roomCode, std::string&ip, std::stri
     }
 }
 
+
+std::list<std::string> GameWorld::getSessions() {
+    std::list<std::string> sessionList;
+    std::map<std::string, GameRoom*>::iterator it;
+    for (it = roomMap.begin(); it != roomMap.end(); it++) {
+	GameRoom* room = it->second;
+	if (room != NULL) {
+	    std::list<std::string> roomSessionList = room->getRoomSessions();
+	    for(std::string& session: roomSessionList) {
+		sessionList.push_back(session);
+	    }
+	}
+    }
+    return sessionList;
+}
+
 Server* GameWorld::getServer() {
     return server;
 }

@@ -6,6 +6,7 @@
 #include <map>
 #include <player.h>
 #include <mutex>
+#include <list>
 
 namespace sails {
 
@@ -27,6 +28,9 @@ public:
     void spreadMessage(std::string& message);
 
     void transferMessage(std::string&ip, std::string& mac, std::string& message);
+
+    std::list<std::string> getRoomSessions();
+    
 private:
     std::string roomCode;
     int seatNum;

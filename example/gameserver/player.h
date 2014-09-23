@@ -30,6 +30,8 @@ public:
     uint32_t connectorUid;
 
     int age; // 存活年龄,当有用户进入和退出时,age加1
+
+    std::string session;
 };
 
 
