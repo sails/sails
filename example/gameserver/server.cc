@@ -859,7 +859,6 @@ void update_sessions (std::list<std::string> sessions) {
 ////////////////////////////////////////main/////////////////////////////////////////////////
 bool isRun = true;
 sails::Server server(2);
-sails::HandleImpl handle(&server);
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
@@ -895,6 +894,7 @@ int main(int argc, char *argv[])
     server.bind(sails::config.get_listen_port());
     server.startNetThread();
     
+    sails::HandleImpl handle(&server);
     server.add_handle(&handle);
     server.startHandleThread();
 
@@ -935,13 +935,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
