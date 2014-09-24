@@ -99,6 +99,9 @@ public:
     // 当epoll读到0个数据时，客户端主动close
     virtual void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
 
+    // 当连接超时时,提供应用层处理机会
+    virtual void connector_timeout_cb(common::net::Connector* connector);
+
     void process_pipe(common::event* e, int revents);
 
     friend class HandleThread<T>;
@@ -333,6 +336,11 @@ void EpollServer<T>::closed_connect_cb(std::shared_ptr<common::net::Connector> c
 	close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
     }
 
+}
+
+template<typename T>
+void EpollServer<T>::connector_timeout_cb(common::net::Connector* connector) {
+    
 }
 
 } // net

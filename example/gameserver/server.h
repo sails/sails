@@ -42,6 +42,8 @@ public:
     // 客户端主动close, 创建一个disconnector的数据包
     void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
 
+    // 当连接超时时,创建一个disconnector数据包
+    void connector_timeout_cb(common::net::Connector* connector);
     
     // 移除用户
     void deletePlayer(uint32_t playerId);

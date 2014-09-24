@@ -507,6 +507,7 @@ template <typename T>
 void NetThread<T>::timeoutCb(common::net::Connector* connector) {
     if (connector != NULL && connector->owner != NULL) {
 	NetThread<T>* netThread = (NetThread<T>*)connector->owner;
+	netThread->server->connector_timeout_cb(connector);
 	netThread->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
     }
 }

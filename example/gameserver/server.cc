@@ -88,6 +88,16 @@ void Server::closed_connect_cb(std::shared_ptr<common::net::Connector> connector
     this->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
 }
 
+
+void Server::connector_timeout_cb(common::net::Connector* connector) {
+     psplog.info("connector_timeout_cb");
+    uint32_t playerId = connector->data.u32;
+    sendDisConnectDataToHandle(playerId, connector->getIp(), connector->getPort(), connector->get_connector_fd(), connector->getId());
+
+    // 不用调用close_connector了,netthread中会自己调用
+}
+
+
 Player* Server::getPlayer(uint32_t playerId) {
     Player* player = playerList.get(playerId);
     return player;
@@ -592,7 +602,8 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
 
 void HandleImpl::player_session_check(uint32_t playerId, std::string ip, int port, int fd, uint32_t uid, std::string session) {
       if ( !check_session(session) ) {
-      ((Server*)server)->sendDisConnectDataToHandle(playerId, ip, port, fd, uid);
+	  psplog.warn("player:%u session:%s check error, ip:%s, port:%d", playerId, session.c_str(), ip.c_str(), port);
+	  ((Server*)server)->sendDisConnectDataToHandle(playerId, ip, port, fd, uid);
       }
 }
 
