@@ -1,11 +1,17 @@
 #include <common/net/epoll_server.h>
 #include <common/net/connector.h>
 #include <signal.h>
+#include <common/log/logging.h>
+
 
 typedef struct {
     char msg[100];
 } __attribute__((packed)) EchoStruct;
 
+namespace sails {
+sails::common::log::Logger serverlog(sails::common::log::Logger::LOG_LEVEL_DEBUG,
+				  "./log/server.log", sails::common::log::Logger::SPLIT_DAY);
+}
 
 class TestServer : public sails::common::net::EpollServer<EchoStruct> {
 public:

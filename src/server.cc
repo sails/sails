@@ -3,6 +3,9 @@
 
 namespace sails {
 
+sails::common::log::Logger serverlog(common::log::Logger::LOG_LEVEL_DEBUG,
+				  "./log/server.log", common::log::Logger::SPLIT_DAY);
+
 Server::Server(int netThreadNum) : sails::common::net::EpollServer<common::net::PacketCommon>(netThreadNum){
     
     // 得到配置的模块
@@ -105,7 +108,6 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<common::net::Packe
 	response->common.len = response_len;
 	memcpy(response->data, content.data, content.len);
 	
-	sails::common::net::TagSendData *sendData = new sails::common::net::TagSendData();
 	std::string buffer = std::string((char *)response, response_len);
 	server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
