@@ -330,7 +330,6 @@ void EventLoop::start_loop() {
 	    }
 	}
     }
-    printf("loop stop\n");
 }
 
 void EventLoop::stop_loop() {

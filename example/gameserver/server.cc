@@ -612,12 +612,10 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
 
 
 void HandleImpl::player_session_check(uint32_t playerId, std::string ip, int port, int fd, uint32_t uid, std::string session) {
-    /*
       if ( !check_session(session) ) {
 	  psplog.warn("player:%u session:%s check error, ip:%s, port:%d", playerId, session.c_str(), ip.c_str(), port);
 	  ((Server*)server)->sendDisConnectDataToHandle(playerId, ip, port, fd, uid);
       }
-    */
 }
 
 

@@ -248,7 +248,9 @@ bool EpollServer<T>::add_handle(HandleThread<T> *handle) {
 
 template<typename T>
 bool EpollServer<T>::startHandleThread() {
+    int i = 0;
     for (HandleThread<T> *handle : handleThreads) {
+	printf("start handle thread i:%d\n", i);
 	handle->run();
     }
     dispacher_thread = new DispatcherThread<T>(this);

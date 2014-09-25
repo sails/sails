@@ -68,7 +68,6 @@ bool Connector::connect(const char *ip, uint16_t port, bool keepalive) {
  
 void Connector::set_timeout() {
     this->is_timeout = true;
-    printf("time out...............\n");
     if (timeoutCB != NULL) {
 	timeoutCB(this);
     }

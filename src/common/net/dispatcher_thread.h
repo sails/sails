@@ -75,7 +75,6 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
 	    }while(data != NULL);
 	}
     }
-    printf("handle thread dispatch loop end\n");
 }
 
 template<typename T>
