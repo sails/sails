@@ -7,6 +7,13 @@
 #include <common/base/thread_queue.h>
 #include <common/base/event_loop.h>
 #include <common/net/connector_list.h>
+#include <common/log/logging.h>
+
+namespace sails {
+
+extern sails::common::log::Logger serverlog;
+
+}
 
 
 namespace sails {
@@ -349,7 +356,7 @@ void NetThread<T>::add_connector(std::shared_ptr<common::net::Connector> connect
 
 template <typename T>
 void NetThread<T>::read_data_cb(common::event* e, int revents, void* owner) {
-    if (owner != NULL) {
+    if (owner != NULL && (revents & common::EventLoop::Event_READ)) {
 	NetThread<T>* net_thread = (NetThread<T>*)owner;
 	net_thread->read_data(e, revents);
     }
@@ -411,6 +418,7 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 	     char errormsg[100];
 	    memset(errormsg, '\0', 100);
 	    sprintf(errormsg, "read connfd %d, return:%d", connector->get_connector_fd(), n);
+	    serverlog.warn(errormsg);
 	    perror(errormsg);
 	    break;
 	}else if (n == -1) {
@@ -421,6 +429,7 @@ void NetThread<T>::read_data(common::event* ev, int revents) {
 		char errormsg[100];
 		memset(errormsg, '\0', 100);
 		sprintf(errormsg, "read connfd %d, return:%d, errno:%d", connector->get_connector_fd(), n, lasterror);
+	        serverlog.warn(errormsg);
 		perror(errormsg);
 		break;
 	    }
@@ -569,7 +578,8 @@ void NetThread<T>::send(const std::string &ip, uint16_t port, int uid,const std:
 
 template <typename T>
 void NetThread<T>::close_connector(const std::string &ip, uint16_t port, int uid, int fd) {
-    printf("call close connector\n");
+//    printf("call close connector\n");
+    serverlog.debug("call close connector\n");
     TagSendData* data = new TagSendData();
     data->cmd = 'c';
     data->uid = uid;

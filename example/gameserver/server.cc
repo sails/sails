@@ -12,7 +12,8 @@ namespace sails {
 sails::Config config("./gameserver.json");
 sails::common::log::Logger psplog(common::log::Logger::LOG_LEVEL_DEBUG,
 				  "./log/psp.log", common::log::Logger::SPLIT_DAY);
-
+sails::common::log::Logger serverlog(common::log::Logger::LOG_LEVEL_DEBUG,
+				  "./log/server.log", common::log::Logger::SPLIT_DAY);
 
 
 Server::Server(int netThreadNum) : sails::common::net::EpollServer<SceNetAdhocctlPacketBase>(netThreadNum){
@@ -516,6 +517,7 @@ void HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdh
 
 
 void HandleImpl::logout_user(uint32_t playerId) {
+    psplog.debug("call logout use playerId:%u", playerId);
     Player* player = ((Server*)server)->getPlayer(playerId);
     if (player != NULL) {
 	server->close_connector(player->ip, player->port, player->connectorUid, player->fd);

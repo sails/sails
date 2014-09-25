@@ -2,12 +2,14 @@
 #include "game_world.h"
 #include "server.h"
 #include "game_packets.h"
+#include <common/log/logging.h>
 
 
 
 namespace sails {
 
 
+extern sails::common::log::Logger psplog;
 
 GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld) {
     this->roomCode = roomCode;
@@ -17,7 +19,7 @@ GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld) {
 
 bool GameRoom::connectPlayer(uint32_t playerId) {
 
-    printf("join game:%s, room :%s\n",gameWorld->getGameCode().c_str(), roomCode.c_str());
+    psplog.debug("join game:%s, room :%s\n",gameWorld->getGameCode().c_str(), roomCode.c_str());
     // 加入map,再通过其它用户
     std::unique_lock<std::mutex> locker(playerMutex);
     
@@ -36,7 +38,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 	// Set Default BSSID(group host)
 	bssid.mac = playerMac;
 
-	printf("connect room, ip:%s, port:%d, mac:%s\n", player->ip.c_str(), player->port, player->mac.c_str());
+	psplog.debug("connect room, ip:%s, port:%d, mac:%s\n", player->ip.c_str(), player->port, player->mac.c_str());
 	
 	// 循环通知玩家
 	for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
@@ -61,7 +63,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 					
 	    // Send Data
 	    // 通知对方
-	    printf("notify other side\n");
+	    psplog.debug("notify other side\n");
 	    std::string buffer = std::string((char*)&packet, sizeof(packet));
 	    gameWorld->getServer()->send(buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
 	    
@@ -101,7 +103,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 	    }
 	}
 	player->roomCode = roomCode;
-	printf("user connect group\n");
+	psplog.debug("user connect group\n");
 
 	return true;
     }
