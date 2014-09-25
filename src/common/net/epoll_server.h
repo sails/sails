@@ -40,9 +40,32 @@ public:
     // 终止网络线程
     bool stopNetThread();
 
+    bool add_handle(HandleThread<T> *handle);
+
+    // 开始运行处理线程
+    bool startHandleThread();
+    // 终止处理线程
+    bool stopHandleThread();
+
+
     // T 的删除器
     virtual void Tdeleter(T *data);
-    
+
+    virtual void create_connector_cb(std::shared_ptr<common::net::Connector> connector);
+
+    // 循环调用parser
+    virtual void parseImp(std::shared_ptr<common::net::Connector> connector);
+    // 解析数据包
+    virtual T* parse(std::shared_ptr<common::net::Connector> connector) {
+	printf(" need implement parser method in subclass\n");
+    }
+
+    // 当epoll读到0个数据时，客户端主动close
+    virtual void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
+
+    // 当连接超时时,提供应用层处理机会
+    virtual void connector_timeout_cb(common::net::Connector* connector);
+
     // 增加连接
     void addConnector(std::shared_ptr<common::net::Connector> connector, int fd);
     
@@ -50,23 +73,6 @@ public:
     NetThread<T>* getNetThreadOfFd(int fd) {
 	return netThreads[fd % netThreads.size()];
     }
-
-
-    virtual void create_connector_cb(std::shared_ptr<common::net::Connector> connector);
-    
-    virtual void parseImp(std::shared_ptr<common::net::Connector> connector);
-    // 解析数据包
-    virtual T* parse(std::shared_ptr<common::net::Connector> connector) {
-	printf(" need implement parser method in subclass\n");
-    }
-
-    
-    bool add_handle(HandleThread<T> *handle);
-
-    // 开始运行处理线程
-    bool startHandleThread();
-    // 终止处理线程
-    bool stopHandleThread();
 
     // 分发线程等待数据
     void dipacher_wait();
@@ -98,12 +104,6 @@ public:
 
     // 关闭连接
     void close_connector(const std::string &ip, uint16_t port, int uid, int fd);
-
-    // 当epoll读到0个数据时，客户端主动close
-    virtual void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
-
-    // 当连接超时时,提供应用层处理机会
-    virtual void connector_timeout_cb(common::net::Connector* connector);
 
     void process_pipe(common::event* e, int revents);
 
