@@ -67,7 +67,9 @@ void Server::sendDisConnectDataToHandle(uint32_t playerId, std::string ip, int p
 
 }
 
-
+void Server::Tdeleter(SceNetAdhocctlPacketBase *data) {
+    free(data);
+}
 
 void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector) {
     uint32_t playerId = connector->data.u32;
@@ -333,6 +335,12 @@ std::map<std::string, std::list<std::string>> Server::getPlayerNameMap(std::stri
 
 Server::~Server() {
 
+    // 删除所有gameworld
+    for (auto game: gameWorldMap) {
+	delete game.second;
+    }
+    //删除所有用户
+    playerList.empty();
 }
 
 
@@ -405,7 +413,7 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
     default: {
 
     }
-
+	
     }
 }
 
@@ -456,6 +464,7 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
 
     // 不合法
     // 删除用户
+    psplog.debug("gamecode invalid");
     ((Server*)server)->deletePlayer(playerId);
     server->close_connector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
@@ -603,10 +612,12 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
 
 
 void HandleImpl::player_session_check(uint32_t playerId, std::string ip, int port, int fd, uint32_t uid, std::string session) {
+    /*
       if ( !check_session(session) ) {
 	  psplog.warn("player:%u session:%s check error, ip:%s, port:%d", playerId, session.c_str(), ip.c_str(), port);
 	  ((Server*)server)->sendDisConnectDataToHandle(playerId, ip, port, fd, uid);
       }
+    */
 }
 
 

@@ -211,6 +211,35 @@ NetThread<T>::~NetThread() {
 	ev_loop = NULL;
     }
 
+    // 删除sendlist中没有处理的数据
+    bool hasData = false;
+    do {
+	hasData = false;
+	TagSendData* data = NULL;
+	sendlist.pop_front(data, 0);
+	if (data != NULL) {
+	    hasData = true;
+	    delete data;
+	}
+    }while(hasData);
+
+    // 删除recvlist中的数据
+    bool hasRecvData = false;
+    do {
+	hasRecvData = false;
+	    TagRecvData<T>* data = NULL;
+	    getRecvData(data, 0);
+	    if (data != NULL) {
+		hasRecvData = true;
+		T* t = data->data;
+		if (t != NULL) {
+		    server->Tdeleter(t);
+		    t = NULL;
+		}
+		delete data;
+		data = NULL;
+	    }
+    }while(hasRecvData);
 }
 
 
@@ -313,7 +342,7 @@ void NetThread<T>::accept_socket(common::event* e, int revents) {
 		connector->setPort(port);
 		char sAddr[20] = {'\0'};
 		inet_ntop(AF_INET, &(local.sin_addr), sAddr, 20);
-		std::string ip = sAddr;
+		std::string ip(sAddr);
 		connector->setIp(ip);
 		connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
@@ -464,11 +493,14 @@ void NetThread<T>::read_pipe_cb(common::event* e, int revents, void* owner) {
     }
 
     TagSendData* data = NULL;
+    bool read_more = true;
     do {
+	read_more = false;
 	data = NULL;
 	net_thread->sendlist.pop_front(data, 0);
 
 	if (data != NULL) {
+	    read_more = true;
 	    int uid = data->uid;
 	    std::string ip = data->ip;
 	    uint16_t port = data->port;
@@ -496,10 +528,11 @@ void NetThread<T>::read_pipe_cb(common::event* e, int revents, void* owner) {
 		    }
 		}
 	    }
-	    
-
 	}
-    }while(data != NULL);
+	if (data != NULL) {
+	    delete data;
+	}
+    }while(read_more);
 
 }
 
@@ -549,7 +582,15 @@ void NetThread<T>::terminate() {
 
 template <typename T>
 void NetThread<T>::addRecvList(TagRecvData<T> *data) {
-    recvlist.push_back(data);
+    if( !recvlist.push_back(data) ) {
+	// 删除它
+	T* t = data->data;
+	if (t != NULL) {
+	    server->Tdeleter(t);
+	    data->data = NULL;
+	}
+	delete data;
+    }
     server->notify_dispacher();
 }
 
@@ -566,7 +607,10 @@ void NetThread<T>::send(const std::string &ip, uint16_t port, int uid,const std:
     data->buffer = s;
     data->ip = ip;
     data->port = port;
-    sendlist.push_back(data);
+    if( !sendlist.push_back(data)) {
+	delete data;
+    }
+    
     // 通知epoll_wait
     sails::common::event notify_ev;
     emptyEvent(notify_ev);
@@ -585,7 +629,10 @@ void NetThread<T>::close_connector(const std::string &ip, uint16_t port, int uid
     data->uid = uid;
     data->ip = ip;
     data->port = port;
-    sendlist.push_back(data);
+    while(!sendlist.push_back(data)) {
+	// 要保证一定正确加入
+	usleep(10000); // 10ms
+    }
 
     // 通知epoll_wait
     sails::common::event notify_ev;

@@ -57,8 +57,8 @@ template<typename T>
 void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
     while(dispacher->continueRun) {
 	
-	dispacher->server->dipacher_wait(); //会一直wait直到有数据
-	
+	dispacher->server->dipacher_wait();
+
 	int recvQueueNum = dispacher->server->getRecvQueueNum();
 	for (int i = 0; i < recvQueueNum; i++) {
 	    TagRecvData<T>* data = NULL;
@@ -75,6 +75,7 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
 	    }while(data != NULL);
 	}
     }
+    printf("handle thread dispatch loop end\n");
 }
 
 template<typename T>

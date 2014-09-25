@@ -119,6 +119,24 @@ HandleThread<T>::~HandleThread() {
 	thread = NULL;
     }
 
+    // 删除handlelist中的数据
+    bool hashandleData = false;
+    do {
+	hashandleData= false;
+	TagRecvData<T>* data = NULL;
+	handlelist.pop_front(data, 100);
+	if (data != NULL) {
+	    hashandleData = true;
+	    T* t = data->data;
+	    if (t != NULL) {
+		server->Tdeleter(t);
+		t = NULL;
+	    }
+	    delete data;
+	    data = NULL;
+	}
+    }while(hashandleData);
+
 }
 
 template <typename T>
@@ -158,7 +176,15 @@ void HandleThread<T>::join() {
 
 template <typename T>
 void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
-    handlelist.push_back(data);
+    if ( !handlelist.push_back(data)) {
+	// 删除它
+	T* t = data->data;
+	if (t != NULL) {
+	    server->Tdeleter(t);
+	    data->data = NULL;
+	}
+	delete data;
+    }
 }
 
 
@@ -176,7 +202,11 @@ void HandleThread<T>::handleImp() {
 	    
 	    handle(recvData);
 	    heartbeat();
-
+	    
+	    if (data->data != NULL) {
+		server->Tdeleter(data->data);
+		data->data = NULL;
+	    }
 	    delete data;
 	}else {
 	    

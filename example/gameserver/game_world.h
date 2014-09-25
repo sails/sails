@@ -16,6 +16,8 @@ class GameWorld {
 public:
     GameWorld(std::string gameCode, Server* server);
 
+    ~GameWorld();
+
     std::string getGameCode() { return gameCode;}
 
     GameRoom* getGameRoom(std::string& roomCode);

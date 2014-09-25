@@ -11,6 +11,17 @@ GameWorld::GameWorld(std::string gameCode, Server* server) {
     this->server = server;
 }
 
+GameWorld::~GameWorld() {
+    // 删除所有的room
+    std::map<std::string, GameRoom*>::iterator it;
+    for (it = roomMap.begin(); it != roomMap.end(); it++) {
+	GameRoom* room = it->second;
+	if (room != NULL) {
+	    delete room;
+	}
+    }
+}
+
 GameRoom* GameWorld::getGameRoom(std::string& roomCode) {
     std::unique_lock<std::mutex> locker(roomMutex);
     GameRoom* room = NULL;
@@ -142,6 +153,7 @@ std::map<std::string, std::list<std::string>> GameWorld::getPlayerNameMap() {
 Server* GameWorld::getServer() {
     return server;
 }
+
 
 } // namesapce sails
 

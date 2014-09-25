@@ -64,7 +64,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 	    // Send Data
 	    // 通知对方
 	    psplog.debug("notify other side\n");
-	    std::string buffer = std::string((char*)&packet, sizeof(packet));
+	    std::string buffer((char*)&packet, sizeof(packet));
 	    gameWorld->getServer()->send(buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
 	    
 	    // Set Player Name
@@ -77,8 +77,8 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 	    packet.ip = HandleImpl::getIp(peer->ip);
 					
 	    // 通知自己
-	    buffer = std::string((char*)&packet, sizeof(packet));
-	    gameWorld->getServer()->send(buffer, player->ip, player->port, player->connectorUid, player->fd);
+	    std::string buffer2((char*)&packet, sizeof(packet));
+	    gameWorld->getServer()->send(buffer2, player->ip, player->port, player->connectorUid, player->fd);
 
 
 	    // 最先加入的当这个组的host
@@ -89,7 +89,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 	}
 	
 	// Send Network BSSID to User
-	std::string buffer = std::string((char*)&bssid, sizeof(bssid));
+	std::string buffer((char*)&bssid, sizeof(bssid));
 	gameWorld->getServer()->send(buffer, player->ip, player->port, player->connectorUid, player->fd);
 	
 

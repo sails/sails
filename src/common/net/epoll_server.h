@@ -40,6 +40,9 @@ public:
     // 终止网络线程
     bool stopNetThread();
 
+    // T 的删除器
+    virtual void Tdeleter(T *data);
+    
     // 增加连接
     void addConnector(std::shared_ptr<common::net::Connector> connector, int fd);
     
@@ -149,7 +152,6 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
 	this->netThreadNum = 15;
     }
     for (size_t i = 0; i < this->netThreadNum; i++) {
-	printf("new net thread i:%ld\n", i);
 	NetThread<T> *netThread = new NetThread<T>(this);
 	netThreads.push_back(netThread);
     }
@@ -164,7 +166,6 @@ EpollServer<T>::~EpollServer() {
     for (size_t i = 0; i < this->netThreadNum; i++) {
 	delete netThreads[i];
     }
-    printf("delete server\n");
 }
 
 
@@ -199,6 +200,11 @@ bool EpollServer<T>::stopNetThread() {
     }
 }
 
+
+template<typename T>
+void EpollServer<T>::Tdeleter(T *data) {
+    free(data);
+}
 
 template<typename T>
 void EpollServer<T>::addConnector(std::shared_ptr<common::net::Connector> connector, int fd) {
@@ -252,6 +258,15 @@ bool EpollServer<T>::startHandleThread() {
 
 template<typename T>
 bool EpollServer<T>::stopHandleThread() {
+
+    printf("stop dispacher thread\n");
+    dispacher_thread->terminate();
+    dispacher_thread->join();
+    delete dispacher_thread;
+    dispacher_thread = NULL;
+    printf(" end stop dispacher\n");
+
+    
     printf("stop handle thread\n");
     for (int i = 0; i < handleThreads.size(); i++) {
         handleThreads[i]->terminate();
@@ -260,12 +275,6 @@ bool EpollServer<T>::stopHandleThread() {
 
     }
 
-    printf("stop dispacher thread\n");
-    dispacher_thread->terminate();
-    dispacher_thread->join();
-    delete dispacher_thread;
-    dispacher_thread = NULL;
-    printf(" end stop dispacher\n");
 }
 
 template<typename T>

@@ -10,7 +10,9 @@ class Player {
 public:
     Player();
 
+    ~Player();
 
+    static void destroy(Player* player);
     
     
 public:

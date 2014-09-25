@@ -25,11 +25,11 @@ public:
     // 通知等待在队列上面的线程都醒过来
     void notifyT();
 
-    // 放数据到队列后端.
-    void push_back(const T& t);
+    // 放数据到队列后端.如果失败,调用端要决定如何处理
+    bool push_back(const T& t);
 
-    // 放数据到队列后端
-    void push_back(const queue_type &qt);
+    // 放数据到队列后端,返回push了多少个元素
+    int push_back(const queue_type &qt);
     
     // 放数据到队列前端. 
     void push_front(const T& t);
@@ -128,31 +128,37 @@ template<typename T, typename D> void ThreadQueue<T, D>::notifyT()
     this->notify.notify_all();
 }
 
-template<typename T, typename D> void ThreadQueue<T, D>::push_back(const T& t)
+template<typename T, typename D> bool ThreadQueue<T, D>::push_back(const T& t)
 {
     if (_size >= _maxSize) {
-	return;
+	return false;
     }
     std::unique_lock<std::mutex> locker(queue_mutex);
     this->notify.notify_one();
 
     _queue.push_back(t);
     ++_size;
+    return true;
 }
 
-template<typename T, typename D> void ThreadQueue<T, D>::push_back(const queue_type &qt)
+template<typename T, typename D> int ThreadQueue<T, D>::push_back(const queue_type &qt)
 {
     std::unique_lock<std::mutex> locker(queue_mutex);
-
     typename queue_type::const_iterator it = qt.begin();
     typename queue_type::const_iterator itEnd = qt.end();
+    int push_num = 0;
     while(it != itEnd)
     {
+	if (_size >= _maxSize) {
+	    return push_num;
+	}
         _queue.push_back(*it);
+	push_num++;
         ++it;
         ++_size;
 	this->notify.notify_one();
     }
+    return push_num;
 }
 
 template<typename T, typename D> void ThreadQueue<T, D>::push_front(const T& t)

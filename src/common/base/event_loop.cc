@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <mutex>
 
 namespace sails {
 namespace common {
@@ -67,6 +68,8 @@ void EventLoop::init() {
     assert(epoll_ctl(epollfd, EPOLL_CTL_ADD, shutdownfd, &ev) == 0);
 
 }
+
+// 把事件加到已有事件列表的最后
 bool EventLoop::add_event(struct event*ev, bool ctl_epoll) {
     if(ev->fd >= max_events) {
 	// malloc new events and anfds
@@ -82,6 +85,7 @@ bool EventLoop::add_event(struct event*ev, bool ctl_epoll) {
     e->cb = ev->cb;
     e->data = ev->data;
     e->stop_cb = ev->stop_cb;
+    e->next = NULL;
 
     int fd = e->fd;
 
@@ -211,6 +215,7 @@ bool EventLoop::mod_event(struct event*ev, bool ctl_epoll) {
 	anfds[fd].isused = 0;
 	// detele event list
 	struct event* cur = anfds[fd].next;
+	anfds[fd].next = NULL;
 	struct event* pre = NULL;
 	while(cur != NULL) {
 	    pre = cur;
@@ -218,6 +223,9 @@ bool EventLoop::mod_event(struct event*ev, bool ctl_epoll) {
 	    if (pre->stop_cb != NULL) {
 		pre->stop_cb(pre, owner);
 	    }
+	    pre->next = NULL;
+	    pre->stop_cb = NULL;
+	    pre->data.ptr = NULL;
 	    free(pre);
 	    pre = NULL;
 	}
@@ -275,8 +283,10 @@ bool EventLoop::event_stop(int fd) {
     return true;
 }
 
+std::recursive_mutex eventMutex;
 
 bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
+    std::unique_lock<std::recursive_mutex> locker(eventMutex);
     if(op == EventLoop::EVENT_CTL_ADD) {
 	return this->add_event(ev);
     }else if(op == EventLoop::EVENT_CTL_DEL) {
@@ -320,6 +330,7 @@ void EventLoop::start_loop() {
 	    }
 	}
     }
+    printf("loop stop\n");
 }
 
 void EventLoop::stop_loop() {
@@ -334,6 +345,7 @@ void EventLoop::stop_loop() {
 }
 
 void EventLoop::process_event(int fd, int events) {
+    std::unique_lock<std::recursive_mutex> locker(eventMutex);
     if(fd < 0 || fd > max_events) {
 	return;
     }

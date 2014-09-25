@@ -9,8 +9,25 @@ Player::Player() {
     age = 0;
 }
 
+Player::~Player() {
+    
+}
 
+
+void Player::destroy(Player* player) {
+    delete player;
+}
 
 
 
 } // namespace sails
+
+
+
+
+
+
+
+
+
+

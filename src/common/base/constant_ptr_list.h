@@ -15,6 +15,7 @@ template<typename T>
 class ConstantPtrList {
 public:
     ConstantPtrList();
+    
     ~ConstantPtrList();
 
     // 初始化大小
@@ -36,6 +37,9 @@ public:
 
     // 删除连接
     void del(uint32_t uid);
+    
+    // T类型必须实现了static destroy(T *t)的方法
+    void empty();
 
     // 大小
     size_t size();
@@ -113,6 +117,7 @@ void ConstantPtrList<T>::init(uint32_t size)
 
     magic_num = (((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24 );
 
+    vList[0] = NULL;
     //free从1开始分配, 这个值为uid
     for(uint32_t i = 1; i <= total; i++)
     { 
@@ -199,9 +204,24 @@ size_t ConstantPtrList<T>::size()
     return total - free_size;
 }
 
+template<typename T>
+void ConstantPtrList<T>::empty() {
+    for (int i = 1; i <= total; i++) {
+	if (vList[i] != NULL) {
+	    T::destroy(vList[i]);
+	    vList[i] = NULL;
+	}
+    }
+}
+
 
 } // namespace common
 } // namespace sails
 
 
 #endif /* CONSTANT_PTR_LIST_H */
+
+
+
+
+

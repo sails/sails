@@ -21,6 +21,7 @@ public:
     ~Server();
 
     void create_connector_cb(std::shared_ptr<common::net::Connector> connector);
+    void Tdeleter(SceNetAdhocctlPacketBase *data);
 
     // 获取游戏
     GameWorld* getGameWorld(std::string& gameCode);
