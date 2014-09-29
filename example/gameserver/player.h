@@ -5,6 +5,14 @@
 
 namespace sails {
 
+enum DisconnectState {
+    STATE_SUCCESS = 0,
+    STATE_PLAYER_NOT_EXISTS = 1,
+    STATE_PLAYER_INVALID = 2,
+    STATE_NO_GAMEWOLD = 3,
+    STATE_NO_ROOM = 4,
+    STATE_FAILED = -1
+};
 
 class Player {
 public:

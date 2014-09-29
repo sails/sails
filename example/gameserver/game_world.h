@@ -25,7 +25,7 @@ public:
 
 
     bool connectPlayer(uint32_t playerId, std::string& roomCode);
-    void disConnectPlayer(uint32_t playerId, std::string& roomCode);
+    DisconnectState disConnectPlayer(uint32_t playerId, std::string& roomCode);
     
     std::list<std::string> getRoomList();
 

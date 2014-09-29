@@ -93,7 +93,7 @@ public:
     // 把用户加入游戏/组里
     void connect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
     // 从组里把用户移除
-    void disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    DisconnectState disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
         
     // 获取游戏的组列表
     void send_scan_results(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);

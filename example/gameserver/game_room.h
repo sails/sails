@@ -19,7 +19,7 @@ public:
 
     bool connectPlayer(uint32_t playerId);
 
-    void disConnectPlayer(uint32_t playerId);
+    DisconnectState disConnectPlayer(uint32_t playerId);
 
     std::string getRoomCode();
 

@@ -110,17 +110,19 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
     return false;
 }
 
-void GameRoom::disConnectPlayer(uint32_t playerId) {
+DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
     
     std::unique_lock<std::mutex> locker(playerMutex);
 
     std::map<uint32_t, Player*>::iterator playerIter = playerMap.find(playerId);
     if (playerIter == playerMap.end()) {
-	return;
+	psplog.error("GameRoom::disConnectPlayer playerId:%u not finded", playerId);
+	return STATE_PLAYER_NOT_EXISTS;
     }
     Player* player = playerIter->second;
     if (player->roomCode.length() == 0 || player->gameCode.length() == 0) {
-	return;
+	psplog.error("GameRoom::disConnectPlayer playerId:%u not invalid roomCode or gameCode", playerId);
+	return STATE_PLAYER_INVALID;
     }
     
     player->roomCode = "";
@@ -154,6 +156,7 @@ void GameRoom::disConnectPlayer(uint32_t playerId) {
 	    gameWorld->getServer()->send(buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
 	    
     }
+    return STATE_SUCCESS;
 }
 
 
@@ -196,7 +199,6 @@ void GameRoom::transferMessage(std::string&ip, std::string& mac, std::string& me
 	Player* peer = iter->second;
 	if (peer != NULL) {
 	    if (peer->ip == ip && peer->mac == mac) {
-//		printf("transfer message ip:%s, port:%d, message len:%d\n", peer->ip.c_str(), peer->port, message.length());
 		gameWorld->getServer()->send(message, peer->ip, peer->port, peer->connectorUid, peer->fd);
 	    }
 	}

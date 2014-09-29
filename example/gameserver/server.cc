@@ -384,7 +384,10 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
 	psplog.info("disconnect");
 	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_LOGGED_IN) {
 	    // Leave Game Gro0x00000000019527a0up
-	    disconnect_user(recvData);
+	    DisconnectState disconnectState = disconnect_user(recvData);
+	    if (disconnectState != STATE_SUCCESS) {
+		psplog.error("disconnect from game room error:%d", disconnectState);
+	    }
 	}
 	logout_user(playerId);
 	break;
@@ -513,14 +516,24 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
 
 }
 
-void HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
+DisconnectState HandleImpl::disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
     uint32_t playerId = recvData.extId;
     Player* player = ((Server*)server)->getPlayer(playerId);
+    if (player == NULL) {
+	return STATE_PLAYER_NOT_EXISTS;
+    }
+    
     if (player != NULL && player->gameCode.length()> 0 && player->ip == recvData.ip && player->port == recvData.port) {
 	GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
 	if (gameWorld != NULL) {
-	    gameWorld->disConnectPlayer(playerId,player->roomCode);
+	    return gameWorld->disConnectPlayer(playerId,player->roomCode);
+	}else {
+	    psplog.error("call disconnect_user but playerId:%u not find gamewold", playerId);
+	    return STATE_NO_GAMEWOLD;
 	}
+    }else {
+	psplog.error("call disconnect_user but playerId:%u not exists", playerId);
+	return STATE_PLAYER_INVALID;
     }
 }
 

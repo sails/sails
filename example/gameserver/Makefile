@@ -1,4 +1,4 @@
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -L../../lib -I./ -I../../src/ -I../../deps/json-cpp/include/
+CFLAGS			= -std=c++11 -fno-omit-frame-pointer -O0 -g -gstabs+ -L../../lib -I./ -I../../src/ -I../../deps/json-cpp/include/
 
 OBJECTS = server.o game_world.o game_room.o player.o product.o config.o
 

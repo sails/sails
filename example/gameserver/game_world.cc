@@ -4,6 +4,7 @@
 
 namespace sails {
 
+extern sails::common::log::Logger psplog;
 
 GameWorld::GameWorld(std::string gameCode, Server* server) {
     this->gameCode = gameCode;
@@ -48,12 +49,13 @@ bool GameWorld::connectPlayer(uint32_t playerId, std::string& roomCode) {
     return room->connectPlayer(playerId);
 }
 
-void GameWorld::disConnectPlayer(uint32_t playerId, std::string& roomCode) {
+DisconnectState GameWorld::disConnectPlayer(uint32_t playerId, std::string& roomCode) {
     GameRoom* room = getGameRoom(roomCode);
     if (room == NULL) {
-	return;
+	psplog.error("GameWorld::disConnectPlayer playerId:%u not find room", playerId);
+	return STATE_NO_ROOM;
     }
-    room->disConnectPlayer(playerId);
+    return room->disConnectPlayer(playerId);
 }
 
 std::list<std::string> GameWorld::getRoomList() {
