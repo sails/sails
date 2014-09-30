@@ -485,7 +485,12 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
 	// Iterate Characters
 	int i = 0; for(; i < ADHOCCTL_GROUPNAME_LEN && valid_group_name == 1; i++){
 	    // End of Name
-	    if(group->data[i] == 0) break;
+	    if(group->data[i] == 0) {
+		if (i == 0) {
+		    valid_group_name = 0;
+		}
+		break;
+	    }
 	    // A - Z
 	    if(group->data[i] >= 'A' && group->data[i] <= 'Z') continue;
 	    // a - z
@@ -509,6 +514,9 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
 		return;
 	    }
 	}
+    }else {
+	Player* player = ((Server*)server)->getPlayer(playerId);
+	psplog.error("playerId %u valid_group_name, ip:%s, port:%d, mac:%s", playerId, player->ip.c_str(), player->port, player->mac.c_str());
     }
 
     // 不合法
