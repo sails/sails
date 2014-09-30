@@ -19,6 +19,8 @@ public:
 
     bool connectPlayer(uint32_t playerId);
 
+    // 因为disconnect之后player才能被删除,所以只要保存disconnect和spreadMessage
+    // stransferMessage互斥,就不会出现问题
     DisconnectState disConnectPlayer(uint32_t playerId);
 
     std::string getRoomCode();

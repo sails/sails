@@ -51,16 +51,16 @@ public:
     ~EventLoop();
     
     void init();
-    bool event_ctl(OperatorType op, struct event*);
+    bool event_ctl(OperatorType op, const struct event*);
     bool event_stop(int fd);
     void start_loop();
     void stop_loop();
     void delete_all_event();
 private:
     void *owner;
-    bool add_event(struct event*, bool ctl_epoll = true);
-    bool delete_event(struct event*, bool ctl_epoll = true);
-    bool mod_event(struct event*, bool ctl_epoll = true);
+    bool add_event(const struct event*, bool ctl_epoll = true);
+    bool delete_event(const struct event*, bool ctl_epoll = true);
+    bool mod_event(const struct event*, bool ctl_epoll = true);
     void process_event(int fd, int events);
     bool array_needsize(int need_cnt);
     void init_events(int start, int count);

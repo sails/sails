@@ -70,7 +70,7 @@ void EventLoop::init() {
 }
 
 // 把事件加到已有事件列表的最后
-bool EventLoop::add_event(struct event*ev, bool ctl_epoll) {
+bool EventLoop::add_event(const struct event*ev, bool ctl_epoll) {
     if(ev->fd >= max_events) {
 	// malloc new events and anfds
 	if(!array_needsize(ev->fd+1)) {
@@ -140,7 +140,7 @@ void EventLoop::delete_all_event() {
     }
 }
 
-bool EventLoop::delete_event(struct event* ev, bool ctl_epoll) {
+bool EventLoop::delete_event(const struct event* ev, bool ctl_epoll) {
     int fd = ev->fd;
     if(fd < 0 || fd > max_events) {
 	return false;
@@ -203,7 +203,7 @@ bool EventLoop::delete_event(struct event* ev, bool ctl_epoll) {
 }
 
 
-bool EventLoop::mod_event(struct event*ev, bool ctl_epoll) {
+bool EventLoop::mod_event(const struct event*ev, bool ctl_epoll) {
     // 删除fd上绑定的所有struct event事件,然后再绑定新的事件,修改epoll event
     int fd = ev->fd;
     if (fd < 0 || fd > max_events) {
@@ -285,7 +285,7 @@ bool EventLoop::event_stop(int fd) {
 
 std::recursive_mutex eventMutex;
 
-bool EventLoop::event_ctl(OperatorType op, struct event* ev) {
+bool EventLoop::event_ctl(OperatorType op, const struct event* ev) {
     std::unique_lock<std::recursive_mutex> locker(eventMutex);
     if(op == EventLoop::EVENT_CTL_ADD) {
 	return this->add_event(ev);
