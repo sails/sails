@@ -11,6 +11,12 @@
 #include <mutex>
 
 namespace sails {
+
+extern sails::common::log::Logger serverlog;
+
+}
+
+namespace sails {
 namespace common {
 namespace net {
 
@@ -188,7 +194,7 @@ EpollServer<T>::~EpollServer() {
 template<typename T>
 void EpollServer<T>::handle_sigpipe(int sig)
 {
-    
+    serverlog.warn("sigpipe %d",sig);
 }
 
 template<typename T>
