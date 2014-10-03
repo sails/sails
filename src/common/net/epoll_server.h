@@ -5,6 +5,7 @@
 #include <common/net/handle_thread.h>
 #include <common/net/net_thread.h>
 #include <common/net/dispatcher_thread.h>
+#include <signal.h>
 #include <thread>
 #include <condition_variable>
 #include <mutex>
@@ -107,6 +108,10 @@ public:
 
     void process_pipe(common::event* e, int revents);
 
+
+    // sigpipe信号处理函数
+    static void handle_sigpipe(int sig);
+
     friend class HandleThread<T>;
 
 private:
@@ -135,6 +140,10 @@ private:
 
     // 空链超时时间
     int connectorTimeout;
+
+    // 防止当连接断开时的瞬间,服务器还在向它写数据时的SIGPIPE错误
+    // 没有日志,也没有core文件,很难发现
+    struct sigaction sigpipe_action;
 };
 
 
@@ -157,6 +166,13 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
     }
     bTerminate = true;
     connectorTimeout = 0;
+
+    
+    sigpipe_action.sa_handler = EpollServer<T>::handle_sigpipe;
+    sigemptyset(&sigpipe_action.sa_mask);
+    sigpipe_action.sa_flags = 0;
+    sigaction(SIGPIPE, &sigpipe_action, NULL);
+    
 }
 
 
@@ -168,6 +184,12 @@ EpollServer<T>::~EpollServer() {
     }
 }
 
+
+template<typename T>
+void EpollServer<T>::handle_sigpipe(int sig)
+{
+    
+}
 
 template<typename T>
 void EpollServer<T>::createEpoll() {

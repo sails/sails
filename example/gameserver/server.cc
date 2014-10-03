@@ -44,6 +44,7 @@ GameWorld* Server::createGameWorld(std::string& gameCode) {
 
 
 void Server::sendDisConnectDataToHandle(uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid) {
+    psplog.debug("sendDisConnectDataToHandle playerId:%u", playerId);
     if (playerId <= 0) {
 	return;
     }
@@ -64,7 +65,7 @@ void Server::sendDisConnectDataToHandle(uint32_t playerId, std::string ip, int p
     int handleNum = getHandleNum();
     int selectedHandle = fd % handleNum;
     addHandleData(data, selectedHandle);
-
+    psplog.debug("sendDisConnectDataToHandle playerId:%u end", playerId);
 }
 
 void Server::Tdeleter(SceNetAdhocctlPacketBase *data) {
@@ -88,7 +89,9 @@ void Server::closed_connect_cb(std::shared_ptr<common::net::Connector> connector
 
     // 关闭连接
     connector->data.u32 = 0;
-    this->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
+    if (!connector->isClosed()) {
+	this->close_connector(connector->getIp(), connector->getPort(), connector->getId(), connector->get_connector_fd());
+    }
 }
 
 
