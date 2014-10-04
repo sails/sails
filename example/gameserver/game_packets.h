@@ -48,8 +48,9 @@ typedef struct SceNetAdhocctlNickname {
 #define USER_STATE_ERROR -1
 #define USER_STATE_WAITING 0
 #define USER_STATE_LOGGED_IN 1
-#define USER_STATE_TIMED_OUT 2
-#define USER_STATE_DIC_CONN 3
+#define USER_STATE_CONNECTED_ROOM 2
+#define USER_STATE_TIMED_OUT 3
+#define USER_STATE_DIC_CONN 4
 
 
 

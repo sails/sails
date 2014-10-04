@@ -74,6 +74,7 @@ void Server::Tdeleter(SceNetAdhocctlPacketBase *data) {
 
 void Server::invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector) {
     uint32_t playerId = connector->data.u32;
+    psplog.warn("invalid msg handle:%u", playerId);
     sendDisConnectDataToHandle(playerId, connector->getIp(), connector->getPort(), connector->get_connector_fd(), connector->getId());
 
     // 关闭连接
@@ -294,8 +295,8 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
     {
 	// Notify User
 	std::string ip = connector->getIp();
-	//	printf("Invalid Opcode 0x%02X in Logged-In State from %s (MAC: %02X:%02X:%02X:%02X:%02X:%02X - IP:%s).\n", user->rx[0], (char *)user->resolver.name.data, user->resolver.mac.data[0], user->resolver.mac.data[1], user->resolver.mac.data[2], user->resolver.mac.data[3], user->resolver.mac.data[4], user->resolver.mac.data[5], ip.c_str());
-
+	psplog.error("recv invalid opcode data");
+	connector->retrieve(connector->readable());
 	invalid_msg_handle(connector);
     }
 
@@ -391,7 +392,7 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
     }
     case OPCODE_DISCONNECT: {
 	psplog.info("disconnect");
-	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_LOGGED_IN) {
+	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_CONNECTED_ROOM) {
 	    // Leave Game Gro0x00000000019527a0up
 	    DisconnectState disconnectState = disconnect_user(recvData);
 	    if (disconnectState != STATE_SUCCESS) {
@@ -417,7 +418,7 @@ void HandleImpl::handle(const sails::common::net::TagRecvData<SceNetAdhocctlPack
     }
 
     case OPCODE_GAME_DATA: {
-	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_LOGGED_IN) {
+	if (((Server*)server)->getPlayerState(playerId) == USER_STATE_CONNECTED_ROOM) {
 	    transfer_message(recvData);
 	}
 	break;
@@ -515,7 +516,9 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
 	    GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
 	    if (gameWorld != NULL) {
 		std::string roomCode((char*)group->data, ADHOCCTL_GROUPNAME_LEN);
-		gameWorld->connectPlayer(playerId, roomCode);
+		if (gameWorld->connectPlayer(playerId, roomCode)) {
+		    player->userState = USER_STATE_CONNECTED_ROOM;
+		}
 		return;
 	    }
 	}

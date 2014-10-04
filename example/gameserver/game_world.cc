@@ -37,6 +37,7 @@ GameRoom* GameWorld::createGameRoom(std::string& roomCode) {
 
     GameRoom* room = new GameRoom(roomCode, 4, this);
     roomMap.insert(std::pair<std::string, GameRoom*>(roomCode, room));
+    roomNum++;
     return room;
 }
 
