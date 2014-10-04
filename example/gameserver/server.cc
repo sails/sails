@@ -268,18 +268,24 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	if(read_able >= sizeof(SceNetAdhocctlGameDataPacketC2C)) {
 	    // cast Packet
 	    SceNetAdhocctlGameDataPacketC2C *packet_raw = (SceNetAdhocctlGameDataPacketC2C*)connector->peek();
-	    if(read_able >= (sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1)) {
-		packet_len = sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1;
+	    if (packet_raw->len >0 && packet_raw->len < 3000) {
+		if(read_able >= (sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1)) {
+		    packet_len = sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1;
 
 
-		//first search user by ip and mac
-		packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-		memset(packet_new, 0, packet_len);
-		memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+		    //first search user by ip and mac
+		    packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
+		    memset(packet_new, 0, packet_len);
+		    memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
 
-		std::string ip = connector->getIp();
-		SceNetAdhocctlGameDataPacketC2C *temp = (SceNetAdhocctlGameDataPacketC2C*)packet;
+		    std::string ip = connector->getIp();
+		    SceNetAdhocctlGameDataPacketC2C *temp = (SceNetAdhocctlGameDataPacketC2C*)packet;
+		}else {
+		    psplog.error("game transfer data content len:%d", packet_raw->len);
+		    packet_len = read_able;
+		}
 	    }
+	    
 	}
     }
 
@@ -445,32 +451,35 @@ void HandleImpl::login_user_data(const sails::common::net::TagRecvData<SceNetAdh
 	// session 校验,为了让它不阻塞主逻辑,这里新建一个线程支校验,当不通过时,向handle线程发送一条disconnect命令
 	std::string ip = recvData.ip;
 	std::string session(data->session);
-
-	std::thread sessionCheckThread(&HandleImpl::player_session_check, this, playerId, ip, recvData.port, recvData.fd, recvData.uid, session);
-	sessionCheckThread.detach();
+	if (session.length() == 32 ) {
+	    std::thread sessionCheckThread(&HandleImpl::player_session_check, this, playerId, ip, recvData.port, recvData.fd, recvData.uid, session);
+	    sessionCheckThread.detach();
 	 
-	 
+	    std::string gameCode = game_product_override(&data->game);
+	    GameWorld* gameWorld = ((Server*)server)->getGameWorld(gameCode);
+	    if (gameWorld == NULL) {
+		gameWorld = ((Server*)server)->createGameWorld(gameCode);
+	    }
+	    Player* player = ((Server*)server)->getPlayer(playerId);
+	    if (gameWorld != NULL) {
+		player->mac = HandleImpl::getMacStr(data->mac);
+		player->userState =  USER_STATE_LOGGED_IN;
+		player->gameCode = gameCode;
+		player->session = session;
 
-	std::string gameCode = game_product_override(&data->game);
-	GameWorld* gameWorld = ((Server*)server)->getGameWorld(gameCode);
-	if (gameWorld == NULL) {
-	    gameWorld = ((Server*)server)->createGameWorld(gameCode);
+		psplog.info("player game code :%s", gameCode.c_str());
+		return;
+	    }
+	}else {
+	    psplog.error("playerId:%u, ip:%s, port:%d session invalid:%s", playerId, ip.c_str(), recvData.port, session.c_str());
 	}
-	Player* player = ((Server*)server)->getPlayer(playerId);
-	if (gameWorld != NULL) {
-	    player->mac = HandleImpl::getMacStr(data->mac);
-	    player->userState =  USER_STATE_LOGGED_IN;
-	    player->gameCode = gameCode;
-	    player->session = session;
-
-	    psplog.info("player game code :%s", gameCode.c_str());
-	    return;
-	}
+	
+    }else {
+	psplog.debug("gamecode or mac invalid");
     }
 
     // 不合法
     // 删除用户
-    psplog.debug("gamecode invalid");
     ((Server*)server)->deletePlayer(playerId);
     server->close_connector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
@@ -485,15 +494,8 @@ void HandleImpl::connect_user(const sails::common::net::TagRecvData<SceNetAdhocc
     // room 名称合法性检查
     int valid_group_name = 1;
     {
-	// Iterate Characters
+	// Iterate Characters, ADHOCCTL_GROUPNAME_LEN长度限制
 	int i = 0; for(; i < ADHOCCTL_GROUPNAME_LEN && valid_group_name == 1; i++){
-	    // End of Name
-	    if(group->data[i] == 0) {
-		if (i == 0) {
-		    valid_group_name = 0;
-		}
-		break;
-	    }
 	    // A - Z
 	    if(group->data[i] >= 'A' && group->data[i] <= 'Z') continue;
 	    // a - z
@@ -623,7 +625,10 @@ void HandleImpl::transfer_message(const sails::common::net::TagRecvData<SceNetAd
     std::string peerMac = HandleImpl::getMacStr(packet->dmac);
 
     packet->ip = HandleImpl::getIp(player->ip);
-    std::string message((char*)packet, sizeof(SceNetAdhocctlGameDataPacketC2C)+packet->len-1);
+
+    int totallen = sizeof(SceNetAdhocctlGameDataPacketC2C)+packet->len-1;
+    
+    std::string message((char*)packet, totallen);
 
     if (player->gameCode.length() > 0) {
 	GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
