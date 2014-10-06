@@ -269,7 +269,7 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 	if(read_able >= sizeof(SceNetAdhocctlGameDataPacketC2C)) {
 	    // cast Packet
 	    SceNetAdhocctlGameDataPacketC2C *packet_raw = (SceNetAdhocctlGameDataPacketC2C*)connector->peek();
-	    if (packet_raw->len >0 && packet_raw->len < 3000) {
+	    if (packet_raw->len >0 && packet_raw->len < 4000) {
 		if(read_able >= (sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1)) {
 		    packet_len = sizeof(SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1;
 
@@ -281,10 +281,10 @@ SceNetAdhocctlPacketBase* Server::parse(std::shared_ptr<sails::common::net::Conn
 
 		    std::string ip = connector->getIp();
 		    SceNetAdhocctlGameDataPacketC2C *temp = (SceNetAdhocctlGameDataPacketC2C*)packet;
-		}else {
-		    psplog.error("game transfer data content len:%d", packet_raw->len);
-		    packet_len = read_able;
 		}
+	    }else { // len > 4000, erro msg
+		packet_len = read_able;
+		psplog.error("game transfer data content len:%d", packet_raw->len);
 	    }
 	    
 	}

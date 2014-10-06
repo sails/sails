@@ -56,6 +56,29 @@ size_t TimeT::time_with_millisecond(char* s, size_t max)
     
 }
 
+
+
+time_t coverStrToTime(const char* timestr) {
+    if (NULL == timestr)
+    {
+	return 0;
+    }
+    struct tm tm_;
+    int year, month, day, hour, minute,second;
+    sscanf(timestr,"%d-%d-%dT%d:%d:%d", &year, &month, &day, &hour, &minute, &second);
+    tm_.tm_year  = year-1900;
+    tm_.tm_mon   = month-1;
+    tm_.tm_mday  = day;
+    tm_.tm_hour  = hour;
+    tm_.tm_min   = minute;
+    tm_.tm_sec   = second;
+    tm_.tm_isdst = 0;
+
+    time_t t_ = mktime(&tm_);
+    return t_;
+}
+
+
 } // namespace common
 } // namespace sails
 
