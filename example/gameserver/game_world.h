@@ -1,7 +1,7 @@
 #ifndef GAME_WORLD_H
 #define GAME_WORLD_H
 
-#include <common/base/constant_ptr_list.h>
+#include <sails/base/constant_ptr_list.h>
 #include <string>
 #include <list>
 #include <map>

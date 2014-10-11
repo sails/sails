@@ -4,9 +4,9 @@
 
 #include <map>
 #include <mutex>
-#include <common/net/epoll_server.h>
-#include <common/net/connector.h>
-#include <common/net/packets.h>
+#include <sails/net/epoll_server.h>
+#include <sails/net/connector.h>
+#include <sails/net/packets.h>
 #include "game_world.h"
 #include "game_packets.h"
 #include "config.h"
@@ -14,13 +14,13 @@
 namespace sails {
 
 
-class Server : public sails::common::net::EpollServer<SceNetAdhocctlPacketBase> {
+class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
 public:
     Server(int netThreadNum);
 
     ~Server();
 
-    void create_connector_cb(std::shared_ptr<common::net::Connector> connector);
+    void create_connector_cb(std::shared_ptr<net::Connector> connector);
     void Tdeleter(SceNetAdhocctlPacketBase *data);
 
     // 获取游戏
@@ -32,19 +32,19 @@ public:
     // 创建用户
     uint32_t createPlayer(std::string ip, int port, int fd, uint32_t connectUid);
     // 数据解析
-    void parseImp(std::shared_ptr<common::net::Connector> connector);
-    SceNetAdhocctlPacketBase* parse(std::shared_ptr<sails::common::net::Connector> connector);
+    void parseImp(std::shared_ptr<net::Connector> connector);
+    SceNetAdhocctlPacketBase* parse(std::shared_ptr<sails::net::Connector> connector);
 
     void sendDisConnectDataToHandle(uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid);
     
     // 非法数据处理(直接移除用户,关闭连接),关于player的数据操作放到handle线程里,防止多线程操作player的问题.创建一个disconnector的数据包
-    void invalid_msg_handle(std::shared_ptr<sails::common::net::Connector> connector);
+    void invalid_msg_handle(std::shared_ptr<sails::net::Connector> connector);
 
     // 客户端主动close, 创建一个disconnector的数据包
-    void closed_connect_cb(std::shared_ptr<common::net::Connector> connector);
+    void closed_connect_cb(std::shared_ptr<net::Connector> connector);
 
     // 当连接超时时,创建一个disconnector数据包
-    void connector_timeout_cb(common::net::Connector* connector);
+    void connector_timeout_cb(net::Connector* connector);
     
     // 移除用户
     void deletePlayer(uint32_t playerId);
@@ -67,7 +67,7 @@ private:
 private:
     std::map<std::string, GameWorld*> gameWorldMap;
     std::mutex gameworldMutex;
-    common::ConstantPtrList<Player> playerList;
+    base::ConstantPtrList<Player> playerList;
 };
 
 
@@ -81,28 +81,28 @@ private:
 
 
 
-class HandleImpl : public sails::common::net::HandleThread<SceNetAdhocctlPacketBase> {
+class HandleImpl : public sails::net::HandleThread<SceNetAdhocctlPacketBase> {
 public:
-    HandleImpl(sails::common::net::EpollServer<SceNetAdhocctlPacketBase>* server);
+    HandleImpl(sails::net::EpollServer<SceNetAdhocctlPacketBase>* server);
     
-    void handle(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    void handle(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
 
     // 登录,对用户,游戏进行校验
-    void login_user_data(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    void login_user_data(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
 
     // 把用户加入游戏/组里
-    void connect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    void connect_user(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
     // 从组里把用户移除
-    DisconnectState disconnect_user(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    DisconnectState disconnect_user(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
         
     // 获取游戏的组列表
-    void send_scan_results(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    void send_scan_results(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
     
     // 向用户发送聊天数据(如果用户没有在房间里,则向所有用户发送,否则向房间内的用户发送)
-    void spread_message(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    void spread_message(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
     
     // 向用户发送游戏数据
-    void transfer_message(const sails::common::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
+    void transfer_message(const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
 
 
     // 用户session 校验,如果不成功,则向handle线程发送退出命令

@@ -4,7 +4,7 @@
 
 namespace sails {
 
-extern sails::common::log::Logger psplog;
+extern sails::log::Logger psplog;
 
 GameWorld::GameWorld(std::string gameCode, Server* server) {
     this->gameCode = gameCode;

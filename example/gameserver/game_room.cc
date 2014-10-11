@@ -2,14 +2,14 @@
 #include "game_world.h"
 #include "server.h"
 #include "game_packets.h"
-#include <common/log/logging.h>
+#include <sails/log/logging.h>
 
 
 
 namespace sails {
 
 
-extern sails::common::log::Logger psplog;
+extern sails::log::Logger psplog;
 
 GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld) {
     this->roomCode = roomCode;
