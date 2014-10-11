@@ -1,12 +1,22 @@
+// Copyright (C) 2014 sails Authors.
+// All rights reserved.
+//
+// Filename: game_room.h
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2014-10-11 17:29:44
+
+
+
 #ifndef GAME_ROOM_H
 #define GAME_ROOM_H
 
 
 #include <string>
 #include <map>
-#include <player.h>
 #include <mutex>
 #include <list>
+#include "player.h"
 
 namespace sails {
 
@@ -14,42 +24,42 @@ class GameWorld;
 
 
 class GameRoom {
-public:
-    GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld);
+ public:
+  GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld);
 
-    bool connectPlayer(uint32_t playerId);
+  bool connectPlayer(uint32_t playerId);
 
-    // 因为disconnect之后player才能被删除,所以只要保存disconnect和spreadMessage
-    // stransferMessage互斥,就不会出现问题
-    DisconnectState disConnectPlayer(uint32_t playerId);
+  // 因为disconnect之后player才能被删除,所以只要保存disconnect和spreadMessage
+  // stransferMessage互斥,就不会出现问题
+  DisconnectState disConnectPlayer(uint32_t playerId);
 
-    std::string getRoomCode();
+  std::string getRoomCode();
 
-    std::string getRoomHostMac();
+  std::string getRoomHostMac();
 
-    void spreadMessage(std::string& message);
+  void spreadMessage(const std::string& message);
 
-    void transferMessage(std::string&ip, std::string& mac, std::string& message);
+  void transferMessage(const std::string&ip,
+                       const std::string& mac, const std::string& message);
 
-    std::list<std::string> getRoomSessions();
+  std::list<std::string> getRoomSessions();
 
-    std::list<std::string> getPlayerNames();
-    
-    
-private:
-    std::string roomCode;
-    int seatNum;
-    int usedNum;
-    std::map<uint32_t, Player*> playerMap;
-    std::mutex playerMutex;
+  std::list<std::string> getPlayerNames();
 
-    GameWorld *gameWorld;
+ private:
+  std::string roomCode;
+  int seatNum;
+  int usedNum;
+  std::map<uint32_t, Player*> playerMap;
+  std::mutex playerMutex;
+
+  GameWorld *gameWorld;
 };
 
 
-} // namespace sails
+}  // namespace sails
 
-#endif /* GAME_ROOM_H */
+#endif  // GAME_ROOM_H
 
 
 

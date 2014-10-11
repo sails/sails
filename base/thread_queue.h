@@ -110,7 +110,7 @@ bool ThreadQueue<T, D>::pop_front(T& t, int millisecond) { // NOLINT'
     if (millisecond == 0) {
       return false;
     }
-    if (millisecond == (size_t)-1) {
+    if (millisecond > 3600*24) {
       wait(locker);
     } else {
       timedWait(millisecond, locker);

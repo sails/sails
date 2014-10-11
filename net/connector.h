@@ -64,10 +64,10 @@ class Connector {
 
  public:
   bool connect(const char* ip, uint16_t port, bool keepalive);
-  int read();
+  uint32_t read();
   const char* peek();
   void retrieve(int len);
-  int readable();
+  uint32_t readable();
 
   int write(const char* data, int len);
   int send();

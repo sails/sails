@@ -13,12 +13,13 @@
 #define SAILS_NET_DISPATCHER_THREAD_H_
 #include <unistd.h>
 #include <thread>
+#include "sails/net/net_thread.h"
 
 namespace sails {
 namespace net {
 
 template <typename T> class EpollServer;
-template <typename T> class TagRecvData;
+// template <typename T> class TagRecvData;
 
 template<typename T>
 class DispatcherThread {

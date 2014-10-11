@@ -102,7 +102,7 @@ ConstantPtrList<T>::ConstantPtrList()
 
 template<typename T>
 ConstantPtrList<T>::~ConstantPtrList() {
-  for (int i = 1; i <= total; i++) {
+  for (uint32_t i = 1; i <= total; i++) {
     vList[i] = NULL;
   }
 
@@ -208,7 +208,7 @@ size_t ConstantPtrList<T>::size() {
 
 template<typename T>
 void ConstantPtrList<T>::empty() {
-  for (int i = 1; i <= total; i++) {
+  for (uint32_t i = 1; i <= total; i++) {
     if (vList[i] != NULL) {
       T::destroy(vList[i]);
       vList[i] = NULL;
@@ -222,3 +222,10 @@ void ConstantPtrList<T>::empty() {
 
 
 #endif  // SAILS_BASE_CONSTANT_PTR_LIST_H_
+
+
+
+
+
+
+

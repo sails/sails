@@ -19,8 +19,8 @@
 #include <mutex>
 #include "sails/base/thread_queue.h"
 #include "sails/net/handle_thread.h"
-#include "sails/net/net_thread.h"
 #include "sails/net/dispatcher_thread.h"
+#include "sails/net/net_thread.h"
 
 
 namespace sails {
@@ -34,6 +34,7 @@ namespace net {
 
 template<typename T>
 class EpollServer {
+  
  public:
   // 构造函数
   explicit EpollServer(unsigned int NetThreadNum = 1);
@@ -76,6 +77,7 @@ class EpollServer {
   virtual T* parse(std::shared_ptr<net::Connector> connector) {
     printf("need implement parser method in subclass, connector:%d\n",
            connector->get_connector_fd());
+    return NULL;
   }
 
   // 当epoll读到0个数据时，客户端主动close
@@ -106,7 +108,7 @@ class EpollServer {
 
   // 从io线程队列中得到数据包,用于dispacher线程
   // index指io线程的标志
-  TagRecvData<T>* getRecvPacket(int index);
+  TagRecvData<T>* getRecvPacket(uint32_t index);
 
   // 处理线程数
   int getHandleNum() {
@@ -216,9 +218,10 @@ void EpollServer<T>::bind(int port) {
 template<typename T>
 bool EpollServer<T>::startNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
-    printf("start net thread i:%ld\n", i);
+    printf("start net thread i:%lu\n", i);
     netThreads[i]->run();
   }
+  return true;
 }
 
 // 终止网络线程
@@ -228,6 +231,7 @@ bool EpollServer<T>::stopNetThread() {
     netThreads[i]->terminate();
     netThreads[i]->join();
   }
+  return true;
 }
 
 
@@ -269,6 +273,7 @@ void EpollServer<T>::create_connector_cb(
 template<typename T>
 bool EpollServer<T>::add_handle(HandleThread<T> *handle) {
   handleThreads.push_back(handle);
+  return true;
 }
 
 template<typename T>
@@ -280,6 +285,7 @@ bool EpollServer<T>::startHandleThread() {
   }
   dispacher_thread = new DispatcherThread<T>(this);
   dispacher_thread->run();
+  return true;
 }
 
 
@@ -293,11 +299,12 @@ bool EpollServer<T>::stopHandleThread() {
   printf(" end stop dispacher\n");
 
   printf("stop handle thread\n");
-  for (int i = 0; i < handleThreads.size(); i++) {
+  for (uint32_t i = 0; i < handleThreads.size(); i++) {
     handleThreads[i]->terminate();
     handleThreads[i]->join();
     handleThreads[i] = NULL;
   }
+  return true;
 }
 
 template<typename T>
@@ -335,7 +342,7 @@ size_t EpollServer<T>::getRecvDataNum() {
 }
 
 template<typename T>
-TagRecvData<T>* EpollServer<T>::getRecvPacket(int index) {
+TagRecvData<T>* EpollServer<T>::getRecvPacket(uint32_t index) {
   TagRecvData<T> *data = NULL;
   if (netThreads.size() >= index) {
     netThreads[index]->getRecvData(data, 0);  //不阻塞
