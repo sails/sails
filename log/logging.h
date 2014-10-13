@@ -67,9 +67,13 @@ class Logger {
 
 class LoggerFactory {
  public:
-  static Logger* getLog(std::string log_name);
-  static Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
-
+  static Logger* getLog(const std::string& log_name);  // SPLIT_NONE
+  static Logger* getLogD(const std::string& log_name);  // SPLIT_DAY
+  static Logger* getLogH(const std::string& log_name);  // SPLIT_HOUR
+  static Logger* getLogM(const std::string& log_name);  // SPLIT_MONTH
+  
+ private:
+  static Logger* getLog(const std::string& log_name, Logger::SAVEMODE save_mode);
  private:
   static std::map<std::string, Logger*> log_map;
   static std::string path;

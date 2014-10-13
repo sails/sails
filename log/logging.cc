@@ -278,7 +278,7 @@ bool Logger::ensure_directory_exist() {
 std::map<std::string, Logger*> LoggerFactory::log_map;
 std::string LoggerFactory::path = "./log";
 
-Logger* LoggerFactory::getLog(std::string log_name) {
+Logger* LoggerFactory::getLog(const std::string& log_name) {
   std::map<std::string, Logger*>::iterator it;
   if ((it=log_map.find(log_name)) != log_map.end()) {
     return it->second;
@@ -292,7 +292,7 @@ Logger* LoggerFactory::getLog(std::string log_name) {
   }
 }
 
-Logger* LoggerFactory::getLog(std::string log_name,
+Logger* LoggerFactory::getLog(const std::string& log_name,
                               Logger::SAVEMODE save_mode) {
   std::map<std::string, Logger*>::iterator it;
   if ((it=log_map.find(log_name)) != log_map.end()) {
@@ -306,6 +306,33 @@ Logger* LoggerFactory::getLog(std::string log_name,
   }
 }
 
+Logger* LoggerFactory::getLogD(const std::string& log_name) {
+  return getLog(log_name, Logger::SPLIT_DAY);
+}
+
+Logger* LoggerFactory::getLogH(const std::string& log_name) {
+  return getLog(log_name, Logger::SPLIT_HOUR);
+}
+
+Logger* LoggerFactory::getLogM(const std::string& log_name) {
+  return getLog(log_name, Logger::SPLIT_MONTH);
+}
 
 }  // namespace log
 }  // namespace sails
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
