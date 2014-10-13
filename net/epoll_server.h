@@ -65,10 +65,12 @@ class EpollServer {
   // 终止处理线程
   bool stopHandleThread();
 
-
-  // T 的删除器
+ public:
+  // T 的删除器,用于用户处理接收到的消息后,框架层删除它
+  // 默认是用户free,如果T是通过new建立,一定重载它
   virtual void Tdeleter(T *data);
-
+  
+  // 创建连接后调用,可能用户层需要在连接建立后创建一些用户相关信息
   virtual void create_connector_cb(std::shared_ptr<net::Connector> connector);
 
   // 循环调用parser
@@ -80,12 +82,15 @@ class EpollServer {
     return NULL;
   }
 
-  // 当epoll读到0个数据时，客户端主动close
+  // 当epoll读到0个数据时，客户端主动close.
+  // 默认是直接让netThread关闭连接,如果要处理额外情况,在子类中重新实现它
   virtual void closed_connect_cb(std::shared_ptr<net::Connector> connector);
 
   // 当连接超时时,提供应用层处理机会
+  // 在调用函数之后,netThread会自己关闭连接,所有子类中不用再调用close connector
   virtual void connector_timeout_cb(net::Connector* connector);
 
+ public:
   // 增加连接
   void addConnector(std::shared_ptr<net::Connector> connector, int fd);
 
