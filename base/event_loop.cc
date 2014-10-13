@@ -74,7 +74,8 @@ void EventLoop::init() {
 
   // shutdown epoll
   struct epoll_event ev;
-  emptyEvent(&ev);
+  ev.events = 0; ev.data.fd = 0;
+  
   ev.events = EPOLLIN | EPOLLET;
   ev.data.fd = shutdownfd;
   assert(epoll_ctl(epollfd, EPOLL_CTL_ADD, shutdownfd, &ev) == 0);
