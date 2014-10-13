@@ -12,4 +12,4 @@ all:
 
 
 clean:
-	rm *.o
+	@for dir in $(DIRS); do rm $$dir/*.o; echo; done
