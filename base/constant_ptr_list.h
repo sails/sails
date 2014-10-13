@@ -50,7 +50,7 @@ class ConstantPtrList : public Uncopyable {
   void del(uint32_t uid);
 
   // T类型必须实现了static destroy(T *t)的方法
-  void empty();
+  void clear();
 
   // 大小
   size_t size();
@@ -207,7 +207,7 @@ size_t ConstantPtrList<T>::size() {
 }
 
 template<typename T>
-void ConstantPtrList<T>::empty() {
+void ConstantPtrList<T>::clear() {
   for (uint32_t i = 1; i <= total; i++) {
     if (vList[i] != NULL) {
       T::destroy(vList[i]);

@@ -160,11 +160,6 @@ extern Config config;
 
 // session 校验与更新相关
 
-struct ptr_string {
-  char *ptr;
-  size_t len;
-};
-
 size_t read_callback(void *buffer, size_t size, size_t nmemb, void *userp);
 
 bool post_message(
