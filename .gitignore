@@ -1,15 +1,7 @@
 *~
 *.o
 *.d
-cscope.out
-sails
-htmlget
-/test/test
-/test/thread_pool_test
-/test/filter_test
-/src/test
-/test/response
+*.out
 core
-/test/response_test
 callgraph.*
 callgrind.out*
