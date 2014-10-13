@@ -74,6 +74,7 @@ void EventLoop::init() {
 
   // shutdown epoll
   struct epoll_event ev;
+  memset(&ev, 0, sizeof(ev));
   ev.events = 0; ev.data.fd = 0;
   
   ev.events = EPOLLIN | EPOLLET;
@@ -119,6 +120,7 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_epoll) {
 
   if (need_add_to_epoll && ctl_epoll) {
     struct epoll_event epoll_ev;
+    memset(&epoll_ev, 0, sizeof(epoll_ev));
     unsigned int events = 0;
     epoll_ev.data.fd = ev->fd;
     if (ev->events & Event_READ) {
@@ -351,7 +353,7 @@ void EventLoop::stop_loop() {
   stop = true;
   if (shutdownfd > 0) {
     struct epoll_event epoll_ev;
-
+    memset(&epoll_ev, 0, sizeof(epoll_ev));
     // 通知epoll wait醒来,只要fd可写,都会触发一次,
     // 也可以通过这种方法来通知发送队列中还有数据可写,
     // 达到类似条件变量的效果,但是优点是基于事件机制,不用线程阻塞.
