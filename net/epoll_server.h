@@ -24,12 +24,6 @@
 
 
 namespace sails {
-
-extern sails::log::Logger serverlog;
-
-}
-
-namespace sails {
 namespace net {
 
 template<typename T>
@@ -203,7 +197,7 @@ EpollServer<T>::~EpollServer() {
 
 template<typename T>
 void EpollServer<T>::handle_sigpipe(int sig) {
-  serverlog.warn("sigpipe %d", sig);
+  log::LoggerFactory::getLogD("serverlog")->warn("sigpipe %d", sig);
 }
 
 template<typename T>

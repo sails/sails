@@ -2,6 +2,11 @@
 // All rights reserved.
 //
 // Filename: logging.h
+// Description: 可以直接通过new来得到一个logger,
+//              但是推荐通过LoggerFactory达到单例目的
+//              factory生成的日志默认是info级别,可以通过
+//              修改log.confg:LogLevel=debug重新定义级别,合法的关键字:
+//              debug, info ,warn, error,修改后10秒生效
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-11 11:18:57
@@ -15,6 +20,7 @@
 #include <time.h>
 #include <string>
 #include <map>
+#include <mutex>
 
 namespace sails {
 namespace log {
@@ -67,16 +73,17 @@ class Logger {
 
 class LoggerFactory {
  public:
-  static Logger* getLog(const std::string& log_name);  // SPLIT_NONE
-  static Logger* getLogD(const std::string& log_name);  // SPLIT_DAY
-  static Logger* getLogH(const std::string& log_name);  // SPLIT_HOUR
-  static Logger* getLogM(const std::string& log_name);  // SPLIT_MONTH
+  static Logger* getLog(std::string log_name);  // SPLIT_NONE
+  static Logger* getLogD(std::string log_name);  // SPLIT_DAY
+  static Logger* getLogH(std::string log_name);  // SPLIT_HOUR
+  static Logger* getLogM(std::string log_name);  // SPLIT_MONTH
   
  private:
-  static Logger* getLog(const std::string& log_name, Logger::SAVEMODE save_mode);
+  static Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
  private:
   static std::map<std::string, Logger*> log_map;
   static std::string path;
+  static std::mutex logMutex;
 };
 
 }  // namespace log

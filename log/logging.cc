@@ -276,24 +276,16 @@ bool Logger::ensure_directory_exist() {
 ///////////////////////////// log facotry /////////////////////////////////
 
 std::map<std::string, Logger*> LoggerFactory::log_map;
+std::mutex LoggerFactory::logMutex;
 std::string LoggerFactory::path = "./log";
 
-Logger* LoggerFactory::getLog(const std::string& log_name) {
-  std::map<std::string, Logger*>::iterator it;
-  if ((it=log_map.find(log_name)) != log_map.end()) {
-    return it->second;
-  } else {
-    Logger* logger = new Logger(Logger::LOG_LEVEL_INFO,
-                                (path+"/"+log_name+".log").c_str());
-    log_map.insert(
-        std::pair<std::string, Logger*>(
-            log_name, logger));
-    return logger;
-  }
+Logger* LoggerFactory::getLog(std::string log_name) {
+  return getLog(log_name, Logger::SPLIT_NONE);
 }
 
-Logger* LoggerFactory::getLog(const std::string& log_name,
+Logger* LoggerFactory::getLog(std::string log_name,
                               Logger::SAVEMODE save_mode) {
+  std::unique_lock<std::mutex> locker(LoggerFactory::logMutex);
   std::map<std::string, Logger*>::iterator it;
   if ((it=log_map.find(log_name)) != log_map.end()) {
     return it->second;
@@ -306,15 +298,15 @@ Logger* LoggerFactory::getLog(const std::string& log_name,
   }
 }
 
-Logger* LoggerFactory::getLogD(const std::string& log_name) {
+Logger* LoggerFactory::getLogD(std::string log_name) {
   return getLog(log_name, Logger::SPLIT_DAY);
 }
 
-Logger* LoggerFactory::getLogH(const std::string& log_name) {
+Logger* LoggerFactory::getLogH(std::string log_name) {
   return getLog(log_name, Logger::SPLIT_HOUR);
 }
 
-Logger* LoggerFactory::getLogM(const std::string& log_name) {
+Logger* LoggerFactory::getLogM(std::string log_name) {
   return getLog(log_name, Logger::SPLIT_MONTH);
 }
 
