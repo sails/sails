@@ -484,7 +484,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
 template <typename T>
 void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
   NetThread<T>* net_thread = NULL;
-  if (e != NULL && owner != NULL && revents == base::EventLoop::Event_READ) {
+  if (e != NULL && owner != NULL && revents == base::EventLoop::Event_WRITE) {
     net_thread = (NetThread<T>*)owner;
     if (net_thread == NULL) {
       return;
@@ -492,7 +492,6 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
   } else {
     return;
   }
-
   TagSendData* data = NULL;
   bool read_more = true;
   do {
@@ -616,7 +615,6 @@ void NetThread<T>::send(const std::string &ip,
   if (!sendlist.push_back(data)) {
     delete data;
   }
-
   // 通知epoll_wait
   sails::base::event notify_ev;
   emptyEvent(&notify_ev);

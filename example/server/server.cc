@@ -1,7 +1,17 @@
-#include <common/net/epoll_server.h>
-#include <common/net/connector.h>
+// Copyright (C) 2014 sails Authors.
+// All rights reserved.
+//
+// Filename: server.cc
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2014-10-13 10:16:55
+
+
+
 #include <signal.h>
-#include <common/log/logging.h>
+#include "sails/net/epoll_server.h"
+#include "sails/net/connector.h"
+#include "sails/log/logging.h"
 
 
 typedef struct {
@@ -9,20 +19,20 @@ typedef struct {
 } __attribute__((packed)) EchoStruct;
 
 namespace sails {
-sails::common::log::Logger serverlog(sails::common::log::Logger::LOG_LEVEL_DEBUG,
-				  "./log/server.log", sails::common::log::Logger::SPLIT_DAY);
+sails::log::Logger serverlog(sails::log::Logger::LOG_LEVEL_DEBUG,
+				  "./log/server.log", sails::log::Logger::SPLIT_DAY);
 }
 
-class TestServer : public sails::common::net::EpollServer<EchoStruct> {
+class TestServer : public sails::net::EpollServer<EchoStruct> {
 public:
-    TestServer(int netThreadNum) : sails::common::net::EpollServer<EchoStruct>(netThreadNum) {
+    TestServer(int netThreadNum) : sails::net::EpollServer<EchoStruct>(netThreadNum) {
 	
     }
     ~TestServer() {
 	
     }
 
-    EchoStruct* parse(std::shared_ptr<sails::common::net::Connector> connector){
+    EchoStruct* parse(std::shared_ptr<sails::net::Connector> connector){
 	int read_able = connector->readable();
 	if(read_able == 0) {
 	    return NULL;
@@ -37,21 +47,18 @@ public:
 };
 
 
-class HandleImpl : public sails::common::net::HandleThread<EchoStruct> {
+class HandleImpl : public sails::net::HandleThread<EchoStruct> {
 public:
-    HandleImpl(sails::common::net::EpollServer<EchoStruct>* server) : sails::common::net::HandleThread<EchoStruct>(server) {
+    HandleImpl(sails::net::EpollServer<EchoStruct>* server) : sails::net::HandleThread<EchoStruct>(server) {
 	
     }
     
-    void handle(const sails::common::net::TagRecvData<EchoStruct> &recvData) {
+    void handle(const sails::net::TagRecvData<EchoStruct> &recvData) {
 //	    server->close_connector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
 	printf("uid:%u, ip:%s, port:%d, msg:%s", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
-	sails::common::net::TagSendData *sendData = new sails::common::net::TagSendData();
 	std::string buffer = std::string(recvData.data->msg);
 	server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
-
-	
     }
 };
 
