@@ -245,8 +245,7 @@ SceNetAdhocctlPacketBase* Server::parse(
     uint32_t playerId = connector->data.u32;
     if (getPlayerState(playerId) == USER_STATE_WAITING) {
       // Enough Data available
-      if (read_able >= sizeof(SceNetAdhocctlLoginPacketC2S))
-      {
+      if (read_able >= sizeof(SceNetAdhocctlLoginPacketC2S)) {
         packet_len = sizeof(SceNetAdhocctlLoginPacketC2S);
         packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
         memset(packet_new, 0, packet_len);
@@ -258,8 +257,7 @@ SceNetAdhocctlPacketBase* Server::parse(
 
     // Enough Data available
     psplog.info("user state logged in");
-    if (read_able >= sizeof(SceNetAdhocctlConnectPacketC2S))
-    {
+    if (read_able >= sizeof(SceNetAdhocctlConnectPacketC2S)) {
       // Cast Packet
       packet_len = sizeof(SceNetAdhocctlConnectPacketC2S);
       packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
@@ -478,8 +476,12 @@ void HandleImpl::login_user_data(
   }
 
   // mac地址合法
-  if(valid_product_code == 1 && memcmp(&data->mac, "\xFF\xFF\xFF\xFF\xFF\xFF",sizeof(data->mac)) != 0 && memcmp(&data->mac, "\x00\x00\x00\x00\x00\x00", sizeof(data->mac)) != 0 && data->name.data[0] != 0) {
-
+  if (valid_product_code == 1
+      && memcmp(&data->mac,
+                "\xFF\xFF\xFF\xFF\xFF\xFF", sizeof(data->mac)) != 0
+      && memcmp(&data->mac,
+                "\x00\x00\x00\x00\x00\x00", sizeof(data->mac)) != 0
+      && data->name.data[0] != 0) {
     // session 校验,为了让它不阻塞主逻辑
     // 这里新建一个线程支校验,当不通过时,向handle线程发送一条disconnect命令
     std::string ip = recvData.ip;
@@ -519,7 +521,6 @@ void HandleImpl::login_user_data(
   ((Server*)server)->deletePlayer(playerId);
   server->close_connector(recvData.ip,
                           recvData.port, recvData.uid, recvData.fd);
-
 }
 
 
@@ -571,7 +572,6 @@ void HandleImpl::connect_user(
 
   // 不合法
   logout_user(playerId);
-
 }
 
 DisconnectState HandleImpl::disconnect_user(
@@ -608,7 +608,6 @@ void HandleImpl::logout_user(uint32_t playerId) {
     server->close_connector(
         player->ip, player->port, player->connectorUid, player->fd);
     ((Server*)server)->deletePlayer(playerId);
-
   }
 }
 
@@ -669,7 +668,7 @@ void HandleImpl::spread_message(
     if (gameWorld != NULL) {
       gameWorld->spreadMessage(player->roomCode, message);
     }
-  }else {
+  } else {
     //还没有加入游戏
   }
 }
@@ -680,7 +679,8 @@ void HandleImpl::transfer_message(
   uint32_t playerId = recvData.extId;
   Player* player = ((Server*)server)->getPlayer(playerId);
 
-  // printf("get transfer message from ip:%s, port :%d\n", player->ip.c_str(), player->port);
+  // printf("get transfer message from ip:%s, port :%d\n",
+  // player->ip.c_str(), player->port);
 
   SceNetAdhocctlGameDataPacketC2C *packet
       = (SceNetAdhocctlGameDataPacketC2C*)recvData.data;
@@ -764,7 +764,6 @@ uint32_t HandleImpl::getIp(std::string ipstr) {
 }
 
 SceNetAdhocctlGroupName HandleImpl::getRoomName(const std::string& name) {
-    
   const char *namestr = name.c_str();
   SceNetAdhocctlGroupName roomName;
 
@@ -792,7 +791,6 @@ std::string HandleImpl::game_product_override(
   int crosslinked = 0;
 
   // Exists Flag
-  int exists = 0;
 
   std::string crosslink;
   std::string productname(productid);
@@ -813,13 +811,11 @@ std::string HandleImpl::game_product_override(
     std::map<std::string, std::string>::iterator products_iter
         = products_map.find(std::string(productid));
     if (products_iter != products_map.end()) {
-      // Set Exists Flag
-      exists = 1;
-    }
-
-    // Game doesn't exist
-    if (!exists) {
-      // products_map.insert(std::pair<std::string, std::string>(std::string(productid), std::string(productid)));
+    } else {
+      // Game doesn't exist
+      // products_map.insert(std::pair<std::string,
+      // std::string>(std::string(productid), std::string(productid)));
+      psplog.warn("game %s doesn't exist", productid);
     }
   }
   if (crosslink.length() > 0) {
@@ -995,7 +991,6 @@ void sails_signal_handle(int signo,
 }
 
 int main(int argc, char *argv[]) {
-
   // signal kill
   struct sigaction act;
   act.sa_sigaction = sails_signal_handle;
