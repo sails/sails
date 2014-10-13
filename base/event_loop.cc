@@ -247,6 +247,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_epoll) {
       if (ctl_epoll) {
         // delete from epoll
         struct epoll_event epoll_ev;
+        memset(&epoll_ev, 0, sizeof(epoll_ev));
         epoll_ev.events = 0;
         unsigned int events = 0;
         epoll_ev.data.fd = ev->fd;

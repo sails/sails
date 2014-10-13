@@ -143,9 +143,9 @@ bool Connector::haveSetTimer() {
   return this->has_set_timer;
 }
 
-uint32_t Connector::read() {
+ssize_t Connector::read() {
   //    std::unique_lock<std::mutex> locker(this->mutex);
-  uint32_t read_count = 0;
+  ssize_t read_count = 0;
   if (!is_closed && this->connect_fd > 0) {
     char tmp[READBYTES] = {'\0'};
     read_count = ::read(this->connect_fd, tmp, READBYTES);

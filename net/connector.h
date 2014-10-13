@@ -64,7 +64,7 @@ class Connector {
 
  public:
   bool connect(const char* ip, uint16_t port, bool keepalive);
-  uint32_t read();
+  ssize_t read();
   const char* peek();
   void retrieve(int len);
   uint32_t readable();
