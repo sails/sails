@@ -30,7 +30,7 @@ Server::Server(int netThreadNum)
 
 
 // 获取游戏
-GameWorld* Server::getGameWorld(const std::string& gameCode) {
+GameWorld* Server::GetGameWorld(const std::string& gameCode) {
   std::unique_lock<std::mutex> locker(gameworldMutex);;
   std::map<std::string, GameWorld*>::iterator iter
       = gameWorldMap.find(gameCode);
@@ -43,7 +43,7 @@ GameWorld* Server::getGameWorld(const std::string& gameCode) {
 }
 
 // 创建游戏
-GameWorld* Server::createGameWorld(const std::string& gameCode) {
+GameWorld* Server::CreateGameWorld(const std::string& gameCode) {
   std::unique_lock<std::mutex> locker(gameworldMutex);;
   GameWorld* gameWorld = new GameWorld(gameCode, this);
   gameWorldMap.insert(
@@ -53,7 +53,7 @@ GameWorld* Server::createGameWorld(const std::string& gameCode) {
 
 
 
-void Server::sendDisConnectDataToHandle(
+void Server::SendDisConnectDataToHandle(
     uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid) {
   log::LoggerFactory::getLogD("psplog")->debug("sendDisConnectDataToHandle playerId:%u", playerId);
   if (playerId <= 0) {
@@ -75,37 +75,33 @@ void Server::sendDisConnectDataToHandle(
   data->fd = fd;
   data->extId = playerId;
 
-  int handleNum = getHandleNum();
+  int handleNum = GetHandleNum();
   int selectedHandle = fd % handleNum;
-  addHandleData(data, selectedHandle);
+  AddHandleData(data, selectedHandle);
   log::LoggerFactory::getLogD("psplog")->debug("sendDisConnectDataToHandle playerId:%u end", playerId);
 }
 
-void Server::Tdeleter(SceNetAdhocctlPacketBase *data) {
-  free(data);
-}
-
-void Server::invalid_msg_handle(
+void Server::InvalidMsgHandle(
     std::shared_ptr<sails::net::Connector> connector) {
   uint32_t playerId = connector->data.u32;
   log::LoggerFactory::getLogD("psplog")->warn("invalid msg handle:%u", playerId);
-  sendDisConnectDataToHandle(playerId, connector->getIp(),
+  SendDisConnectDataToHandle(playerId, connector->getIp(),
                              connector->getPort(),
                              connector->get_connector_fd(),
                              connector->getId());
 
   // 关闭连接
   connector->data.u32 = 0;
-  this->close_connector(connector->getIp(),
+  this->CloseConnector(connector->getIp(),
                         connector->getPort(),
                         connector->getId(),
                         connector->get_connector_fd());
 }
 
-void Server::closed_connect_cb(std::shared_ptr<net::Connector> connector) {
+void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
   log::LoggerFactory::getLogD("psplog")->info("closed_connect_cb");
   uint32_t playerId = connector->data.u32;
-  sendDisConnectDataToHandle(playerId, connector->getIp(),
+  SendDisConnectDataToHandle(playerId, connector->getIp(),
                              connector->getPort(),
                              connector->get_connector_fd(),
                              connector->getId());
@@ -113,7 +109,7 @@ void Server::closed_connect_cb(std::shared_ptr<net::Connector> connector) {
   // 关闭连接
   connector->data.u32 = 0;
   if (!connector->isClosed()) {
-    this->close_connector(connector->getIp(),
+    this->CloseConnector(connector->getIp(),
                           connector->getPort(),
                           connector->getId(),
                           connector->get_connector_fd());
@@ -121,10 +117,10 @@ void Server::closed_connect_cb(std::shared_ptr<net::Connector> connector) {
 }
 
 
-void Server::connector_timeout_cb(net::Connector* connector) {
+void Server::ConnectorTimeoutCB(net::Connector* connector) {
   log::LoggerFactory::getLogD("psplog")->info("connector_timeout_cb");
   uint32_t playerId = connector->data.u32;
-  sendDisConnectDataToHandle(playerId, connector->getIp(),
+  SendDisConnectDataToHandle(playerId, connector->getIp(),
                              connector->getPort(),
                              connector->get_connector_fd(),
                              connector->getId());
@@ -133,19 +129,19 @@ void Server::connector_timeout_cb(net::Connector* connector) {
 }
 
 
-Player* Server::getPlayer(uint32_t playerId) {
+Player* Server::GetPlayer(uint32_t playerId) {
   Player* player = playerList.get(playerId);
   return player;
 }
 
-void Server::deletePlayer(uint32_t playerId) {
+void Server::DeletePlayer(uint32_t playerId) {
   // 删除用户
   Player* player = playerList.get(playerId);
   if (player != NULL) {
     playerList.del(playerId);
     if (player->gameCode.length() > 0
         && player->roomCode.length() > 0 && player->playerId > 0) {
-      GameWorld* gameWorld = getGameWorld(player->gameCode);
+      GameWorld* gameWorld = GetGameWorld(player->gameCode);
       if (gameWorld != NULL) {
         gameWorld->disConnectPlayer(playerId, player->roomCode);
       }
@@ -155,7 +151,7 @@ void Server::deletePlayer(uint32_t playerId) {
   }
 }
 
-int Server::getPlayerState(uint32_t playerId) {
+int Server::GetPlayerState(uint32_t playerId) {
   Player* player = playerList.get(playerId);
   if (player != NULL) {
     return player->userState;
@@ -163,10 +159,10 @@ int Server::getPlayerState(uint32_t playerId) {
   return USER_STATE_DIC_CONN;
 }
 
-void Server::create_connector_cb(std::shared_ptr<net::Connector> connector) {
+void Server::CreateConnectorCB(std::shared_ptr<net::Connector> connector) {
   //    printf("new player\n");
 
-  uint32_t uid = createPlayer(connector->getIp(),
+  uint32_t uid = CreatePlayer(connector->getIp(),
                               connector->getPort(),
                               connector->get_connector_fd(),
                               connector->getId());
@@ -175,7 +171,7 @@ void Server::create_connector_cb(std::shared_ptr<net::Connector> connector) {
 }
 
 
-uint32_t Server::createPlayer(
+uint32_t Server::CreatePlayer(
     std::string ip, int port, int fd, uint32_t connectUid) {
 
   uint32_t uid = playerList.getUniqId();
@@ -193,9 +189,9 @@ uint32_t Server::createPlayer(
   return uid;
 }
 
-void Server::parseImp(std::shared_ptr<net::Connector> connector) {
+void Server::ParseImp(std::shared_ptr<net::Connector> connector) {
   SceNetAdhocctlPacketBase* packet = NULL;
-  while ((packet = this->parse(connector)) != NULL) {
+  while ((packet = this->Parse(connector)) != NULL) {
     net::TagRecvData<SceNetAdhocctlPacketBase>* data
         = new net::TagRecvData<SceNetAdhocctlPacketBase>();
     data->uid = connector->getId();
@@ -206,12 +202,12 @@ void Server::parseImp(std::shared_ptr<net::Connector> connector) {
     data->extId = connector->data.u32;
 
     net::NetThread<SceNetAdhocctlPacketBase>* netThread
-        = getNetThreadOfFd(connector->get_connector_fd());
+        = GetNetThreadOfFd(connector->get_connector_fd());
     netThread->addRecvList(data);
   }
 }
 
-SceNetAdhocctlPacketBase* Server::parse(
+SceNetAdhocctlPacketBase* Server::Parse(
     std::shared_ptr<sails::net::Connector> connector) {
 
   if (connector->readable() <= 0) {
@@ -222,7 +218,7 @@ SceNetAdhocctlPacketBase* Server::parse(
       = (SceNetAdhocctlPacketBase *)connector->peek();
   if (packet->opcode > PACKET_MAX) {
     connector->retrieve(connector->readable());
-    invalid_msg_handle(connector);
+    InvalidMsgHandle(connector);
     return NULL;
   }
 
@@ -239,7 +235,7 @@ SceNetAdhocctlPacketBase* Server::parse(
   } else if (packet->opcode == OPCODE_LOGIN) {
     // login
     uint32_t playerId = connector->data.u32;
-    if (getPlayerState(playerId) == USER_STATE_WAITING) {
+    if (GetPlayerState(playerId) == USER_STATE_WAITING) {
       // Enough Data available
       if (read_able >= sizeof(SceNetAdhocctlLoginPacketC2S)) {
         packet_len = sizeof(SceNetAdhocctlLoginPacketC2S);
@@ -313,7 +309,7 @@ SceNetAdhocctlPacketBase* Server::parse(
     // Notify User
     log::LoggerFactory::getLogD("psplog")->error("recv invalid opcode data");
     connector->retrieve(connector->readable());
-    invalid_msg_handle(connector);
+    InvalidMsgHandle(connector);
   }
 
   if (packet_len > 0) {
@@ -326,7 +322,7 @@ SceNetAdhocctlPacketBase* Server::parse(
 }
 
 
-std::list<std::string> Server::getPlayerSession() {
+std::list<std::string> Server::GetPlayerSession() {
   std::list<std::string> sessions;
   std::map<std::string, GameWorld*>::iterator iter;
   for (iter = gameWorldMap.begin(); iter != gameWorldMap.end(); ++iter) {
@@ -342,7 +338,7 @@ std::list<std::string> Server::getPlayerSession() {
 }
 
 
-std::list<std::string> Server::getGameWorldList() {
+std::list<std::string> Server::GetGameWorldList() {
   std::list<std::string> gameCodeList;
   for (auto game : gameWorldMap) {
     gameCodeList.push_back(game.first);
@@ -350,10 +346,10 @@ std::list<std::string> Server::getGameWorldList() {
   return gameCodeList;
 }
 
-std::map<std::string, std::list<std::string>> Server::getPlayerNameMap(
+std::map<std::string, std::list<std::string>> Server::GetPlayerNameMap(
     const std::string& gameCode) {
   std::map<std::string, std::list<std::string>> map;
-  GameWorld* game = getGameWorld(gameCode);
+  GameWorld* game = GetGameWorld(gameCode);
   if (game != NULL) {
     map = game->getPlayerNameMap();
   }
@@ -403,7 +399,7 @@ void HandleImpl::handle(
     }
     case OPCODE_CONNECT: {
       log::LoggerFactory::getLogD("psplog")->info("get connect data");
-      if (((Server*)server)->getPlayerState(playerId)
+      if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_LOGGED_IN) {
         connect_user(recvData);
       }
@@ -411,7 +407,7 @@ void HandleImpl::handle(
     }
     case OPCODE_DISCONNECT: {
       log::LoggerFactory::getLogD("psplog")->info("disconnect");
-      if (((Server*)server)->getPlayerState(playerId)
+      if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_CONNECTED_ROOM) {
         // Leave Game Gro0x00000000019527a0up
         DisconnectState disconnectState = disconnect_user(recvData);
@@ -424,7 +420,7 @@ void HandleImpl::handle(
     }
     case OPCODE_SCAN: {
       // Send Network List
-      if (((Server*)server)->getPlayerState(playerId)
+      if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_LOGGED_IN) {
         send_scan_results(recvData);
       }
@@ -432,7 +428,7 @@ void HandleImpl::handle(
     }
     case OPCODE_CHAT: {
       // Spread Chat Message
-      if (((Server*)server)->getPlayerState(playerId)
+      if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_LOGGED_IN) {
         spread_message(recvData);
       }
@@ -440,7 +436,7 @@ void HandleImpl::handle(
     }
 
     case OPCODE_GAME_DATA: {
-      if (((Server*)server)->getPlayerState(playerId)
+      if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_CONNECTED_ROOM) {
         transfer_message(recvData);
       }
@@ -490,11 +486,11 @@ void HandleImpl::login_user_data(
       sessionCheckThread.detach();
 
       std::string gameCode = game_product_override(&data->game);
-      GameWorld* gameWorld = ((Server*)server)->getGameWorld(gameCode);
+      GameWorld* gameWorld = ((Server*)server)->GetGameWorld(gameCode);
       if (gameWorld == NULL) {
-        gameWorld = ((Server*)server)->createGameWorld(gameCode);
+        gameWorld = ((Server*)server)->CreateGameWorld(gameCode);
       }
-      Player* player = ((Server*)server)->getPlayer(playerId);
+      Player* player = ((Server*)server)->GetPlayer(playerId);
       if (gameWorld != NULL) {
         player->mac = HandleImpl::getMacStr(data->mac);
         player->userState =  USER_STATE_LOGGED_IN;
@@ -514,8 +510,8 @@ void HandleImpl::login_user_data(
 
   // 不合法
   // 删除用户
-  ((Server*)server)->deletePlayer(playerId);
-  server->close_connector(recvData.ip,
+  ((Server*)server)->DeletePlayer(playerId);
+  server->CloseConnector(recvData.ip,
                           recvData.port, recvData.uid, recvData.fd);
 }
 
@@ -546,11 +542,11 @@ void HandleImpl::connect_user(
   }
   // Valid Group Name
   if (valid_group_name == 1) {
-    Player* player = ((Server*)server)->getPlayer(playerId);
+    Player* player = ((Server*)server)->GetPlayer(playerId);
 
     if (player != NULL && player->gameCode.length()> 0) {
       GameWorld* gameWorld
-          = ((Server*)server)->getGameWorld(player->gameCode);
+          = ((Server*)server)->GetGameWorld(player->gameCode);
       if (gameWorld != NULL) {
         std::string roomCode((char*)group->data, ADHOCCTL_GROUPNAME_LEN);
         if (gameWorld->connectPlayer(playerId, roomCode)) {
@@ -560,7 +556,7 @@ void HandleImpl::connect_user(
       }
     }
   } else {
-    Player* player = ((Server*)server)->getPlayer(playerId);
+    Player* player = ((Server*)server)->GetPlayer(playerId);
     log::LoggerFactory::getLogD("psplog")->error("playerId %u valid_group_name, ip:%s, port:%d, mac:%s",
                  playerId, player->ip.c_str(),
                  player->port, player->mac.c_str());
@@ -573,7 +569,7 @@ void HandleImpl::connect_user(
 DisconnectState HandleImpl::disconnect_user(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
   uint32_t playerId = recvData.extId;
-  Player* player = ((Server*)server)->getPlayer(playerId);
+  Player* player = ((Server*)server)->GetPlayer(playerId);
   if (player == NULL) {
     return STATE_PLAYER_NOT_EXISTS;
   }
@@ -581,7 +577,7 @@ DisconnectState HandleImpl::disconnect_user(
   if (player != NULL && player->gameCode.length() > 0
       && player->ip == recvData.ip
       && player->port == recvData.port) {
-    GameWorld* gameWorld = ((Server*)server)->getGameWorld(player->gameCode);
+    GameWorld* gameWorld = ((Server*)server)->GetGameWorld(player->gameCode);
     if (gameWorld != NULL) {
       return gameWorld->disConnectPlayer(playerId, player->roomCode);
     } else {
@@ -599,21 +595,21 @@ DisconnectState HandleImpl::disconnect_user(
 
 void HandleImpl::logout_user(uint32_t playerId) {
   log::LoggerFactory::getLogD("psplog")->debug("call logout use playerId:%u", playerId);
-  Player* player = ((Server*)server)->getPlayer(playerId);
+  Player* player = ((Server*)server)->GetPlayer(playerId);
   if (player != NULL) {
-    server->close_connector(
+    server->CloseConnector(
         player->ip, player->port, player->connectorUid, player->fd);
-    ((Server*)server)->deletePlayer(playerId);
+    ((Server*)server)->DeletePlayer(playerId);
   }
 }
 
 void HandleImpl::send_scan_results(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
   uint32_t playerId = recvData.extId;
-  Player* player = ((Server*)server)->getPlayer(playerId);
+  Player* player = ((Server*)server)->GetPlayer(playerId);
   if (player != NULL && player->gameCode.length()> 0) {
     GameWorld* gameWorld
-        = ((Server*)server)->getGameWorld(player->gameCode);
+        = ((Server*)server)->GetGameWorld(player->gameCode);
     if (gameWorld != NULL) {
       std::list<std::string> roomList = gameWorld->getRoomList();
       for (std::string& roomCode : roomList) {
@@ -652,7 +648,7 @@ void HandleImpl::send_scan_results(
 void HandleImpl::spread_message(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
   uint32_t playerId = recvData.extId;
-  Player* player = ((Server*)server)->getPlayer(playerId);
+  Player* player = ((Server*)server)->GetPlayer(playerId);
 
   SceNetAdhocctlChatPacketC2S * packet
       = (SceNetAdhocctlChatPacketC2S *)recvData.data;
@@ -660,7 +656,7 @@ void HandleImpl::spread_message(
 
   if (player!= NULL && player->gameCode.length() > 0) {
     GameWorld* gameWorld
-        = ((Server*)server)->getGameWorld(player->gameCode);
+        = ((Server*)server)->GetGameWorld(player->gameCode);
     if (gameWorld != NULL) {
       gameWorld->spreadMessage(player->roomCode, message);
     }
@@ -673,7 +669,7 @@ void HandleImpl::spread_message(
 void HandleImpl::transfer_message(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
   uint32_t playerId = recvData.extId;
-  Player* player = ((Server*)server)->getPlayer(playerId);
+  Player* player = ((Server*)server)->GetPlayer(playerId);
 
   // printf("get transfer message from ip:%s, port :%d\n",
   // player->ip.c_str(), player->port);
@@ -692,7 +688,7 @@ void HandleImpl::transfer_message(
 
   if (player->gameCode.length() > 0) {
     GameWorld* gameWorld
-        = ((Server*)server)->getGameWorld(player->gameCode);
+        = ((Server*)server)->GetGameWorld(player->gameCode);
     if (gameWorld != NULL) {
       gameWorld->transferMessage(player->roomCode, peerIp, peerMac, message);
     }
@@ -707,7 +703,7 @@ void HandleImpl::player_session_check(
   if ( !check_session(session) ) {
     log::LoggerFactory::getLogD("psplog")->warn("player:%u session:%s check error, ip:%s, port:%d",
                 playerId, session.c_str(), ip.c_str(), port);
-    ((Server*)server)->sendDisConnectDataToHandle(
+    ((Server*)server)->SendDisConnectDataToHandle(
         playerId, ip, port, fd, uid);
   }
 }
@@ -979,8 +975,8 @@ void sails_signal_handle(int signo,
     case SIGINT:
       {
         printf("stop netthread\n");
-        server.stopNetThread();
-        server.stopHandleThread();
+        server.StopNetThread();
+        server.StopHandleThread();
         isRun = false;
       }
   }
@@ -999,14 +995,14 @@ int main(int argc, char *argv[]) {
 
 
 
-  server.createEpoll();
+  server.CreateEpoll();
 
-  // server.setEmptyConnTimeout(10);
-  server.bind(sails::config.get_listen_port());
-  server.startNetThread();
+  // server.SetEmptyConnTimeout(10);
+  server.Bind(sails::config.get_listen_port());
+  server.StartNetThread();
   sails::HandleImpl handle(&server);
-  server.add_handle(&handle);
-  server.startHandleThread();
+  server.AddHandle(&handle);
+  server.StartHandleThread();
 
 
   // 统计
@@ -1020,7 +1016,7 @@ int main(int argc, char *argv[]) {
     // 更新session
     if (now - lastUpdteSession >= 30) {  // 30s
       lastUpdteSession = now;
-      std::list<std::string> sessions = server.getPlayerSession();
+      std::list<std::string> sessions = server.GetPlayerSession();
       sails::log::LoggerFactory::getLogD("psplog")->info("playerNum:%d", sessions.size());
       std::thread t(sails::update_sessions, sessions);
       t.detach();
@@ -1029,10 +1025,10 @@ int main(int argc, char *argv[]) {
     // 统计
     if (now - lastLogStatTime >= 60) {  // 60s
       lastLogStatTime = now;
-      std::list<std::string> gameList = server.getGameWorldList();
+      std::list<std::string> gameList = server.GetGameWorldList();
       for (std::string& gameCode : gameList) {
         std::map<std::string, std::list<std::string>> roomsMap
-            = server.getPlayerNameMap(gameCode);
+            = server.GetPlayerNameMap(gameCode);
         for (auto roominfo : roomsMap) {
           sails::log::LoggerFactory::getLogD("psplog")->info("game %s, room name %s, playerNum:%d",
                              gameCode.c_str(), roominfo.first.c_str(),

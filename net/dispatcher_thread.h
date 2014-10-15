@@ -68,19 +68,19 @@ void DispatcherThread<T>::run() {
 template<typename T>
 void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
   while (dispacher->continueRun) {
-    dispacher->server->dipacher_wait();
+    dispacher->server->DipacherWait();
 
-    int recvQueueNum = dispacher->server->getRecvQueueNum();
+    int recvQueueNum = dispacher->server->GetRecvQueueNum();
     for (int i = 0; i < recvQueueNum; i++) {
       TagRecvData<T>* data = NULL;
       do {
-        data = dispacher->server->getRecvPacket(i);
+        data = dispacher->server->GetRecvPacket(i);
         if (data != NULL) {
           // 开始分发消息
           int fd = data->fd;
-          int handleNum = dispacher->server->getHandleNum();
+          int handleNum = dispacher->server->GetHandleNum();
           int selectedHandle = fd % handleNum;
-          dispacher->server->addHandleData(data, selectedHandle);
+          dispacher->server->AddHandleData(data, selectedHandle);
         }
       } while (data != NULL);
     }
@@ -90,7 +90,7 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
 template<typename T>
 void DispatcherThread<T>::terminate() {
   continueRun = false;
-  server->notify_dispacher();
+  server->NotifyDispacher();
 }
 
 template<typename T>

@@ -93,13 +93,6 @@ class HttpRequest {
 };
 
 
-// get protocol type
-enum PROTOCOL {
-  ERROR_PROTOCOL = -1,
-  NORMAL_PROTOCOL = 0,
-  PROTOBUF_PROTOCOL
-};
-
 
 /////////////////////////// http response //////////////////////////////
 class HttpResponse {

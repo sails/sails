@@ -345,9 +345,9 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
         connector->setIp(ip);
         connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
-        server->addConnector(connector, connfd);
+        server->AddConnector(connector, connfd);
 
-        server->create_connector_cb(connector);
+        server->CreateConnectorCB(connector);
 
       } else {
         break;
@@ -428,7 +428,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
     if (n > 0) {
       totalNum+=n;
       if (totalNum >= 4096) {  // 大于4k就开始解析,防止数据过多
-        this->server->parseImp(connector);
+        this->server->ParseImp(connector);
       }
       if (n < READBYTES) {  // no data
         break;
@@ -466,10 +466,10 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
 
   if (readerror) {
     // 客户端主动close
-    this->server->closed_connect_cb(connector);
+    this->server->ClosedConnectCB(connector);
   } else {
     connect_timer->update_connector_time(connector);  // update timeout
-    this->server->parseImp(connector);
+    this->server->ParseImp(connector);
   }
 }
 
@@ -543,7 +543,7 @@ template <typename T>
 void NetThread<T>::timeoutCb(net::Connector* connector) {
   if (connector != NULL && connector->owner != NULL) {
     NetThread<T>* netThread = (NetThread<T>*)connector->owner;
-    netThread->server->connector_timeout_cb(connector);
+    netThread->server->ConnectorTimeoutCB(connector);
     netThread->close_connector(connector->getIp(),
                                connector->getPort(),
                                connector->getId(),
@@ -588,7 +588,7 @@ void NetThread<T>::addRecvList(TagRecvData<T> *data) {
     }
     delete data;
   }
-  server->notify_dispacher();
+  server->NotifyDispacher();
 }
 
 template <typename T>

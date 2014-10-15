@@ -31,55 +31,54 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
 
   ~Server();
 
-  void create_connector_cb(std::shared_ptr<net::Connector> connector);
-  void Tdeleter(SceNetAdhocctlPacketBase *data);
+  void CreateConnectorCB(std::shared_ptr<net::Connector> connector);
 
   // 获取游戏
-  GameWorld* getGameWorld(const std::string& gameCode);
+  GameWorld* GetGameWorld(const std::string& gameCode);
 
   // 创建游戏
-  GameWorld* createGameWorld(const std::string& gameCode);
+  GameWorld* CreateGameWorld(const std::string& gameCode);
 
   // 创建用户
-  uint32_t createPlayer(std::string ip, int port, int fd, uint32_t connectUid);
+  uint32_t CreatePlayer(std::string ip, int port, int fd, uint32_t connectUid);
   // 数据解析
-  void parseImp(std::shared_ptr<net::Connector> connector);
-  SceNetAdhocctlPacketBase* parse(
+  void ParseImp(std::shared_ptr<net::Connector> connector);
+  SceNetAdhocctlPacketBase* Parse(
       std::shared_ptr<sails::net::Connector> connector);
 
-  void sendDisConnectDataToHandle(
+  void SendDisConnectDataToHandle(
       uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid);
 
   // 非法数据处理(直接移除用户,关闭连接),
   // 关于player的数据操作放到handle线程里
   // 防止多线程操作player的问题.创建一个disconnector的数据包
-  void invalid_msg_handle(std::shared_ptr<sails::net::Connector> connector);
+  void InvalidMsgHandle(std::shared_ptr<sails::net::Connector> connector);
 
   // 客户端主动close, 创建一个disconnector的数据包
-  void closed_connect_cb(std::shared_ptr<net::Connector> connector);
+  void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
 
   // 当连接超时时,创建一个disconnector数据包
-  void connector_timeout_cb(net::Connector* connector);
+  void ConnectorTimeoutCB(net::Connector* connector);
 
   // 移除用户
-  void deletePlayer(uint32_t playerId);
+  void DeletePlayer(uint32_t playerId);
 
-  Player* getPlayer(uint32_t playerId);
+  Player* GetPlayer(uint32_t playerId);
 
   // 操作player属性值
-  int getPlayerState(uint32_t playerId);
-  void setPlayerState(int32_t playerId, int state);
+  int GetPlayerState(uint32_t playerId);
+  void SetPlayerState(int32_t playerId, int state);
 
-  std::list<std::string> getPlayerSession();
+  std::list<std::string> GetPlayerSession();
 
-  std::list<std::string> getGameWorldList();
+  std::list<std::string> GetGameWorldList();
 
   // 得到游戏组里用户
-  std::map<std::string, std::list<std::string>> getPlayerNameMap(
+  std::map<std::string, std::list<std::string>> GetPlayerNameMap(
       const std::string& gameCode);
 
  private:
-  std::mutex* getPlayerMutex(uint32_t playerId);
+  std::mutex* GetPlayerMutex(uint32_t playerId);
 
  private:
   std::map<std::string, GameWorld*> gameWorldMap;

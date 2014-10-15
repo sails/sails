@@ -32,7 +32,7 @@ public:
 	
     }
 
-    EchoStruct* parse(std::shared_ptr<sails::net::Connector> connector){
+    EchoStruct* Parse(std::shared_ptr<sails::net::Connector> connector){
 	int read_able = connector->readable();
 	if(read_able == 0) {
 	    return NULL;
@@ -54,7 +54,7 @@ public:
     }
     
     void handle(const sails::net::TagRecvData<EchoStruct> &recvData) {
-//	    server->close_connector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
+//	    server->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
 	printf("uid:%u, ip:%s, port:%d, msg:%s", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
 	std::string buffer = std::string(recvData.data->msg);
@@ -74,8 +74,8 @@ void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
 	case SIGINT:
 	{
 	    printf("stop netthread\n");
-	    server.stopNetThread();
-	    server.stopHandleThread();
+	    server.StopNetThread();
+	    server.StopHandleThread();
 	    isRun = false;
 	}
     }
@@ -99,14 +99,14 @@ int main(int argc, char *argv[])
 
 
 
-    server.createEpoll();
+    server.CreateEpoll();
 
-//    server.setEmptyConnTimeout(10);
-    server.bind(8000);
-    server.startNetThread();
+//    server.SetEmptyConnTimeout(10);
+    server.Bind(8000);
+    server.StartNetThread();
     
-    server.add_handle(&handle);
-    server.startHandleThread();
+    server.AddHandle(&handle);
+    server.StartHandleThread();
 
     while(isRun) {
 	sleep(2);

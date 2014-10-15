@@ -31,7 +31,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
   std::unique_lock<std::mutex> locker(playerMutex);
     
   Server* server = gameWorld->getServer();
-  Player* player = server->getPlayer(playerId);
+  Player* player = server->GetPlayer(playerId);
 
   int maxAge = -1;
   if (player != NULL) {
