@@ -45,7 +45,7 @@ class HandleChain {
   void add_handle(Handle<T, U> *handle);
  private:
   std::vector<Handle<T, U>*> chain;
-  int index;
+  uint32_t index;
 };
 
 
