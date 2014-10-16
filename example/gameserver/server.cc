@@ -108,12 +108,6 @@ void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
 
   // 关闭连接
   connector->data.u32 = 0;
-  if (!connector->isClosed()) {
-    this->CloseConnector(connector->getIp(),
-                          connector->getPort(),
-                          connector->getId(),
-                          connector->get_connector_fd());
-  }
 }
 
 

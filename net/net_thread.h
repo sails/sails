@@ -467,6 +467,12 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
   if (readerror) {
     // 客户端主动close
     this->server->ClosedConnectCB(connector);
+
+    if (!connector->isClosed()) {
+      this->server->CloseConnector(connector->getIp(),
+                    connector->getPort(),
+                    connector->getId(), connector->get_connector_fd());
+    }
   } else {
     connect_timer->update_connector_time(connector);  // update timeout
     this->server->ParseImp(connector);

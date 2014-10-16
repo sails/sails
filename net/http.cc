@@ -11,6 +11,7 @@
 #include "sails/net/http.h"
 #include <stdlib.h>
 #include <string.h>
+#include "sails/base/string.h"
 
 namespace sails {
 namespace net {
@@ -340,6 +341,180 @@ void HttpResponse::set_default_header() {
 }
 
 
+
+
+
+
+
+
+
+
+
+static http_parser_settings settings =
+{.on_message_begin = message_begin_cb
+ ,.on_url = request_url_cb
+ ,.on_status = response_status_cb
+ ,.on_header_field = header_field_cb
+ ,.on_header_value = header_value_cb
+ ,.on_headers_complete = headers_complete_cb
+ ,.on_body = body_cb
+ ,.on_message_complete = message_complete_cb
+  };
+
+
+int message_begin_cb (http_parser *p)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  flag->message->message_begin_cb_called = TRUE;
+  return 0;
+}
+
+
+int header_field_cb (http_parser *p, const char *buf, size_t len)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+
+  if (m->last_header_element != FIELD)
+    m->num_headers++;
+
+  base::strlncat(m->headers[m->num_headers-1][0],
+           sizeof(m->headers[m->num_headers-1][0]),
+           buf,
+           len);
+
+  m->last_header_element = FIELD;
+
+  return 0;
+}
+
+int header_value_cb (http_parser *p, const char *buf, size_t len)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+
+  base::strlncat(m->headers[m->num_headers-1][1],
+           sizeof(m->headers[m->num_headers-1][1]),
+           buf,
+           len);
+
+  m->last_header_element = VALUE;
+
+  return 0;
+}
+
+int request_url_cb (http_parser *p, const char *buf, size_t len)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+
+  base::strlncat(m->request_url,
+                 sizeof(m->request_url),
+                 buf,
+                 len);
+  return 0;
+}
+
+int response_status_cb (http_parser *p, const char *buf, size_t len)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+  base::strlncat(m->response_status,
+           sizeof(m->response_status),
+           buf,
+           len);
+  return 0;
+}
+
+int body_cb (http_parser *p, const char *buf, size_t len)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+  
+  base::strlncat(m->body,
+           sizeof(m->body),
+           buf,
+           len);
+  m->body_size += len;
+  check_body_is_final(p);
+ // printf("body_cb: '%s'\n", requests[num_messages].body);
+  return 0;
+}
+
+void check_body_is_final (const http_parser *p)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+  if (m->body_is_final) {
+    fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
+                    "on last on_body callback call "
+                    "but it doesn't! ***\n\n");
+    flag->flag = -1;
+    return;
+  }
+  m->body_is_final = http_body_is_final(p);
+}
+
+int headers_complete_cb (http_parser *p)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+  
+  m->method = p->method;
+  m->status_code = p->status_code;
+  m->http_major = p->http_major;
+  m->http_minor = p->http_minor;
+  m->headers_complete_cb_called = TRUE;
+  m->should_keep_alive = http_should_keep_alive(p);
+  return 0;
+}
+
+int message_complete_cb (http_parser *p)
+{
+  ParserFlag* flag = (ParserFlag*)p->data;
+  struct http_message *m = flag->message;
+  if (m->should_keep_alive != http_should_keep_alive(p))
+  {
+    fprintf(stderr, "\n\n *** Error http_should_keep_alive() should have same "
+                    "value in both on_message_complete and on_headers_complete "
+                    "but it doesn't! ***\n\n");
+    flag->flag = -1;
+    return -1;
+  }
+
+  if (m->body_size &&
+      http_body_is_final(p) &&
+      !m->body_is_final)
+  {
+    fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
+                    "on last on_body callback call "
+                    "but it doesn't! ***\n\n");
+    flag->flag = -1;
+    return -1;
+  }
+
+  m->message_complete_cb_called = TRUE;
+  m->message_complete_on_eof = TRUE;
+
+  flag->messageList.push_back(flag->message);
+  http_message* message = (http_message*)malloc(sizeof(http_message));
+  http_message_init(message);
+  flag->message = message;
+
+  return 0;
+}
+
+
+
+int sails_http_parser(
+    http_parser* parser, const char* buf,  ParserFlag* flag) {
+  parser->data = flag;
+
+  int parsed
+      = http_parser_execute(parser, &settings, buf, strlen(buf));
+  
+  return parsed;
+}
 
 }  // namespace net
 }  // namespace sails

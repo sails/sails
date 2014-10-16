@@ -69,7 +69,7 @@ class EpollServer {
 
   // 循环调用parser, 子类可能要在得到parse的结果后,为TagRecvData设置一些属性
   virtual void ParseImp(std::shared_ptr<net::Connector> connector);
-  // 解析数据包
+  // 解析数据包,ParseImp会循环调用,所以一次只用解析出一个包
   virtual T* Parse(std::shared_ptr<net::Connector> connector) {
     printf("need implement parser method in subclass, connector:%d\n",
            connector->get_connector_fd());
@@ -77,7 +77,8 @@ class EpollServer {
   }
 
   // 当epoll读到0个数据时，客户端主动close.
-  // 默认是直接让netThread关闭连接,如果要处理额外情况,在子类中重新实现它
+  // 在调用函数之后,netThread会主动调用connect close
+  // 如果要处理额外情况,在子类中重新实现它
   virtual void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
 
   // 当连接超时时,提供应用层处理机会
@@ -371,16 +372,12 @@ void EpollServer<T>::CloseConnector(
 template<typename T>
 void EpollServer<T>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
-  if (!connector->isClosed()) {
-    CloseConnector(connector->getIp(),
-                    connector->getPort(),
-                    connector->getId(), connector->get_connector_fd());
-  }
+  log::LoggerFactory::getLogD("serverlog")->debug("connetor %ld will be closed", connector->get_connector_fd());
 }
 
 template<typename T>
 void EpollServer<T>::ConnectorTimeoutCB(net::Connector* connector) {
-  printf("connector %d timeout, perhaps need to do something",
+  log::LoggerFactory::getLogD("serverlog")->debug("connector %d timeout, perhaps need to do something",
          connector->get_connector_fd());
 }
 
