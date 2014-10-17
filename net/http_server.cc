@@ -83,5 +83,38 @@ HttpRequest* HttpServer::Parse(std::shared_ptr<net::Connector> connector) {
 
 
 
+
+
+
+
+HttpServerHandle::HttpServerHandle(sails::net::HttpServer* server)
+    : HandleThread<sails::net::HttpRequest>(server) {
+  
+}
+    
+void HttpServerHandle::handle(
+    const sails::net::TagRecvData<sails::net::HttpRequest> &recvData) {
+  char data[10*1024] = {'\0'};
+  recvData.data->ToString(data, 10*1024);
+  printf("uid:%u, ip:%s, port:%d, msg:\n%s\n", recvData.uid, recvData.ip.c_str(), recvData.port, data);
+  sails::net::HttpResponse *response = new sails::net::HttpResponse();
+  sails::net::HttpRequest *request = recvData.data;
+  process(*request, response);
+  char response_str[1024] = {'\0'};
+  response->ToString(response_str, 1024);
+  std::string buffer(response_str);
+  printf("response:\n%s\n", response_str);
+  server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+  // 因为最后都被放到一个队列中处理,所以肯定会send之后,再close
+  server->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
+
+  delete response;
+}
+
+void HttpServerHandle::process(const sails::net::HttpRequest& request,
+             sails::net::HttpResponse* response) {
+   response->SetBody("sails");
+}
+
 }  // namespace net          
 }  // namespace sails

@@ -43,6 +43,18 @@ class HttpServer : public EpollServer<HttpRequest> {
   struct http_parser_settings settings;
 };
 
+
+class HttpServerHandle : public HandleThread<sails::net::HttpRequest> {
+ public:
+  HttpServerHandle(sails::net::HttpServer* server);
+    
+  void handle(
+      const sails::net::TagRecvData<sails::net::HttpRequest> &recvData);
+
+  void process(const sails::net::HttpRequest& request,
+               sails::net::HttpResponse* response);
+};
+
 }  // namespace net          
 }  // namespace sails
 

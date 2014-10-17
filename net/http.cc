@@ -57,10 +57,101 @@ void delete_http_message(struct http_message *msg) {
   }
 }
 
+int message_to_string(struct http_message *msg, char* data, int len) {
+
+  if (msg != NULL) {
+    if (msg->raw != NULL) {
+      free(msg->raw);
+      msg->raw = NULL;
+    }
+    // 计算长度
+    // status line
+    char statusLine[MAX_ELEMENT_SIZE+30] = {'\0'};
+    if (msg->type == HTTP_REQUEST) {
+      char method_str[10] = {0};
+      if (msg->method == 1) {
+        sprintf(method_str, "%s", "GET");
+      } else {
+        sprintf(method_str, "%s", "POST");
+      }
+      sprintf(statusLine, "%s %s HTTP/%d.%d",
+              method_str,
+              msg->request_url,
+              msg->http_major,
+              msg->http_minor);    
+    } else {
+      sprintf(statusLine, "HTTP/%d.%d %d %s",
+            msg->http_major,
+            msg->http_minor,
+            msg->status_code,
+            HttpResponse::StatusCodeToReasonPhrase(msg->status_code));
+
+    }
+    uint32_t statusLen = strlen(statusLine)+2;  // status
+    
+    uint32_t headLen = 0;
+    // header len
+    for (int i = 0; i < msg->num_headers; i++) {
+      headLen += strlen(msg->headers[i][0]);
+      headLen += strlen(msg->headers[i][1]);
+      headLen += 3;  // : '\r' '\n'
+    }
+    // body len
+    uint32_t bodyLen = strlen(msg->body)+2;
+
+    int totalLen = statusLen + headLen + 2 + bodyLen;  // head和body的空行
+
+    // 分配原始内容空间
+    msg->raw = (char*)malloc(totalLen);
+    memset(msg->raw, 0, totalLen);
+
+    // 开始to string    
+
+    // status line
+    strncpy(msg->raw, statusLine, strlen(statusLine));
+    msg->raw[strlen(msg->raw)] = '\r';
+    msg->raw[strlen(msg->raw)] = '\n';
+
+    // header
+    for (int i = 0; i < msg->num_headers; i++) {
+      strncpy(msg->raw+strlen(msg->raw),
+              msg->headers[i][0],
+              strlen(msg->headers[i][0]));
+      msg->raw[strlen(msg->raw)] = ':';
+      strncpy(msg->raw+strlen(msg->raw),
+              msg->headers[i][1],
+              strlen(msg->headers[i][1]));
+      msg->raw[strlen(msg->raw)] = '\r';
+      msg->raw[strlen(msg->raw)] = '\n';
+    }
+
+    // empty line
+    msg->raw[strlen(msg->raw)] = '\r';
+    msg->raw[strlen(msg->raw)] = '\n';
+
+    // body
+    strncpy(msg->raw+strlen(msg->raw),
+            msg->body,
+            strlen(msg->body));
+
+    msg->raw[strlen(msg->raw)] = '\r';
+    msg->raw[strlen(msg->raw)] = '\n';
+
+
+    int rawLen = strlen(msg->raw);
+    int cpyLen = rawLen > len ? len:rawLen;
+    strncpy(data, msg->raw, cpyLen);
+
+    return 0;
+  }
+  return 1;
+}
+
 
 ///////////////////////////// http request ////////////////////////////////
 HttpRequest::HttpRequest(struct http_message *raw_data) {
   this->raw_data = raw_data;
+  this->raw_data->type = HTTP_REQUEST;
 }
 
 HttpRequest::~HttpRequest() {
@@ -69,7 +160,7 @@ HttpRequest::~HttpRequest() {
   }
 }
 
-std::string HttpRequest::getparam(std::string param_name) {
+std::string HttpRequest::GetParam(std::string param_name) {
   std::map<std::string, std::string>::iterator iter
       = this->param.find(param_name);
   if (iter == param.end()) {
@@ -91,8 +182,8 @@ std::string HttpRequest::getparam(std::string param_name) {
   }
 }
 
-void HttpRequest::set_default_header() {
-  this->set_http_proto(1, 1);
+void HttpRequest::SetDefaultHeader() {
+  this->SetHttpProto(1, 1);
   this->raw_data->method = 1;
   char headers[MAX_HEADERS][2][MAX_ELEMENT_SIZE]
       = {{ "Accept",
@@ -105,18 +196,18 @@ void HttpRequest::set_default_header() {
          { "User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36" }};  // NOLINT'
 
   for (int i = 0; i < MAX_HEADERS; i++) {
-    this->set_header(headers[i][0], headers[i][1]);
+    this->SetHeader(headers[i][0], headers[i][1]);
   }
 }
-void HttpRequest::set_http_proto(int http_major, int http_minor) {
+void HttpRequest::SetHttpProto(int http_major, int http_minor) {
   this->raw_data->http_major = http_major;
   this->raw_data->http_minor = http_minor;
 }
 
-void HttpRequest::set_request_method(int method) {
+void HttpRequest::SetRequestMethod(int method) {
   this->raw_data->method = method;
 }
-int HttpRequest::set_header(const char* key, const char *value) {
+int HttpRequest::SetHeader(const char* key, const char *value) {
   if (key != NULL && value != NULL && strlen(key) > 0) {
     int exist = 0;
     for (int i = 0; i < raw_data->num_headers; i++) {
@@ -136,7 +227,7 @@ int HttpRequest::set_header(const char* key, const char *value) {
   }
   return 1;
 }
-int HttpRequest::set_body(const char* body) {
+int HttpRequest::SetBody(const char* body) {
   if (body != NULL && strlen(body) > 0) {
     int body_size = strlen(body);
     memset(raw_data->body, 0, MAX_ELEMENT_SIZE);
@@ -145,66 +236,73 @@ int HttpRequest::set_body(const char* body) {
   }
   return 1;
 }
-int HttpRequest::to_str() {
+int HttpRequest::ToString(char* data, int len) {
   if (this->raw_data != NULL) {
-    if (raw_data->raw == NULL) {
-      raw_data->raw = (char*)malloc(1024*10);
-    }
-
-    memset(raw_data->raw, 0, 1024*10);
-
-    char method_str[10] = {0};
-    if (raw_data->method == 1) {
-      sprintf(method_str, "%s", "GET");
-    } else {
-      sprintf(method_str, "%s", "POST");
-    }
-    // status
-    sprintf(raw_data->raw, "%s / HTTP/%d.%d\r\n",
-            method_str,
-            raw_data->http_major,
-            raw_data->http_minor);
-
-    // header
-    for (int i = 0; i < raw_data->num_headers; i++) {
-      strncpy(raw_data->raw+strlen(raw_data->raw),
-              raw_data->headers[i][0],
-              strlen(raw_data->headers[i][0]));
-      raw_data->raw[strlen(raw_data->raw)] = ':';
-      strncpy(raw_data->raw+strlen(raw_data->raw),
-              raw_data->headers[i][1],
-              strlen(raw_data->headers[i][1]));
-      raw_data->raw[strlen(raw_data->raw)] = '\r';
-      raw_data->raw[strlen(raw_data->raw)] = '\n';
-    }
-
-    // empty line
-    raw_data->raw[strlen(raw_data->raw)] = '\r';
-    raw_data->raw[strlen(raw_data->raw)] = '\n';
-
-    // body
-    strncpy(raw_data->raw+strlen(raw_data->raw),
-            raw_data->body,
-            strlen(raw_data->body));
-
-    raw_data->raw[strlen(raw_data->raw)] = '\r';
-    raw_data->raw[strlen(raw_data->raw)] = '\n';
-    return 0;
+    return message_to_string(this->raw_data, data, len);
   }
   return 1;
 }
-char* HttpRequest::get_raw() {
-  return this->raw_data->raw;
-}
+
 
 
 
 ///////////////////////////// http response ////////////////////////////
+
+
+static const struct {
+  int status_code;
+  const char* reason_phrase;
+  const char* status_description;
+} kResponseStatus[] = {
+  { 100, "Continue", "Request received, please continue" },
+  { 101, "Switching Protocols", "Switching to new protocol; obey Upgrade header" },
+  { 200, "OK", "Request fulfilled, document follows" },
+  { 201, "Created", "Document created, URL follows" },
+  { 202, "Accepted", "Request accepted, processing continues off-line" },
+  { 203, "Non-Authoritative Information", "Request fulfilled from cache" },
+  { 204, "No Content", "Request fulfilled, nothing follows" },
+  { 205, "Reset Content", "Clear input form for further input." },
+  { 206, "Partial Content", "Partial content follows." },
+  { 300, "Multiple Choices", "Object has several resources -- see URI list" },
+  { 301, "Moved Permanently", "Object moved permanently -- see URI list" },
+  { 302, "Found", "Object moved temporarily -- see URI list" },
+  { 303, "See Other", "Object moved -- see Method and URL list" },
+  { 304, "Not Modified", "Document has not changed since given time" },
+  { 305, "Use Proxy", "You must use proxy specified in Location to access this resource." },
+  { 307, "Temporary Redirect", "Object moved temporarily -- see URI list" },
+  { 400, "Bad Request", "Bad request syntax or unsupported method" },
+  { 401, "Unauthorized", "No permission -- see authorization schemes" },
+  { 402, "Payment Required", "No payment -- see charging schemes" },
+  { 403, "Forbidden", "Request forbidden -- authorization will not help" },
+  { 404, "Not Found", "Nothing matches the given URI" },
+  { 405, "Method Not Allowed", "Specified method is invalid for this resource." },
+  { 406, "Not Acceptable", "URI not available in preferred format." },
+  { 407, "Proxy Authentication Required", "You must authenticate with this proxy before proceeding." },
+  { 408, "Request Timeout", "Request timed out; try again later." },
+  { 409, "Conflict", "Request conflict." },
+  { 410, "Gone", "URI no longer exists and has been permanently removed." },
+  { 411, "Length Required", "Client must specify Content-Length." },
+  { 412, "Precondition Failed", "Precondition in headers is false." },
+  { 413, "Request Entity Too Large", "Entity is too large." },
+  { 414, "Request-URI Too Long", "URI is too long." },
+  { 415, "Unsupported Media Type", "Entity body in unsupported format." },
+  { 416, "Requested Range Not Satisfiable", "Cannot satisfy request range." },
+  { 417, "Expectation Failed", "Expect condition could not be satisfied." },
+  { 500, "Internal Server Error", "Server got itself in trouble" },
+  { 501, "Not Implemented", "Server does not support this operation" },
+  { 502, "Bad Gateway", "Invalid responses from another server/proxy." },
+  { 503, "Service Unavailable", "The server cannot process the request due to a high load" },
+  { 504, "Gateway Timeout", "The gateway server did not receive a timely response" },
+  { 505, "HTTP Version Not Supported", "Cannot fulfill request." },
+  { -1, NULL, NULL },
+};
+
+
 HttpResponse::HttpResponse() {
   this->raw_data = (struct http_message *)malloc(sizeof(struct http_message));
   http_message_init(this->raw_data);
   this->raw_data->type = HTTP_RESPONSE;
-  this->set_default_header();
+  this->SetDefaultHeader();
 }
 
 HttpResponse::HttpResponse(struct http_message *raw_data) {
@@ -217,16 +315,25 @@ HttpResponse::~HttpResponse() {
   }
 }
 
-void HttpResponse::set_http_proto(int http_major, int http_minor) {
+const char* HttpResponse::StatusCodeToReasonPhrase(int status_code) {
+  for (int i = 0; kResponseStatus[i].status_code != -1; ++i) {
+    if (kResponseStatus[i].status_code == status_code) {
+      return kResponseStatus[i].reason_phrase;
+    }
+  }
+  return NULL;
+}
+
+void HttpResponse::SetHttpProto(int http_major, int http_minor) {
   this->raw_data->http_major = http_major;
   this->raw_data->http_minor = http_minor;
 }
 
-void HttpResponse::set_response_status(int response_status) {
+void HttpResponse::SetResponseStatus(int response_status) {
   this->raw_data->status_code = response_status;
 }
 
-int HttpResponse::set_header(const char *key, const char *value) {
+int HttpResponse::SetHeader(const char *key, const char *value) {
   if (key != NULL && value != NULL && strlen(key) > 0) {
     int exist = 0;
     for (int i = 0; i < raw_data->num_headers; i++) {
@@ -249,80 +356,38 @@ int HttpResponse::set_header(const char *key, const char *value) {
   return 1;
 }
 
-int HttpResponse::set_body(const char *body) {
+int HttpResponse::SetBody(const char *body) {
   if (body != NULL && strlen(body) > 0) {
     int body_size = strlen(body);
     memset(raw_data->body, 0, MAX_ELEMENT_SIZE);
     strncpy(raw_data->body, body, body_size);
     char body_size_str[11];
     sprintf(body_size_str, "%d", body_size);
-    this->set_header("Content-Length", body_size_str);
+    this->SetHeader("Content-Length", body_size_str);
     return 0;
   }
   return 1;
 }
 
-char *HttpResponse::get_body() {
+char *HttpResponse::GetBody() {
   return this->raw_data->body;
 }
 
-int HttpResponse::to_str() {
+int HttpResponse::ToString(char* data, int len) {
   if (this->raw_data != NULL) {
-    if (raw_data->raw == NULL) {
-      raw_data->raw = (char*)malloc(1024*10);
-    }
-
-    memset(raw_data->raw, 0, 1024*10);
-
-    // status
-    sprintf(raw_data->raw, "HTTP/%d.%d %d OK\r\n",
-            raw_data->http_major,
-            raw_data->http_minor,
-            raw_data->status_code);
-
-    // header
-    for (int i = 0; i < raw_data->num_headers; i++) {
-      strncpy(raw_data->raw+strlen(raw_data->raw),
-              raw_data->headers[i][0],
-              strlen(raw_data->headers[i][0]));
-      raw_data->raw[strlen(raw_data->raw)] = ':';
-      strncpy(raw_data->raw+strlen(raw_data->raw),
-              raw_data->headers[i][1],
-              strlen(raw_data->headers[i][1]));
-      raw_data->raw[strlen(raw_data->raw)] = '\r';
-      raw_data->raw[strlen(raw_data->raw)] = '\n';
-    }
-
-    // empty line
-    raw_data->raw[strlen(raw_data->raw)] = '\r';
-    raw_data->raw[strlen(raw_data->raw)] = '\n';
-
-    // body
-    strncpy(raw_data->raw+strlen(raw_data->raw),
-            raw_data->body,
-            strlen(raw_data->body));
-
-    raw_data->raw[strlen(raw_data->raw)] = '\r';
-    raw_data->raw[strlen(raw_data->raw)] = '\n';
-
-    return 0;
+    return message_to_string(this->raw_data, data, len);
   }
   return 1;
 }
 
-char* HttpResponse::get_raw() {
-  return this->raw_data->raw;
-}
-
-void HttpResponse::set_default_header() {
-  this->set_http_proto(1, 1);
-  this->set_response_status(200);
+void HttpResponse::SetDefaultHeader() {
+  this->SetHttpProto(1, 1);
+  this->SetResponseStatus(200);
   time_t timep;
   time(&timep);
 
   char headers[MAX_HEADERS][2][MAX_ELEMENT_SIZE]
-      = {{ "Location", "localhost/cust"},
-         { "Content-Type", "text/html;charset=UTF-8"},
+      = {{ "Content-Type", "text/html;charset=UTF-8"},
          { "Date", ""},
          { "Expires", "" },
          { "Connection", "keep-alive"},
@@ -331,13 +396,13 @@ void HttpResponse::set_default_header() {
          { "Content-Length", "0" }};
 
   for (int i = 0; i < MAX_HEADERS; i++) {
-    this->set_header(headers[i][0], headers[i][1]);
+    this->SetHeader(headers[i][0], headers[i][1]);
   }
   // local time
   char *time_str = ctime(&timep);
   time_str[strlen(time_str)-1] = 0;  // delete '\n'
-  this->set_header("Date", time_str);
-  this->set_header("Expires", time_str);
+  this->SetHeader("Date", time_str);
+  this->SetHeader("Expires", time_str);
 }
 
 
@@ -348,6 +413,23 @@ void HttpResponse::set_default_header() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////// http_message /////////////////////////////
 
 
 static http_parser_settings settings =
@@ -359,7 +441,7 @@ static http_parser_settings settings =
  ,.on_headers_complete = headers_complete_cb
  ,.on_body = body_cb
  ,.on_message_complete = message_complete_cb
-  };
+};
 
 
 int message_begin_cb (http_parser *p)
@@ -379,9 +461,9 @@ int header_field_cb (http_parser *p, const char *buf, size_t len)
     m->num_headers++;
 
   base::strlncat(m->headers[m->num_headers-1][0],
-           sizeof(m->headers[m->num_headers-1][0]),
-           buf,
-           len);
+                 sizeof(m->headers[m->num_headers-1][0]),
+                 buf,
+                 len);
 
   m->last_header_element = FIELD;
 
@@ -394,9 +476,9 @@ int header_value_cb (http_parser *p, const char *buf, size_t len)
   struct http_message *m = flag->message;
 
   base::strlncat(m->headers[m->num_headers-1][1],
-           sizeof(m->headers[m->num_headers-1][1]),
-           buf,
-           len);
+                 sizeof(m->headers[m->num_headers-1][1]),
+                 buf,
+                 len);
 
   m->last_header_element = VALUE;
 
@@ -420,9 +502,9 @@ int response_status_cb (http_parser *p, const char *buf, size_t len)
   ParserFlag* flag = (ParserFlag*)p->data;
   struct http_message *m = flag->message;
   base::strlncat(m->response_status,
-           sizeof(m->response_status),
-           buf,
-           len);
+                 sizeof(m->response_status),
+                 buf,
+                 len);
   return 0;
 }
 
@@ -432,12 +514,12 @@ int body_cb (http_parser *p, const char *buf, size_t len)
   struct http_message *m = flag->message;
   
   base::strlncat(m->body,
-           sizeof(m->body),
-           buf,
-           len);
+                 sizeof(m->body),
+                 buf,
+                 len);
   m->body_size += len;
   check_body_is_final(p);
- // printf("body_cb: '%s'\n", requests[num_messages].body);
+  // printf("body_cb: '%s'\n", requests[num_messages].body);
   return 0;
 }
 
@@ -447,8 +529,8 @@ void check_body_is_final (const http_parser *p)
   struct http_message *m = flag->message;
   if (m->body_is_final) {
     fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
-                    "on last on_body callback call "
-                    "but it doesn't! ***\n\n");
+            "on last on_body callback call "
+            "but it doesn't! ***\n\n");
     flag->flag = -1;
     return;
   }
@@ -476,8 +558,8 @@ int message_complete_cb (http_parser *p)
   if (m->should_keep_alive != http_should_keep_alive(p))
   {
     fprintf(stderr, "\n\n *** Error http_should_keep_alive() should have same "
-                    "value in both on_message_complete and on_headers_complete "
-                    "but it doesn't! ***\n\n");
+            "value in both on_message_complete and on_headers_complete "
+            "but it doesn't! ***\n\n");
     flag->flag = -1;
     return -1;
   }
@@ -487,21 +569,63 @@ int message_complete_cb (http_parser *p)
       !m->body_is_final)
   {
     fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
-                    "on last on_body callback call "
-                    "but it doesn't! ***\n\n");
+            "on last on_body callback call "
+            "but it doesn't! ***\n\n");
     flag->flag = -1;
     return -1;
   }
 
   m->message_complete_cb_called = TRUE;
   m->message_complete_on_eof = TRUE;
-
+  parser_url(m);
   flag->messageList.push_back(flag->message);
   http_message* message = (http_message*)malloc(sizeof(http_message));
   http_message_init(message);
   flag->message = message;
 
   return 0;
+}
+
+void parser_url(struct http_message* m) {
+  char url[MAX_PATH_SIZE];
+  memset(url, 0, MAX_PATH_SIZE);
+  strncat(url, "http://", strlen("http://"));
+  for(int i = 0; i < m->num_headers; i++) {
+    if(strcmp("Host", m->headers[i][0]) == 0) {
+      strncat(url, m->headers[i][1], strlen(m->headers[i][1]));
+      break;
+    }
+  }
+  strncat(url, m->request_url, strlen(m->request_url));
+
+  struct http_parser_url u;
+  int url_result = 0;
+
+  if((url_result = http_parser_parse_url(url, strlen(url), 0, &u)) == 0)
+  {
+    if(u.field_set & (1 << UF_PORT)) {
+      m->port = u.port;
+    }else {
+      m->port = 80;
+    }
+    if(m->host) {
+      free(m->host);
+    }
+    if(u.field_set & (1 << UF_HOST)) {
+      m->host = (char*)malloc(u.field_data[UF_HOST].len+1);
+      strncpy(m->host, url+u.field_data[UF_HOST].off, u.field_data[UF_HOST].len);  
+      m->host[u.field_data[UF_HOST].len] = 0;
+    }
+    memset(m->request_path, 0, strlen(m->request_path));
+    if(u.field_set & (1 << UF_PATH))  
+    {  
+      strncpy(m->request_path, url+u.field_data[UF_PATH].off, u.field_data[UF_PATH].len);  
+      m->request_path[u.field_data[UF_PATH].len] = 0;  
+    }
+
+  }else {
+    printf("url parser error:%d\n", url_result);
+  }
 }
 
 
