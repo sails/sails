@@ -198,7 +198,7 @@ EpollServer<T>::~EpollServer() {
 
 template<typename T>
 void EpollServer<T>::HandleSigpipe(int sig) {
-  log::LoggerFactory::getLogD("serverlog")->warn("sigpipe %d", sig);
+  log::LoggerFactory::getLogD("server")->warn("sigpipe %d", sig);
 }
 
 template<typename T>
@@ -372,12 +372,12 @@ void EpollServer<T>::CloseConnector(
 template<typename T>
 void EpollServer<T>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLogD("serverlog")->debug("connetor %ld will be closed", connector->get_connector_fd());
+  log::LoggerFactory::getLogD("server")->debug("connetor %ld will be closed", connector->get_connector_fd());
 }
 
 template<typename T>
 void EpollServer<T>::ConnectorTimeoutCB(net::Connector* connector) {
-  log::LoggerFactory::getLogD("serverlog")->debug("connector %d timeout, perhaps need to do something",
+  log::LoggerFactory::getLogD("server")->debug("connector %d timeout, perhaps need to do something",
          connector->get_connector_fd());
 }
 

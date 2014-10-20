@@ -16,9 +16,16 @@
 #include "sails/net/http.h"
 #include "sails/net/epoll_server.h"
 #include "sails/net/http_parser.h"
+#include <functional>
 
 namespace sails {
 namespace net {
+
+typedef std::function<void(sails::net::HttpRequest& request,
+                           sails::net::HttpResponse* response )> HttpProcessor;
+
+#define HTTPBIND(server, path, obj, fun)                                 \
+  server->RegisterProcessor(path, std::bind(&fun, obj, std::placeholders::_1, std::placeholders::_2));
 
 
 class HttpServer : public EpollServer<HttpRequest> {
@@ -26,6 +33,11 @@ class HttpServer : public EpollServer<HttpRequest> {
   explicit HttpServer(uint32_t netThreadNum = 1);
   ~HttpServer();
 
+  // 成功返回0,已经存在针对path的处理器返回1,processor为NULL返回-1,其它返回-100
+  int RegisterProcessor(std::string path, HttpProcessor processor);
+
+  HttpProcessor FindProcessor(std::string path);
+  
  private:
   // HttpRequest删除器
   void Tdeleter(HttpRequest* data);
@@ -38,9 +50,10 @@ class HttpServer : public EpollServer<HttpRequest> {
 
   // 删除http parser
   void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
-
+  
  private:
   struct http_parser_settings settings;
+  std::map<std::string, HttpProcessor> processorMap;
 };
 
 
@@ -51,8 +64,10 @@ class HttpServerHandle : public HandleThread<sails::net::HttpRequest> {
   void handle(
       const sails::net::TagRecvData<sails::net::HttpRequest> &recvData);
 
-  void process(const sails::net::HttpRequest& request,
+  // 找到对应的processor来处理
+  void process(sails::net::HttpRequest& request,
                sails::net::HttpResponse* response);
+  
 };
 
 }  // namespace net          
@@ -60,16 +75,3 @@ class HttpServerHandle : public HandleThread<sails::net::HttpRequest> {
 
 
 #endif  // SAILS_NET_HTTP_SERVER_H_
-
-
-
-
-
-
-
-
-
-
-
-
-

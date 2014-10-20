@@ -5,6 +5,22 @@ bool isRun = true;
 sails::net::HttpServer server(2);
 sails::net::HttpServerHandle handle(&server);
 
+
+
+
+class HandleTest {
+ public:
+  void test1(sails::net::HttpRequest& request,
+             sails::net::HttpResponse* response) {
+    response->SetBody("call test1");
+  }
+  void test2(sails::net::HttpRequest& request,
+             sails::net::HttpResponse* response) {
+    response->SetBody("call test2");
+  }
+};
+
+
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
 	case SIGINT:
@@ -16,8 +32,6 @@ void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
 	}
     }
 }
-
-
 
 
 int main(int argc, char *argv[])
@@ -44,6 +58,12 @@ int main(int argc, char *argv[])
     server.AddHandle(&handle);
     server.StartHandleThread();
 
+    // 请求处理器
+    sails::net::HttpServer* httpserver = &server;
+    HandleTest test;
+    HTTPBIND(httpserver, "/test1", test, HandleTest::test1);
+    HTTPBIND(httpserver, "/test2", test, HandleTest::test2);
+    
     while(isRun) {
 	sleep(2);
     }

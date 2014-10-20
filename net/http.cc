@@ -160,6 +160,13 @@ HttpRequest::~HttpRequest() {
   }
 }
 
+std::string HttpRequest::GetRequestPath() {
+  if (this->raw_data == NULL) {
+    return "";
+  }
+  return std::string(raw_data->request_path);
+}
+
 std::string HttpRequest::GetParam(std::string param_name) {
   std::map<std::string, std::string>::iterator iter
       = this->param.find(param_name);

@@ -85,6 +85,7 @@ class HttpRequest {
 
   ~HttpRequest();
 
+  std::string GetRequestPath();
   std::string GetParam(std::string param_name);
 
   // new request for rpc client to send data
