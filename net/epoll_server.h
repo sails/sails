@@ -52,6 +52,7 @@ class EpollServer {
   // 终止网络线程
   bool StopNetThread();
 
+  // 增加网络线程
   bool AddHandle(HandleThread<T> *handle);
 
   // 开始运行处理线程
@@ -130,7 +131,10 @@ class EpollServer {
 
   friend class HandleThread<T>;
 
+ public:
+  int ListenPort() { return listenPort;}
  private:
+  int listenPort;
   // 网络线程
   std::vector<NetThread<T>*> netThreads;
   // 逻辑处理线程
@@ -177,6 +181,7 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
     NetThread<T> *netThread = new NetThread<T>(this);
     netThreads.push_back(netThread);
   }
+  listenPort = 0;
   bTerminate = true;
   connectorTimeout = 0;
 
@@ -211,6 +216,7 @@ void EpollServer<T>::CreateEpoll() {
 
 template<typename T>
 void EpollServer<T>::Bind(int port) {
+  listenPort = port;
   netThreads[0]->bind(port);
 }
 
