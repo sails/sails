@@ -238,13 +238,10 @@ bool EpollServer<T, U>::StopNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
     netThreads[i]->terminate();
     netThreads[i]->join();
-<<<<<<< HEAD
     // 因为当网络线程结束时,要进行一些后续处理
     // 比如关闭连接,删除用户数据等,所以不能等到server析构时再来delete
     // 这里是要删除全部网络线程,所以不用把后面的线程往前移
     // 如果只是删除某一个,则要移动,否则数据得不到处理.
-=======
->>>>>>> 86a971fbba5eb2f1a20bc3864e0ba9d3c9d69a54
     delete netThreads[i];
     netThreads[i] = NULL;
   }
