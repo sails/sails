@@ -277,7 +277,7 @@ bool Logger::ensure_directory_exist() {
 
 std::map<std::string, Logger*> LoggerFactory::log_map;
 std::mutex LoggerFactory::logMutex;
-std::string LoggerFactory::path = "./log";
+std::string LoggerFactory::path("log");
 
 Logger* LoggerFactory::getLog(std::string log_name) {
   return getLog(log_name, Logger::SPLIT_NONE);
@@ -291,8 +291,16 @@ Logger* LoggerFactory::getLog(std::string log_name,
     return it->second;
   } else {
     char filename[200] = {'\0'};
+<<<<<<< HEAD
     snprintf(filename, sizeof(filename),
              "%s/%s.log", path.c_str(), log_name.c_str());
+=======
+    const char* pathstr = path.c_str();
+    const char* log_name_str = log_name.c_str();
+    printf("path len:%d, %s\n", strlen(pathstr), pathstr);
+    printf("logname len:%d, %s\n", strlen(log_name_str), log_name_str);
+    snprintf(filename, 200, "%s/%s.log", path.c_str(), log_name.c_str());
+>>>>>>> 86a971fbba5eb2f1a20bc3864e0ba9d3c9d69a54
     Logger* logger = new Logger(Logger::LOG_LEVEL_INFO,
                                 filename, save_mode);
     log_map.insert(
