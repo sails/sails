@@ -28,8 +28,8 @@
 namespace sails {
 namespace net {
 
-
-template <typename T> class EpollServer;
+template <typename T> class HandleThread;
+template <typename T, typename U=sails::net::HandleThread<T> > class EpollServer;
 
 
 // 定义数据队列中的结构

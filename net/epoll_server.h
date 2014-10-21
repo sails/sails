@@ -26,7 +26,7 @@
 namespace sails {
 namespace net {
 
-template<typename T>
+template<typename T, typename U >
 class EpollServer {
   
  public:
@@ -49,9 +49,6 @@ class EpollServer {
   // 开始运行网络线程
   bool StartNetThread();
 
-  // 终止网络线程
-  bool StopNetThread();
-
   // 增加网络线程
   bool AddHandle(HandleThread<T> *handle);
 
@@ -59,6 +56,9 @@ class EpollServer {
   bool StartHandleThread();
   // 终止处理线程
   bool StopHandleThread();
+
+  // 终止网络线程
+  bool StopNetThread();
 
  public:
   // T 的删除器,用于用户处理接收到的消息后,框架层删除它
@@ -169,8 +169,8 @@ class EpollServer {
 
 
 
-template<typename T>
-EpollServer<T>::EpollServer(unsigned int netThreadNum) {
+template<typename T, typename U>
+EpollServer<T, U>::EpollServer(unsigned int netThreadNum) {
   this->netThreadNum = netThreadNum;
   if (this->netThreadNum < 0) {
     this->netThreadNum = 1;
@@ -192,8 +192,8 @@ EpollServer<T>::EpollServer(unsigned int netThreadNum) {
 }
 
 
-template<typename T>
-EpollServer<T>::~EpollServer() {
+template<typename T, typename U>
+EpollServer<T, U>::~EpollServer() {
   printf("delete server\n");
   for (size_t i = 0; i < this->netThreadNum; i++) {
     delete netThreads[i];
@@ -201,28 +201,28 @@ EpollServer<T>::~EpollServer() {
 }
 
 
-template<typename T>
-void EpollServer<T>::HandleSigpipe(int sig) {
+template<typename T, typename U>
+void EpollServer<T, U>::HandleSigpipe(int sig) {
   log::LoggerFactory::getLogD("server")->warn("sigpipe %d", sig);
 }
 
-template<typename T>
-void EpollServer<T>::CreateEpoll() {
+template<typename T, typename U>
+void EpollServer<T, U>::CreateEpoll() {
   for (size_t i = 0; i < this->netThreadNum; i++) {
     netThreads[i]->create_event_loop();
   }
 }
 
 
-template<typename T>
-void EpollServer<T>::Bind(int port) {
+template<typename T, typename U>
+void EpollServer<T, U>::Bind(int port) {
   listenPort = port;
   netThreads[0]->bind(port);
 }
 
 // 开始运行网络线程
-template<typename T>
-bool EpollServer<T>::StartNetThread() {
+template<typename T, typename U>
+bool EpollServer<T, U>::StartNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
     printf("start net thread i:%lu\n", i);
     netThreads[i]->run();
@@ -231,31 +231,38 @@ bool EpollServer<T>::StartNetThread() {
 }
 
 // 终止网络线程
-template<typename T>
-bool EpollServer<T>::StopNetThread() {
+template<typename T, typename U>
+bool EpollServer<T, U>::StopNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
     netThreads[i]->terminate();
     netThreads[i]->join();
+    // 因为当网络线程结束时,要进行一些后续处理
+    // 比如关闭连接,删除用户数据等,所以不能等到server析构时再来delete
+    // 这里是要删除全部网络线程,所以不用把后面的线程往前移
+    // 如果只是删除某一个,则要移动,否则数据得不到处理.
+    delete netThreads[i];
+    netThreads[i] = NULL;
   }
   return true;
 }
 
 
-template<typename T>
-void EpollServer<T>::Tdeleter(T *data) {
+template<typename T, typename U>
+void EpollServer<T, U>::Tdeleter(T *data) {
   free(data);
 }
 
-template<typename T>
-void EpollServer<T>::AddConnector(
+template<typename T, typename U>
+void EpollServer<T, U>::AddConnector(
     std::shared_ptr<net::Connector> connector, int fd) {
   NetThread<T>* netThread = GetNetThreadOfFd(fd);
   netThread->add_connector(connector);
 }
 
 
-template<typename T>
-void EpollServer<T>::ParseImp(std::shared_ptr<net::Connector> connector) {
+template<typename T, typename U>
+void EpollServer<T, U>::ParseImp(
+    std::shared_ptr<net::Connector> connector) {
   T* packet = NULL;
   while ((packet = this->Parse(connector)) != NULL) {
     TagRecvData<T>* data = new TagRecvData<T>();
@@ -270,20 +277,20 @@ void EpollServer<T>::ParseImp(std::shared_ptr<net::Connector> connector) {
   }
 }
 
-template<typename T>
-void EpollServer<T>::CreateConnectorCB(
+template<typename T, typename U>
+void EpollServer<T, U>::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
   printf("create connector cb %d\n", connector->get_connector_fd());
 }
 
-template<typename T>
-bool EpollServer<T>::AddHandle(HandleThread<T> *handle) {
+template<typename T, typename U>
+bool EpollServer<T, U>::AddHandle(HandleThread<T> *handle) {
   handleThreads.push_back(handle);
   return true;
 }
 
-template<typename T>
-bool EpollServer<T>::StartHandleThread() {
+template<typename T, typename U>
+bool EpollServer<T, U>::StartHandleThread() {
   int i = 0;
   for (HandleThread<T> *handle : handleThreads) {
     printf("start handle thread i:%d\n", i);
@@ -295,8 +302,8 @@ bool EpollServer<T>::StartHandleThread() {
 }
 
 
-template<typename T>
-bool EpollServer<T>::StopHandleThread() {
+template<typename T, typename U>
+bool EpollServer<T, U>::StopHandleThread() {
   printf("stop dispacher thread\n");
   dispacher_thread->terminate();
   dispacher_thread->join();
@@ -313,33 +320,33 @@ bool EpollServer<T>::StopHandleThread() {
   return true;
 }
 
-template<typename T>
-void EpollServer<T>::AddHandleData(TagRecvData<T>*data, int handleIndex) {
+template<typename T, typename U>
+void EpollServer<T, U>::AddHandleData(TagRecvData<T>*data, int handleIndex) {
   handleThreads[handleIndex]->addForHandle(data);
 }
 
 
-template<typename T>
-void EpollServer<T>::DipacherWait() {
+template<typename T, typename U>
+void EpollServer<T, U>::DipacherWait() {
   std::unique_lock<std::mutex> locker(dispacher_mutex);
   dispacher_notify.wait(locker);
 }
 
 
-template<typename T>
-void EpollServer<T>::NotifyDispacher() {
+template<typename T, typename U>
+void EpollServer<T, U>::NotifyDispacher() {
   std::unique_lock<std::mutex> locker(dispacher_mutex);
   dispacher_notify.notify_one();
 }
 
-template<typename T>
-int EpollServer<T>::GetRecvQueueNum() {
+template<typename T, typename U>
+int EpollServer<T, U>::GetRecvQueueNum() {
   return netThreads.size();
 }
 
 
-template<typename T>
-size_t EpollServer<T>::GetRecvDataNum() {
+template<typename T, typename U>
+size_t EpollServer<T, U>::GetRecvDataNum() {
   size_t num = 0;
   for (int i = 0; i < netThreads.size(); i++) {
     num = num + netThreads[i]->get_recvqueue_size();
@@ -347,17 +354,19 @@ size_t EpollServer<T>::GetRecvDataNum() {
   return num;
 }
 
-template<typename T>
-TagRecvData<T>* EpollServer<T>::GetRecvPacket(uint32_t index) {
+template<typename T, typename U>
+TagRecvData<T>* EpollServer<T, U>::GetRecvPacket(uint32_t index) {
   TagRecvData<T> *data = NULL;
   if (netThreads.size() >= index) {
-    netThreads[index]->getRecvData(data, 0);  //不阻塞
+    if (netThreads[index] != NULL) {
+      netThreads[index]->getRecvData(data, 0);  //不阻塞
+    }
   }
   return data;
 }
 
-template<typename T>
-void EpollServer<T>::send(const std::string &s,
+template<typename T, typename U>
+void EpollServer<T, U>::send(const std::string &s,
                           const std::string &ip,
                           uint16_t port, int uid, int fd) {
   NetThread<T>* netThread = GetNetThreadOfFd(fd);
@@ -366,8 +375,8 @@ void EpollServer<T>::send(const std::string &s,
   }
 }
 
-template<typename T>
-void EpollServer<T>::CloseConnector(
+template<typename T, typename U>
+void EpollServer<T, U>::CloseConnector(
     const std::string &ip, uint16_t port, int uid, int fd) {
   NetThread<T>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
@@ -375,14 +384,14 @@ void EpollServer<T>::CloseConnector(
   }
 }
 
-template<typename T>
-void EpollServer<T>::ClosedConnectCB(
+template<typename T, typename U>
+void EpollServer<T, U>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
   log::LoggerFactory::getLogD("server")->debug("connetor %ld will be closed", connector->get_connector_fd());
 }
 
-template<typename T>
-void EpollServer<T>::ConnectorTimeoutCB(net::Connector* connector) {
+template<typename T, typename U>
+void EpollServer<T, U>::ConnectorTimeoutCB(net::Connector* connector) {
   log::LoggerFactory::getLogD("server")->debug("connector %d timeout, perhaps need to do something",
                                                connector->get_connector_fd());
 }

@@ -291,7 +291,8 @@ Logger* LoggerFactory::getLog(std::string log_name,
     return it->second;
   } else {
     char filename[200] = {'\0'};
-    snprintf(filename, 200, "%s/%s.log", path.c_str(), log_name.c_str());
+    snprintf(filename, sizeof(filename),
+             "%s/%s.log", path.c_str(), log_name.c_str());
     Logger* logger = new Logger(Logger::LOG_LEVEL_INFO,
                                 filename, save_mode);
     log_map.insert(

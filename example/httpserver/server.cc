@@ -26,8 +26,8 @@ void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
 	case SIGINT:
 	{
 	    printf("stop netthread\n");
-	    server.StopNetThread();
 	    server.StopHandleThread();
+            server.StopNetThread();
 	    isRun = false;
 	}
     }

@@ -18,8 +18,6 @@
 namespace sails {
 namespace net {
 
-template <typename T> class EpollServer;
-// template <typename T> class TagRecvData;
 
 template<typename T>
 class DispatcherThread {
