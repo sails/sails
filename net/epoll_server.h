@@ -196,7 +196,9 @@ template<typename T>
 EpollServer<T>::~EpollServer() {
   printf("delete server\n");
   for (size_t i = 0; i < this->netThreadNum; i++) {
-    delete netThreads[i];
+    if (netThreads[i] != NULL) {
+          delete netThreads[i];
+    }
   }
 }
 
@@ -236,6 +238,8 @@ bool EpollServer<T>::StopNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
     netThreads[i]->terminate();
     netThreads[i]->join();
+    delete netThreads[i];
+    netThreads[i] = NULL;
   }
   return true;
 }
@@ -351,7 +355,9 @@ template<typename T>
 TagRecvData<T>* EpollServer<T>::GetRecvPacket(uint32_t index) {
   TagRecvData<T> *data = NULL;
   if (netThreads.size() >= index) {
-    netThreads[index]->getRecvData(data, 0);  //不阻塞
+    if (netThreads[index] != NULL) {
+      netThreads[index]->getRecvData(data, 0);  //不阻塞
+    }
   }
   return data;
 }
