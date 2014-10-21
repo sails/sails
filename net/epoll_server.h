@@ -384,7 +384,7 @@ void EpollServer<T>::ClosedConnectCB(
 template<typename T>
 void EpollServer<T>::ConnectorTimeoutCB(net::Connector* connector) {
   log::LoggerFactory::getLogD("server")->debug("connector %d timeout, perhaps need to do something",
-         connector->get_connector_fd());
+                                               connector->get_connector_fd());
 }
 
 }  // namespace net

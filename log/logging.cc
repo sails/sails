@@ -290,8 +290,10 @@ Logger* LoggerFactory::getLog(std::string log_name,
   if ((it=log_map.find(log_name)) != log_map.end()) {
     return it->second;
   } else {
+    char filename[200] = {'\0'};
+    snprintf(filename, 200, "%s/%s.log", path.c_str(), log_name.c_str());
     Logger* logger = new Logger(Logger::LOG_LEVEL_INFO,
-                                (path+"/"+log_name+".log").c_str(), save_mode);
+                                filename, save_mode);
     log_map.insert(
         std::pair<std::string, Logger*>(log_name, logger));  // NOLINT'
     return logger;
@@ -312,19 +314,4 @@ Logger* LoggerFactory::getLogM(std::string log_name) {
 
 }  // namespace log
 }  // namespace sails
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

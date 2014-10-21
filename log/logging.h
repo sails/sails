@@ -5,7 +5,7 @@
 // Description: 可以直接通过new来得到一个logger,
 //              但是推荐通过LoggerFactory达到单例目的
 //              factory生成的日志默认是info级别,可以通过
-//              修改log.confg:LogLevel=debug重新定义级别,合法的关键字:
+//              修改log.conf:LogLevel=debug重新定义级别,合法的关键字:
 //              debug, info ,warn, error,修改后10秒生效
 //
 // Author: sailsxu <sailsxu@gmail.com>
