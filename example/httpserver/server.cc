@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
     }
 
 
-
     server.CreateEpoll();
 
 //    server.SetEmptyConnTimeout(10);
@@ -63,7 +62,9 @@ int main(int argc, char *argv[])
     HandleTest test;
     HTTPBIND(httpserver, "/test1", test, HandleTest::test1);
     HTTPBIND(httpserver, "/test2", test, HandleTest::test2);
+
     
+
     while(isRun) {
 	sleep(2);
     }

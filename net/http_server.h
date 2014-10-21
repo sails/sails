@@ -25,7 +25,7 @@ typedef std::function<void(sails::net::HttpRequest& request,
                            sails::net::HttpResponse* response )> HttpProcessor;
 
 #define HTTPBIND(server, path, obj, fun)                                 \
-  server->RegisterProcessor(path, std::bind(&fun, obj, std::placeholders::_1, std::placeholders::_2));
+server->RegisterProcessor(path, std::bind(&fun, obj, std::placeholders::_1, std::placeholders::_2));
 
 
 class HttpServer : public EpollServer<HttpRequest> {
