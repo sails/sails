@@ -969,8 +969,7 @@ void sails_signal_handle(int signo,
     case SIGINT:
       {
         printf("stop netthread\n");
-        server.StopNetThread();
-        server.StopHandleThread();
+        server.Stop();
         isRun = false;
       }
   }
@@ -987,19 +986,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-
-  /*
-  server.CreateEpoll();
-
-  // server.SetEmptyConnTimeout(10);
-  server.Bind(sails::config.get_listen_port());
-  server.StartNetThread();
-  */
   server.Init(sails::config.get_listen_port(), 2, 10, 1);
-  sails::HandleImpl handle(&server);
-  server.AddHandle(&handle);
-  server.StartHandleThread();
-
 
   // 统计
   time_t lastUpdteSession = 0;

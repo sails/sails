@@ -61,7 +61,7 @@ class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
 
 class HttpServerHandle : public HandleThread<sails::net::HttpRequest, HttpServerHandle> {
  public:
-  HttpServerHandle(sails::net::HttpServer* server);
+  HttpServerHandle(EpollServer<HttpRequest, HttpServerHandle>* server);
     
   void handle(
       const sails::net::TagRecvData<sails::net::HttpRequest> &recvData);

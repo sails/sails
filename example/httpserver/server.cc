@@ -26,8 +26,7 @@ void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
 	case SIGINT:
 	{
 	    printf("stop netthread\n");
-	    server.StopHandleThread();
-            server.StopNetThread();
+	    server.Stop();
 	    isRun = false;
 	}
     }
@@ -47,18 +46,8 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
 
-    /*
-    server.CreateEpoll();
-
-//    server.SetEmptyConnTimeout(10);
-    server.Bind(8000);
-    server.StartNetThread();
-    */
     server.Init(8000, 2, 10, 1);
     
-    server.AddHandle(&handle);
-    server.StartHandleThread();
-
     // 请求处理器
     sails::net::HttpServer* httpserver = &server;
     HandleTest test;

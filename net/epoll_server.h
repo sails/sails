@@ -37,22 +37,22 @@ class EpollServer {
 
   // 初始化
   void Init(int port, int netThreadNum, int timeout, int handleThreadNum);
+
+  // 停止服务器
+  void Stop();
+
+ protected:
   // 创建epoll
   void CreateEpoll();
 
   // 设置空连接超时时间
   void SetEmptyConnTimeout(int timeout) { connectorTimeout = timeout;}
 
-  int GetEmptyConnTimeout() { return connectorTimeout;}
-
   // 绑定一个网络线程去监听端口
   void Bind(int port);
 
   // 开始运行网络线程
   bool StartNetThread();
-
-  // 增加网络线程
-  bool AddHandle(HandleThread<T, U> *handle);
 
   // 开始运行处理线程
   bool StartHandleThread();
@@ -89,6 +89,8 @@ class EpollServer {
   virtual void ConnectorTimeoutCB(net::Connector* connector);
 
  public:
+  int GetEmptyConnTimeout() { return connectorTimeout;}
+  
   // 增加连接
   void AddConnector(std::shared_ptr<net::Connector> connector, int fd);
 
@@ -140,12 +142,14 @@ class EpollServer {
   // 网络线程
   std::vector<NetThread<T, U>*> netThreads;
   // 逻辑处理线程
-  std::vector<HandleThread<T, U>*> handleThreads;
+  std::vector<U*> handleThreads;
   // 消息分发线程
   DispatcherThread<T, U>* dispacher_thread;
 
   // 网络线程数目
   unsigned int netThreadNum;
+
+  uint32_t handleThreadNum;
 
   // io线程将数据入队时通过dispacher线程分发
   std::mutex dispacher_mutex;
@@ -212,10 +216,24 @@ void EpollServer<T, U>::Init(
   CreateEpoll();
   SetEmptyConnTimeout(timeout);
   Bind(port);
+
+  // 新建处理线程
+  if (handleThreadNum < 0) {
+    this->handleThreadNum = 1;
+  } else if (handleThreadNum > 15) {
+    this-> handleThreadNum = 15;
+  } else {
+    this->handleThreadNum = handleThreadNum;
+  }
+  for (size_t i = 0; i < this->handleThreadNum; i++) {
+    U* handleThread = new U(this);
+    handleThreads.push_back(handleThread);
+  }
   
   // 开始网络线程
   StartNetThread();
-  
+  // 开始处理线程
+  StartHandleThread();
 }
 
 
@@ -303,12 +321,6 @@ void EpollServer<T, U>::CreateConnectorCB(
 }
 
 template<typename T, typename U>
-bool EpollServer<T, U>::AddHandle(HandleThread<T, U> *handle) {
-  handleThreads.push_back(handle);
-  return true;
-}
-
-template<typename T, typename U>
 bool EpollServer<T, U>::StartHandleThread() {
   int i = 0;
   for (HandleThread<T, U> *handle : handleThreads) {
@@ -318,6 +330,13 @@ bool EpollServer<T, U>::StartHandleThread() {
   dispacher_thread = new DispatcherThread<T, U>(this);
   dispacher_thread->run();
   return true;
+}
+
+
+template<typename T, typename U>
+void EpollServer<T, U>::Stop() {
+  this->StopHandleThread();
+  this->StopNetThread();
 }
 
 
@@ -334,6 +353,7 @@ bool EpollServer<T, U>::StopHandleThread() {
   for (uint32_t i = 0; i < handleThreads.size(); i++) {
     handleThreads[i]->terminate();
     handleThreads[i]->join();
+    delete handleThreads[i];
     handleThreads[i] = NULL;
   }
   return true;

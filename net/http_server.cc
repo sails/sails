@@ -109,7 +109,8 @@ HttpProcessor HttpServer::FindProcessor(std::string path) {
 
 
 
-HttpServerHandle::HttpServerHandle(sails::net::HttpServer* server)
+HttpServerHandle::HttpServerHandle(
+    EpollServer<HttpRequest, HttpServerHandle>* server)
     : HandleThread<sails::net::HttpRequest, HttpServerHandle>(server) {
   
 }

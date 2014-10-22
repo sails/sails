@@ -69,15 +69,13 @@ public:
 
 bool isRun = true;
 TestServer server;
-HandleImpl handle(&server);
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
 	case SIGINT:
 	{
 	    printf("stop netthread\n");
-	    server.StopNetThread();
-	    server.StopHandleThread();
+            server.Stop();
 	    isRun = false;
 	}
     }
@@ -101,15 +99,6 @@ int main(int argc, char *argv[])
 
 
     server.Init(8000, 2, 10, 1);
-    /*
-    server.CreateEpoll();
-
-//    server.SetEmptyConnTimeout(10);
-    server.Bind(8000);
-    server.StartNetThread();
-    */
-    server.AddHandle(&handle);
-    server.StartHandleThread();
 
     while(isRun) {
 	sleep(2);
