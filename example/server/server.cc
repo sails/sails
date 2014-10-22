@@ -65,17 +65,12 @@ public:
 };
 
 
-
-
 bool isRun = true;
-TestServer server;
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
 	case SIGINT:
 	{
-	    printf("stop netthread\n");
-            server.Stop();
 	    isRun = false;
 	}
     }
@@ -97,14 +92,15 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
 
-
+    TestServer server;
     server.Init(8000, 2, 10, 1);
 
     while(isRun) {
 	sleep(2);
     }
     
-
+    printf("stop netthread\n");
+    server.Stop();
 
     return 0;
 }

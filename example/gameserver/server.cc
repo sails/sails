@@ -961,15 +961,13 @@ void update_sessions(const std::list<std::string>& sessions) {
 
 ////////////////////////// main /////////////////////////////////
 bool isRun = true;
-sails::Server server;
+
 
 void sails_signal_handle(int signo,
                          siginfo_t *info, void *ext) {
   switch (signo) {
     case SIGINT:
       {
-        printf("stop netthread\n");
-        server.Stop();
         isRun = false;
       }
   }
@@ -986,6 +984,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  sails::Server server;
   server.Init(sails::config.get_listen_port(), 2, 10, 1);
 
   // 统计
@@ -1022,6 +1021,8 @@ int main(int argc, char *argv[]) {
     sleep(2);
   }
 
+  printf("server stop\n");
+  server.Stop();
 
   return 0;
 }

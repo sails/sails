@@ -1,12 +1,6 @@
 #include "sails/net/http_server.h"
 
 
-bool isRun = true;
-sails::net::HttpServer server;
-sails::net::HttpServerHandle handle(&server);
-
-
-
 
 class HandleTest {
  public:
@@ -21,12 +15,12 @@ class HandleTest {
 };
 
 
+bool isRun = true;
+
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
     switch(signo) {
 	case SIGINT:
 	{
-	    printf("stop netthread\n");
-	    server.Stop();
 	    isRun = false;
 	}
     }
@@ -46,6 +40,7 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
 
+    sails::net::HttpServer server;
     server.Init(8000, 2, 10, 1);
     
     // 请求处理器
@@ -60,7 +55,7 @@ int main(int argc, char *argv[])
 	sleep(2);
     }
     
-
+    server.Stop();
 
     return 0;
 }
