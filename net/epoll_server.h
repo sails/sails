@@ -326,6 +326,7 @@ bool EpollServer<T, U>::StartHandleThread() {
   for (HandleThread<T, U> *handle : handleThreads) {
     printf("start handle thread i:%d\n", i);
     handle->run();
+    i++;
   }
   dispacher_thread = new DispatcherThread<T, U>(this);
   dispacher_thread->run();
