@@ -21,10 +21,10 @@ namespace sails {
 namespace net {
 
 
-template <typename T>
+template <typename T, typename U>
 class HandleThread {
  public:
-  explicit HandleThread(EpollServer<T> *server);
+  explicit HandleThread(EpollServer<T, U> *server);
 
   virtual ~HandleThread();
 
@@ -36,7 +36,7 @@ class HandleThread {
   };
 
   // 获取服务
-  EpollServer<T>* getEpollServer();
+  EpollServer<T, U>* getEpollServer();
 
   // 线程处理方法
   virtual void run();
@@ -62,7 +62,7 @@ class HandleThread {
   void close(unsigned int uid, int fd);
   */
  protected:
-  static void runThread(HandleThread<T>* handle);
+  static void runThread(HandleThread<T, U>* handle);
   // 具体的处理逻辑
   virtual void handleImp();
 
@@ -87,7 +87,7 @@ class HandleThread {
   virtual void stopHandle() {}
 
  protected:
-  EpollServer<T>  *server;
+  EpollServer<T, U>  *server;
 
   // 将要处理的数据队列
   recv_queue<T> handlelist;
@@ -96,7 +96,7 @@ class HandleThread {
   // 等待时间
   uint32_t  _iWaitTime;
 
-  std::thread *thread;
+  std::thread *hthread;
   int status;
 };
 
@@ -107,20 +107,20 @@ class HandleThread {
 
 
 
-template <typename T>
-HandleThread<T>::HandleThread(EpollServer<T> *server) {
+template <typename T, typename U>
+HandleThread<T, U>::HandleThread(EpollServer<T, U> *server) {
   this->server = server;
-  this->status = HandleThread<T>::STOPING;
+  this->status = HandleThread<T, U>::STOPING;
   continueHanle = true;
 }
 
-template <typename T>
-HandleThread<T>::~HandleThread() {
-  if (status != HandleThread<T>::STOPING) {
+template <typename T, typename U>
+HandleThread<T, U>::~HandleThread() {
+  if (status != HandleThread<T, U>::STOPING) {
     terminate();
     join();
-    delete thread;
-    thread = NULL;
+    delete hthread;
+    hthread = NULL;
   }
 
   // 删除handlelist中的数据
@@ -142,43 +142,43 @@ HandleThread<T>::~HandleThread() {
   } while (hashandleData);
 }
 
-template <typename T>
-EpollServer<T>* HandleThread<T>::getEpollServer() {
+template <typename T, typename U>
+EpollServer<T, U>* HandleThread<T, U>::getEpollServer() {
   return server;
 }
 
-template <typename T>
-void HandleThread<T>::run() {
+template <typename T, typename U>
+void HandleThread<T, U>::run() {
   initialize();
   startHandle();
-  thread = new std::thread(runThread, this);
-  this->status = HandleThread<T>::RUNING;
+  hthread = new std::thread(runThread, this);
+  this->status = HandleThread<T, U>::RUNING;
 }
 
-template <typename T>
-void HandleThread<T>::runThread(HandleThread<T>* handle) {
+template <typename T, typename U>
+void HandleThread<T, U>::runThread(HandleThread<T, U>* handle) {
   if (handle != NULL) {
     handle->handleImp();
   }
 }
 
-template <typename T>
-void HandleThread<T>::terminate() {
+template <typename T, typename U>
+void HandleThread<T, U>::terminate() {
   continueHanle = false;
   stopHandle();
 }
 
-template <typename T>
-void HandleThread<T>::join() {
-  thread->join();
-  status = HandleThread<T>::STOPING;
-  delete thread;
-  thread = NULL;
+template <typename T, typename U>
+void HandleThread<T, U>::join() {
+  hthread->join();
+  status = HandleThread<T, U>::STOPING;
+  delete hthread;
+  hthread = NULL;
 }
 
 
-template <typename T>
-void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
+template <typename T, typename U>
+void HandleThread<T, U>::addForHandle(TagRecvData<T> *data) {
   if (!handlelist.push_back(data)) {
     // 删除它
     T* t = data->data;
@@ -191,8 +191,8 @@ void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
 }
 
 
-template <typename T>
-void HandleThread<T>::handleImp() {
+template <typename T, typename U>
+void HandleThread<T, U>::handleImp() {
   // 从接收队列中得到数据,然后调用handle()处理
   while (continueHanle) {
     TagRecvData<T>* data = NULL;

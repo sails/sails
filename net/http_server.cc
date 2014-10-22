@@ -15,8 +15,7 @@ namespace sails {
 namespace net {
 
 
-HttpServer::HttpServer(uint32_t netThreadNum)
-    :EpollServer<HttpRequest>(netThreadNum) {
+HttpServer::HttpServer() {
 
 }
 
@@ -111,7 +110,7 @@ HttpProcessor HttpServer::FindProcessor(std::string path) {
 
 
 HttpServerHandle::HttpServerHandle(sails::net::HttpServer* server)
-    : HandleThread<sails::net::HttpRequest>(server) {
+    : HandleThread<sails::net::HttpRequest, HttpServerHandle>(server) {
   
 }
     

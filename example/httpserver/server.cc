@@ -2,7 +2,7 @@
 
 
 bool isRun = true;
-sails::net::HttpServer server(2);
+sails::net::HttpServer server;
 sails::net::HttpServerHandle handle(&server);
 
 
@@ -47,12 +47,14 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
 
-
+    /*
     server.CreateEpoll();
 
 //    server.SetEmptyConnTimeout(10);
     server.Bind(8000);
     server.StartNetThread();
+    */
+    server.Init(8000, 2, 10, 1);
     
     server.AddHandle(&handle);
     server.StartHandleThread();

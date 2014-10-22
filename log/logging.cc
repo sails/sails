@@ -223,7 +223,7 @@ void Logger::check_loginfo() {
           if (regex_match(buf, cm, level)) {  // match level
             Logger::LogLevel setlevel = get_level_by_name(buf+9);
             if (setlevel != Logger::LOG_LEVEL_NONE) {
-              printf("set level %d\n", setlevel);
+              // printf("set level %d\n", setlevel);
               this->level = setlevel;
             }
           }

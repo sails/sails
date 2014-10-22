@@ -23,8 +23,8 @@ namespace sails {
 sails::Config config("./gameserver.json");
 
 
-Server::Server(int netThreadNum)
-    : sails::net::EpollServer<SceNetAdhocctlPacketBase>(netThreadNum) {
+Server::Server()
+    : sails::net::EpollServer<SceNetAdhocctlPacketBase, HandleImpl>() {
   playerList.init(50);
 }
 
@@ -195,7 +195,7 @@ void Server::ParseImp(std::shared_ptr<net::Connector> connector) {
     data->fd = connector->get_connector_fd();
     data->extId = connector->data.u32;
 
-    net::NetThread<SceNetAdhocctlPacketBase>* netThread
+    net::NetThread<SceNetAdhocctlPacketBase, HandleImpl>* netThread
         = GetNetThreadOfFd(connector->get_connector_fd());
     netThread->addRecvList(data);
   }
@@ -370,8 +370,8 @@ Server::~Server() {
 
 
 HandleImpl::HandleImpl(
-    sails::net::EpollServer<SceNetAdhocctlPacketBase>* server)
-    : sails::net::HandleThread<SceNetAdhocctlPacketBase>(server) {
+    sails::net::EpollServer<SceNetAdhocctlPacketBase, HandleImpl>* server)
+    : sails::net::HandleThread<SceNetAdhocctlPacketBase, HandleImpl>(server) {
 }
 
 
@@ -961,7 +961,7 @@ void update_sessions(const std::list<std::string>& sessions) {
 
 ////////////////////////// main /////////////////////////////////
 bool isRun = true;
-sails::Server server(2);
+sails::Server server;
 
 void sails_signal_handle(int signo,
                          siginfo_t *info, void *ext) {
@@ -988,12 +988,14 @@ int main(int argc, char *argv[]) {
   }
 
 
-
+  /*
   server.CreateEpoll();
 
   // server.SetEmptyConnTimeout(10);
   server.Bind(sails::config.get_listen_port());
   server.StartNetThread();
+  */
+  server.Init(sails::config.get_listen_port(), 2, 10, 1);
   sails::HandleImpl handle(&server);
   server.AddHandle(&handle);
   server.StartHandleThread();

@@ -28,9 +28,11 @@ typedef std::function<void(sails::net::HttpRequest& request,
 server->RegisterProcessor(path, std::bind(&fun, obj, std::placeholders::_1, std::placeholders::_2));
 
 
-class HttpServer : public EpollServer<HttpRequest> {
+class HttpServerHandle;
+
+class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
  public:
-  explicit HttpServer(uint32_t netThreadNum = 1);
+  HttpServer();
   ~HttpServer();
 
   // 成功返回0,已经存在针对path的处理器返回1,processor为NULL返回-1,其它返回-100
@@ -57,7 +59,7 @@ class HttpServer : public EpollServer<HttpRequest> {
 };
 
 
-class HttpServerHandle : public HandleThread<sails::net::HttpRequest> {
+class HttpServerHandle : public HandleThread<sails::net::HttpRequest, HttpServerHandle> {
  public:
   HttpServerHandle(sails::net::HttpServer* server);
     

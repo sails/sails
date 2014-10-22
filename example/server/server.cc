@@ -23,9 +23,11 @@ sails::log::Logger serverlog(sails::log::Logger::LOG_LEVEL_DEBUG,
 				  "./log/server.log", sails::log::Logger::SPLIT_DAY);
 }
 
-class TestServer : public sails::net::EpollServer<EchoStruct> {
+class HandleImpl;
+
+class TestServer : public sails::net::EpollServer<EchoStruct, HandleImpl> {
 public:
-    TestServer(int netThreadNum) : sails::net::EpollServer<EchoStruct>(netThreadNum) {
+    TestServer() {
 	
     }
     ~TestServer() {
@@ -47,9 +49,9 @@ public:
 };
 
 
-class HandleImpl : public sails::net::HandleThread<EchoStruct> {
+class HandleImpl : public sails::net::HandleThread<EchoStruct, HandleImpl> {
 public:
-    HandleImpl(sails::net::EpollServer<EchoStruct>* server) : sails::net::HandleThread<EchoStruct>(server) {
+  HandleImpl(sails::net::EpollServer<EchoStruct, HandleImpl>* server) : sails::net::HandleThread<EchoStruct, HandleImpl>(server) {
 	
     }
     
@@ -66,7 +68,7 @@ public:
 
 
 bool isRun = true;
-TestServer server(2);
+TestServer server;
 HandleImpl handle(&server);
 
 void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
@@ -98,13 +100,14 @@ int main(int argc, char *argv[])
     }
 
 
-
+    server.Init(8000, 2, 10, 1);
+    /*
     server.CreateEpoll();
 
 //    server.SetEmptyConnTimeout(10);
     server.Bind(8000);
     server.StartNetThread();
-    
+    */
     server.AddHandle(&handle);
     server.StartHandleThread();
 

@@ -31,10 +31,12 @@ class EpollServer {
   
  public:
   // 构造函数
-  explicit EpollServer(unsigned int NetThreadNum = 1);
+  explicit EpollServer();
   // 析构函数
   virtual ~EpollServer();
 
+  // 初始化
+  void Init(int port, int netThreadNum, int timeout, int handleThreadNum);
   // 创建epoll
   void CreateEpoll();
 
@@ -50,7 +52,7 @@ class EpollServer {
   bool StartNetThread();
 
   // 增加网络线程
-  bool AddHandle(HandleThread<T> *handle);
+  bool AddHandle(HandleThread<T, U> *handle);
 
   // 开始运行处理线程
   bool StartHandleThread();
@@ -91,7 +93,7 @@ class EpollServer {
   void AddConnector(std::shared_ptr<net::Connector> connector, int fd);
 
   // 选择网络线程
-  NetThread<T>* GetNetThreadOfFd(int fd) {
+  NetThread<T, U>* GetNetThreadOfFd(int fd) {
     return netThreads[fd % netThreads.size()];
   }
 
@@ -129,18 +131,18 @@ class EpollServer {
   // sigpipe信号处理函数
   static void HandleSigpipe(int sig);
 
-  friend class HandleThread<T>;
+  friend class HandleThread<T, U>;
 
  public:
   int ListenPort() { return listenPort;}
  private:
   int listenPort;
   // 网络线程
-  std::vector<NetThread<T>*> netThreads;
+  std::vector<NetThread<T, U>*> netThreads;
   // 逻辑处理线程
-  std::vector<HandleThread<T>*> handleThreads;
+  std::vector<HandleThread<T, U>*> handleThreads;
   // 消息分发线程
-  DispatcherThread<T>* dispacher_thread;
+  DispatcherThread<T, U>* dispacher_thread;
 
   // 网络线程数目
   unsigned int netThreadNum;
@@ -170,22 +172,12 @@ class EpollServer {
 
 
 template<typename T, typename U>
-EpollServer<T, U>::EpollServer(unsigned int netThreadNum) {
-  this->netThreadNum = netThreadNum;
-  if (this->netThreadNum < 0) {
-    this->netThreadNum = 1;
-  } else if (this->netThreadNum > 15) {
-    this->netThreadNum = 15;
-  }
-  for (size_t i = 0; i < this->netThreadNum; i++) {
-    NetThread<T> *netThread = new NetThread<T>(this);
-    netThreads.push_back(netThread);
-  }
+EpollServer<T, U>::EpollServer() {
   listenPort = 0;
   bTerminate = true;
   connectorTimeout = 0;
 
-  sigpipe_action.sa_handler = EpollServer<T>::HandleSigpipe;
+  sigpipe_action.sa_handler = EpollServer<T, U>::HandleSigpipe;
   sigemptyset(&sigpipe_action.sa_mask);
   sigpipe_action.sa_flags = 0;
   sigaction(SIGPIPE, &sigpipe_action, NULL);
@@ -201,6 +193,31 @@ EpollServer<T, U>::~EpollServer() {
     }
   }
 }
+
+
+template<typename T, typename U>
+void EpollServer<T, U>::Init(
+    int port, int netThreadNum, int timeout, int handleThreadNum) {
+  // 新建网络线程
+  this->netThreadNum = netThreadNum;
+  if (this->netThreadNum < 0) {
+    this->netThreadNum = 1;
+  } else if (this->netThreadNum > 15) {
+    this->netThreadNum = 15;
+  }
+  for (size_t i = 0; i < this->netThreadNum; i++) {
+    NetThread<T, U> *netThread = new NetThread<T, U>(this);
+    netThreads.push_back(netThread);
+  }
+  CreateEpoll();
+  SetEmptyConnTimeout(timeout);
+  Bind(port);
+  
+  // 开始网络线程
+  StartNetThread();
+  
+}
+
 
 
 template<typename T, typename U>
@@ -257,7 +274,7 @@ void EpollServer<T, U>::Tdeleter(T *data) {
 template<typename T, typename U>
 void EpollServer<T, U>::AddConnector(
     std::shared_ptr<net::Connector> connector, int fd) {
-  NetThread<T>* netThread = GetNetThreadOfFd(fd);
+  NetThread<T, U>* netThread = GetNetThreadOfFd(fd);
   netThread->add_connector(connector);
 }
 
@@ -274,7 +291,7 @@ void EpollServer<T, U>::ParseImp(
     data->port= connector->getPort();
     data->fd = connector->get_connector_fd();
 
-    NetThread<T>* netThread = GetNetThreadOfFd(connector->get_connector_fd());
+    NetThread<T, U>* netThread = GetNetThreadOfFd(connector->get_connector_fd());
     netThread->addRecvList(data);
   }
 }
@@ -286,7 +303,7 @@ void EpollServer<T, U>::CreateConnectorCB(
 }
 
 template<typename T, typename U>
-bool EpollServer<T, U>::AddHandle(HandleThread<T> *handle) {
+bool EpollServer<T, U>::AddHandle(HandleThread<T, U> *handle) {
   handleThreads.push_back(handle);
   return true;
 }
@@ -294,11 +311,11 @@ bool EpollServer<T, U>::AddHandle(HandleThread<T> *handle) {
 template<typename T, typename U>
 bool EpollServer<T, U>::StartHandleThread() {
   int i = 0;
-  for (HandleThread<T> *handle : handleThreads) {
+  for (HandleThread<T, U> *handle : handleThreads) {
     printf("start handle thread i:%d\n", i);
     handle->run();
   }
-  dispacher_thread = new DispatcherThread<T>(this);
+  dispacher_thread = new DispatcherThread<T, U>(this);
   dispacher_thread->run();
   return true;
 }
@@ -371,7 +388,7 @@ template<typename T, typename U>
 void EpollServer<T, U>::send(const std::string &s,
                           const std::string &ip,
                           uint16_t port, int uid, int fd) {
-  NetThread<T>* netThread = GetNetThreadOfFd(fd);
+  NetThread<T, U>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
     netThread->send(ip, port, uid, s);
   }
@@ -380,7 +397,7 @@ void EpollServer<T, U>::send(const std::string &s,
 template<typename T, typename U>
 void EpollServer<T, U>::CloseConnector(
     const std::string &ip, uint16_t port, int uid, int fd) {
-  NetThread<T>* netThread = GetNetThreadOfFd(fd);
+  NetThread<T, U>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
     netThread->close_connector(ip, port, uid, fd);
   }

@@ -24,10 +24,11 @@
 
 namespace sails {
 
+class HandleImpl;
 
-class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
+class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase, HandleImpl> {
  public:
-  explicit Server(int netThreadNum);
+  explicit Server();
 
   ~Server();
 
@@ -97,10 +98,10 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
 
 
 
-class HandleImpl : public sails::net::HandleThread<SceNetAdhocctlPacketBase> {
+class HandleImpl : public sails::net::HandleThread<SceNetAdhocctlPacketBase, HandleImpl> {
  public:
   explicit HandleImpl(
-      sails::net::EpollServer<SceNetAdhocctlPacketBase>* server);
+      sails::net::EpollServer<SceNetAdhocctlPacketBase, HandleImpl>* server);
 
   void handle(
       const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);
