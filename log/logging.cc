@@ -271,17 +271,24 @@ bool Logger::ensure_directory_exist() {
 
 
 
-
-
 ///////////////////////////// log facotry /////////////////////////////////
 
-std::map<std::string, Logger*> LoggerFactory::log_map;
+LoggerFactory* LoggerFactory::_pInstance = 0;
 std::mutex LoggerFactory::logMutex;
-std::string LoggerFactory::path("./log");
 
-Logger* LoggerFactory::getLog(std::string log_name) {
-  return getLog(log_name, Logger::SPLIT_NONE);
+LoggerFactory::LoggerFactory() : path("./log") {
+  
 }
+
+LoggerFactory::~LoggerFactory() {
+  for (auto& item : log_map) {
+    if (item.second != NULL) {
+      delete item.second;
+    }
+  }
+  log_map.clear();
+}
+
 
 Logger* LoggerFactory::getLog(std::string log_name,
                               Logger::SAVEMODE save_mode) {
@@ -301,18 +308,37 @@ Logger* LoggerFactory::getLog(std::string log_name,
   }
 }
 
+
+LoggerFactory* LoggerFactory::instance() {
+  if (_pInstance == NULL) {
+    std::unique_lock<std::mutex> locker(LoggerFactory::logMutex);
+    if (_pInstance == NULL) {
+        static LoggerFactory loggerFactory;
+        _pInstance = &loggerFactory;
+    }
+  }
+  return _pInstance;
+}
+
+Logger* LoggerFactory::getLog(std::string log_name) {
+  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_NONE);
+}
+
 Logger* LoggerFactory::getLogD(std::string log_name) {
-  return getLog(log_name, Logger::SPLIT_DAY);
+  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_DAY);
 }
 
 Logger* LoggerFactory::getLogH(std::string log_name) {
-  return getLog(log_name, Logger::SPLIT_HOUR);
+  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_HOUR);
 }
 
 Logger* LoggerFactory::getLogM(std::string log_name) {
-  return getLog(log_name, Logger::SPLIT_MONTH);
+  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_MONTH);
 }
 
 }  // namespace log
 }  // namespace sails
+
+
+
 

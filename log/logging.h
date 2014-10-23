@@ -71,19 +71,24 @@ class Logger {
 };
 
 
+// 以单例模式
 class LoggerFactory {
+ private:
+  LoggerFactory();
+  ~LoggerFactory();
  public:
   static Logger* getLog(std::string log_name);  // SPLIT_NONE
   static Logger* getLogD(std::string log_name);  // SPLIT_DAY
   static Logger* getLogH(std::string log_name);  // SPLIT_HOUR
   static Logger* getLogM(std::string log_name);  // SPLIT_MONTH
-  
  private:
-  static Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
- private:
-  static std::map<std::string, Logger*> log_map;
-  static std::string path;
+  Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
+  static LoggerFactory* instance();
+  static LoggerFactory* _pInstance;
+  // for log
+  std::string path;
   static std::mutex logMutex;
+  std::map<std::string, Logger*> log_map;
 };
 
 }  // namespace log

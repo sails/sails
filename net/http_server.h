@@ -51,7 +51,7 @@ class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
   HttpRequest* Parse(std::shared_ptr<net::Connector> connector);
 
   // 删除http parser
-  void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
+  void CleanUpConnectorData(std::shared_ptr<net::Connector> connector);
   
  private:
   struct http_parser_settings settings;

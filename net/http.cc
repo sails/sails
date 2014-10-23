@@ -96,10 +96,11 @@ int message_to_string(struct http_message *msg, char* data, int len) {
       headLen += strlen(msg->headers[i][1]);
       headLen += 3;  // : '\r' '\n'
     }
+    headLen = headLen + 2;  // head和body之间的空行
     // body len
     uint32_t bodyLen = strlen(msg->body)+2;
 
-    int totalLen = statusLen + headLen + 2 + bodyLen;  // head和body的空行
+    int totalLen = statusLen + headLen + bodyLen + 1; // 加1,最后放str的结束符
 
     // 分配原始内容空间
     msg->raw = (char*)malloc(totalLen);

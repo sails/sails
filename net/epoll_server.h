@@ -68,6 +68,7 @@ class EpollServer {
   virtual void Tdeleter(T *data);
   
   // 创建连接后调用,可能用户层需要在连接建立后创建一些用户相关信息
+  // 注意,如果在这里分配了内存,那么记得在关闭时释放
   virtual void CreateConnectorCB(std::shared_ptr<net::Connector> connector);
 
   // 循环调用parser, 子类可能要在得到parse的结果后,为TagRecvData设置一些属性
@@ -87,6 +88,9 @@ class EpollServer {
   // 当连接超时时,提供应用层处理机会
   // 在调用函数之后,netThread会自己关闭连接,所有子类中不用再调用close connector
   virtual void ConnectorTimeoutCB(net::Connector* connector);
+
+   // 最后的机会,在io线程中删除资源
+  virtual void CleanUpConnectorData(std::shared_ptr<Connector> connector);
 
  public:
   int GetEmptyConnTimeout() { return connectorTimeout;}
@@ -125,11 +129,20 @@ class EpollServer {
 
   // 发送数据
   void send(const std::string &s, const std::string &ip,
-            uint16_t port, int uid, int fd);
+            uint16_t port, uint32_t uid, int fd);
 
-  // 关闭连接
-  void CloseConnector(const std::string &ip, uint16_t port, int uid, int fd);
-
+  // 提供给处理调用,它通过向io线程发送命令来达到目的,所以是多线程安全的
+  // 关闭连接,关闭连接有三种情况,1:客户端主动关闭,2:服务器超时,3:服务器业务中关闭
+  // 不管哪种情况,最后都会通过调用这个函数来向netThread线程中发送命令来操作
+  // 所以如果在创建连接时,绑定了资源,可能会想到可以在这里来统一释放.
+  // 当然也可以把资源释放放在三种情况ClosedConnectCB,ConnectorTimeoutCB,业务
+  // 中去分别不同处理.
+  // 但要注意的是,为了多线程安全,删除时要考虑清楚谁在使用就应该由谁来删除
+  // (handle线程,io线程),不要多个线程中都可以来处理.而这里多个线程都可以调用
+  // 所以,CloseConnector,ClosedConnectCB,ConnectorTimeoutCB一般都不直接删除它,
+  // 而是把它交给handle线程或者io线程,如在例子中gameserver中user数据就放在handle线程中
+  // httpserver中的parser数据就放在netThread的io线程中删除
+  void CloseConnector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
   // sigpipe信号处理函数
   static void HandleSigpipe(int sig);
 
@@ -210,7 +223,7 @@ void EpollServer<T, U>::Init(
     this->netThreadNum = 15;
   }
   for (size_t i = 0; i < this->netThreadNum; i++) {
-    NetThread<T, U> *netThread = new NetThread<T, U>(this);
+    NetThread<T, U> *netThread = new NetThread<T, U>(this, i);
     netThreads.push_back(netThread);
   }
   CreateEpoll();
@@ -317,7 +330,7 @@ void EpollServer<T, U>::ParseImp(
 template<typename T, typename U>
 void EpollServer<T, U>::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
-  printf("create connector cb %d\n", connector->get_connector_fd());
+  log::LoggerFactory::getLogD("server")->debug("create connector cb %d\n", connector->get_connector_fd());
 }
 
 template<typename T, typename U>
@@ -408,7 +421,7 @@ TagRecvData<T>* EpollServer<T, U>::GetRecvPacket(uint32_t index) {
 template<typename T, typename U>
 void EpollServer<T, U>::send(const std::string &s,
                           const std::string &ip,
-                          uint16_t port, int uid, int fd) {
+                          uint16_t port, uint32_t uid, int fd) {
   NetThread<T, U>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
     netThread->send(ip, port, uid, s);
@@ -417,7 +430,7 @@ void EpollServer<T, U>::send(const std::string &s,
 
 template<typename T, typename U>
 void EpollServer<T, U>::CloseConnector(
-    const std::string &ip, uint16_t port, int uid, int fd) {
+    const std::string &ip, uint16_t port, uint32_t uid, int fd) {
   NetThread<T, U>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
     netThread->close_connector(ip, port, uid, fd);
@@ -427,13 +440,23 @@ void EpollServer<T, U>::CloseConnector(
 template<typename T, typename U>
 void EpollServer<T, U>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLogD("server")->debug("connetor %ld will be closed", connector->get_connector_fd());
+  log::LoggerFactory::getLogD("server")->debug(
+      "connetor %ld will be closed", connector->get_connector_fd());
 }
 
 template<typename T, typename U>
 void EpollServer<T, U>::ConnectorTimeoutCB(net::Connector* connector) {
-  log::LoggerFactory::getLogD("server")->debug("connector %d timeout, perhaps need to do something",
-                                               connector->get_connector_fd());
+  log::LoggerFactory::getLogD("server")->debug(
+      "connector %d timeout, perhaps need to do something",
+      connector->get_connector_fd());
+}
+
+template<typename T, typename U>
+void EpollServer<T, U>::CleanUpConnectorData(
+    std::shared_ptr<Connector> connector) {
+  log::LoggerFactory::getLogD("server")->debug(
+      "connector %d will be deleted, perhaps need to clean up some thing",
+      connector->get_connector_fd());
 }
 
 }  // namespace net

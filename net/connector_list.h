@@ -26,8 +26,8 @@ class ConnectorList {
   // 析够函数
   ~ConnectorList();
 
-  // 初始化大小
-  void init(uint32_t size);
+  // 初始化大小, index用于生成一个唯一的magic_num
+  void init(uint32_t size, uint32_t index);
 
   /**
    * 获取惟一ID

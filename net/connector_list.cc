@@ -32,7 +32,7 @@ ConnectorList::~ConnectorList() {
   delete[] vConn;
 }
 
-void ConnectorList::init(uint32_t size) {
+void ConnectorList::init(uint32_t size, uint32_t index) {
   total = size;
 
   free_size  = 0;
@@ -45,8 +45,9 @@ void ConnectorList::init(uint32_t size) {
 
   magic_num = time(NULL);
 
-  magic_num = (((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24);
-
+  // magit_num是int的前16位,后16位用于放index,最大可以3w
+  magic_num = ((((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24))
+              | ((index << 16) & (0xFFFFFFFF << 16));
   // free从1开始分配, 这个值为uid, 0保留为管道用
   for (uint32_t i = 1; i <= total; i++) {
     vConn[i] = NULL;
@@ -69,8 +70,8 @@ uint32_t ConnectorList::getUniqId() {
 }
 
 std::shared_ptr<Connector> ConnectorList::get(uint32_t uid) {
-  uint32_t magi = uid & (0xFFFFFFFF << 24);
-  uid           = uid & (0xFFFFFFFF >> 8);
+  uint32_t magi = uid & (0xFFFFFFFF << 16);
+  uid           = uid & (0xFFFFFFFF >> 16);
 
   if (magi != magic_num) return NULL;
 
@@ -81,8 +82,8 @@ void ConnectorList::add(std::shared_ptr<Connector> connector) {
   std::unique_lock<std::mutex> locker(list_mutex);
 
   uint32_t muid = connector->getId();
-  uint32_t magi = muid & (0xFFFFFFFF << 24);
-  uint32_t uid  = muid & (0xFFFFFFFF >> 8);
+  uint32_t magi = muid & (0xFFFFFFFF << 16);
+  uint32_t uid  = muid & (0xFFFFFFFF >> 16);
 
   assert(magi ==  magic_num && uid > 0
          && uid <= total && vConn[uid] == NULL);
@@ -93,8 +94,8 @@ void ConnectorList::add(std::shared_ptr<Connector> connector) {
 void ConnectorList::del(uint32_t uid) {
   std::unique_lock<std::mutex> locker(list_mutex);
 
-  uint32_t magi = uid & (0xFFFFFFFF << 24);
-  uid           = uid & (0xFFFFFFFF >> 8);
+  uint32_t magi = uid & (0xFFFFFFFF << 16);
+  uid           = uid & (0xFFFFFFFF >> 16);
 
   assert(magi == magic_num && uid > 0 && uid <= total && vConn[uid] != NULL);
 

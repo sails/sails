@@ -30,22 +30,41 @@ void HttpServer::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
   // connector的data属性设置成parser,parser的data设置成解析的msg
   http_parser *parser = (http_parser*)malloc(sizeof(http_parser));
+  connector->data.ptr = parser;
   http_parser_init(parser, HTTP_REQUEST);
   ParserFlag* parserFlag = new ParserFlag();
+  parser->data = parserFlag;
   parserFlag->message = (http_message*)malloc(sizeof(http_message));
   http_message_init(parserFlag->message);
-  parser->data = parserFlag;
-  
-  connector->data.ptr = parser;
 }
 
-void HttpServer::ClosedConnectCB(
+void HttpServer::CleanUpConnectorData(
     std::shared_ptr<net::Connector> connector) {
   if (connector->data.ptr != NULL) {
     http_parser *parser = (http_parser*)connector->data.ptr;
+    if (parser == NULL) {
+      connector->data.ptr = NULL;
+      return;
+    }
     ParserFlag* parserFlag = (ParserFlag*)parser->data;
-    delete parserFlag;
-    delete parser;
+    if (parserFlag != NULL && parserFlag->message != NULL) {
+      free(parserFlag->message);
+      if (parserFlag->messageList.size() > 0) {
+        for (auto it = parserFlag->messageList.begin();
+             it != parserFlag->messageList.end(); ++it) {
+          http_message* msg = parserFlag->messageList.front();
+          if (msg != NULL) {
+            free(msg);
+          }
+          parserFlag->messageList.pop_front();
+        }
+      }
+    }
+    if (parserFlag != NULL) {
+      delete parserFlag;
+    }
+    printf("delete parser\n");
+    free(parser);
 
     connector->data.ptr = NULL;
   }
