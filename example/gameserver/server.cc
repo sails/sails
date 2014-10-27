@@ -55,7 +55,7 @@ GameWorld* Server::CreateGameWorld(const std::string& gameCode) {
 
 void Server::SendDisConnectDataToHandle(
     uint32_t playerId, std::string ip, int port, int fd,  uint32_t uid) {
-  log::LoggerFactory::getLogD("psplog")->debug("sendDisConnectDataToHandle playerId:%u", playerId);
+  log::LoggerFactory::getLogD("psp")->debug("sendDisConnectDataToHandle playerId:%u", playerId);
   if (playerId <= 0) {
     return;
   }
@@ -78,13 +78,13 @@ void Server::SendDisConnectDataToHandle(
   int handleNum = GetHandleNum();
   int selectedHandle = fd % handleNum;
   AddHandleData(data, selectedHandle);
-  log::LoggerFactory::getLogD("psplog")->debug("sendDisConnectDataToHandle playerId:%u end", playerId);
+  log::LoggerFactory::getLogD("psp")->debug("sendDisConnectDataToHandle playerId:%u end", playerId);
 }
 
 void Server::InvalidMsgHandle(
     std::shared_ptr<sails::net::Connector> connector) {
   uint32_t playerId = connector->data.u32;
-  log::LoggerFactory::getLogD("psplog")->warn("invalid msg handle:%u", playerId);
+  log::LoggerFactory::getLogD("psp")->warn("invalid msg handle:%u", playerId);
   SendDisConnectDataToHandle(playerId, connector->getIp(),
                              connector->getPort(),
                              connector->get_connector_fd(),
@@ -99,7 +99,7 @@ void Server::InvalidMsgHandle(
 }
 
 void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLogD("psplog")->info("closed_connect_cb");
+  log::LoggerFactory::getLogD("psp")->info("closed_connect_cb");
   uint32_t playerId = connector->data.u32;
   SendDisConnectDataToHandle(playerId, connector->getIp(),
                              connector->getPort(),
@@ -112,7 +112,7 @@ void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
 
 
 void Server::ConnectorTimeoutCB(net::Connector* connector) {
-  log::LoggerFactory::getLogD("psplog")->info("connector_timeout_cb");
+  log::LoggerFactory::getLogD("psp")->info("connector_timeout_cb");
   uint32_t playerId = connector->data.u32;
   SendDisConnectDataToHandle(playerId, connector->getIp(),
                              connector->getPort(),
@@ -140,7 +140,7 @@ void Server::DeletePlayer(uint32_t playerId) {
         gameWorld->disConnectPlayer(playerId, player->roomCode);
       }
     }
-    log::LoggerFactory::getLogD("psplog")->info("delete player");
+    log::LoggerFactory::getLogD("psp")->info("delete player");
     delete player;
   }
 }
@@ -242,7 +242,7 @@ SceNetAdhocctlPacketBase* Server::Parse(
     // Group Connect Packet
 
     // Enough Data available
-    log::LoggerFactory::getLogD("psplog")->info("user state logged in");
+    log::LoggerFactory::getLogD("psp")->info("user state logged in");
     if (read_able >= sizeof(SceNetAdhocctlConnectPacketC2S)) {
       // Cast Packet
       packet_len = sizeof(SceNetAdhocctlConnectPacketC2S);
@@ -294,14 +294,14 @@ SceNetAdhocctlPacketBase* Server::Parse(
         }
       } else {  // len > 4000, erro msg
         packet_len = read_able;
-        log::LoggerFactory::getLogD("psplog")->error("game transfer data content len:%d", packet_raw->len);
+        log::LoggerFactory::getLogD("psp")->error("game transfer data content len:%d", packet_raw->len);
       }
     }
   } else {
     // Invalid Opcode
 
     // Notify User
-    log::LoggerFactory::getLogD("psplog")->error("recv invalid opcode data");
+    log::LoggerFactory::getLogD("psp")->error("recv invalid opcode data");
     connector->retrieve(connector->readable());
     InvalidMsgHandle(connector);
   }
@@ -387,12 +387,12 @@ void HandleImpl::handle(
       break;
     }
     case OPCODE_LOGIN: {
-      log::LoggerFactory::getLogD("psplog")->info("get login data");
+      log::LoggerFactory::getLogD("psp")->info("get login data");
       login_user_data(recvData);
       break;
     }
     case OPCODE_CONNECT: {
-      log::LoggerFactory::getLogD("psplog")->info("get connect data");
+      log::LoggerFactory::getLogD("psp")->info("get connect data");
       if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_LOGGED_IN) {
         connect_user(recvData);
@@ -400,13 +400,13 @@ void HandleImpl::handle(
       break;
     }
     case OPCODE_DISCONNECT: {
-      log::LoggerFactory::getLogD("psplog")->info("disconnect");
+      log::LoggerFactory::getLogD("psp")->info("disconnect");
       if (((Server*)server)->GetPlayerState(playerId)
           == USER_STATE_CONNECTED_ROOM) {
         // Leave Game Gro0x00000000019527a0up
         DisconnectState disconnectState = disconnect_user(recvData);
         if (disconnectState != STATE_SUCCESS) {
-          log::LoggerFactory::getLogD("psplog")->error("disconnect from game room error:%d", disconnectState);
+          log::LoggerFactory::getLogD("psp")->error("disconnect from game room error:%d", disconnectState);
         }
       }
       logout_user(playerId);
@@ -491,15 +491,15 @@ void HandleImpl::login_user_data(
         player->gameCode = gameCode;
         player->session = session;
 
-        log::LoggerFactory::getLogD("psplog")->info("player game code :%s", gameCode.c_str());
+        log::LoggerFactory::getLogD("psp")->info("player game code :%s", gameCode.c_str());
         return;
       }
     } else {
-      log::LoggerFactory::getLogD("psplog")->error("playerId:%u, ip:%s, port:%d session invalid:%s",
+      log::LoggerFactory::getLogD("psp")->error("playerId:%u, ip:%s, port:%d session invalid:%s",
                    playerId, ip.c_str(), recvData.port, session.c_str());
     }
   } else {
-    log::LoggerFactory::getLogD("psplog")->debug("gamecode or mac invalid");
+    log::LoggerFactory::getLogD("psp")->debug("gamecode or mac invalid");
   }
 
   // 不合法
@@ -551,7 +551,7 @@ void HandleImpl::connect_user(
     }
   } else {
     Player* player = ((Server*)server)->GetPlayer(playerId);
-    log::LoggerFactory::getLogD("psplog")->error("playerId %u valid_group_name, ip:%s, port:%d, mac:%s",
+    log::LoggerFactory::getLogD("psp")->error("playerId %u valid_group_name, ip:%s, port:%d, mac:%s",
                  playerId, player->ip.c_str(),
                  player->port, player->mac.c_str());
   }
@@ -575,20 +575,20 @@ DisconnectState HandleImpl::disconnect_user(
     if (gameWorld != NULL) {
       return gameWorld->disConnectPlayer(playerId, player->roomCode);
     } else {
-      log::LoggerFactory::getLogD("psplog")->error(
+      log::LoggerFactory::getLogD("psp")->error(
           "call disconnect_user but playerId:%u not find gamewold",
           playerId);
       return STATE_NO_GAMEWOLD;
     }
   } else {
-    log::LoggerFactory::getLogD("psplog")->error("call disconnect_user but playerId:%u not exists", playerId);
+    log::LoggerFactory::getLogD("psp")->error("call disconnect_user but playerId:%u not exists", playerId);
     return STATE_PLAYER_INVALID;
   }
 }
 
 
 void HandleImpl::logout_user(uint32_t playerId) {
-  log::LoggerFactory::getLogD("psplog")->debug("call logout use playerId:%u", playerId);
+  log::LoggerFactory::getLogD("psp")->debug("call logout use playerId:%u", playerId);
   Player* player = ((Server*)server)->GetPlayer(playerId);
   if (player != NULL) {
     server->CloseConnector(
@@ -695,7 +695,7 @@ void HandleImpl::player_session_check(
     uint32_t playerId, std::string ip, int port,
     int fd, uint32_t uid, std::string session) {
   if ( !check_session(session) ) {
-    log::LoggerFactory::getLogD("psplog")->warn("player:%u session:%s check error, ip:%s, port:%d",
+    log::LoggerFactory::getLogD("psp")->warn("player:%u session:%s check error, ip:%s, port:%d",
                 playerId, session.c_str(), ip.c_str(), port);
     ((Server*)server)->SendDisConnectDataToHandle(
         playerId, ip, port, fd, uid);
@@ -786,7 +786,7 @@ std::string HandleImpl::game_product_override(
     crosslink = crosslinks_iter->second;
 
     // Log Crosslink
-    log::LoggerFactory::getLogD("psplog")->info("Crosslinked %s to %s.", productid,  crosslink.c_str());
+    log::LoggerFactory::getLogD("psp")->info("Crosslinked %s to %s.", productid,  crosslink.c_str());
 
     // Set Crosslinked Flag
     crosslinked = 1;
@@ -801,7 +801,7 @@ std::string HandleImpl::game_product_override(
       // Game doesn't exist
       // products_map.insert(std::pair<std::string,
       // std::string>(std::string(productid), std::string(productid)));
-      log::LoggerFactory::getLogD("psplog")->warn("game %s doesn't exist", productid);
+      log::LoggerFactory::getLogD("psp")->warn("game %s doesn't exist", productid);
     }
   }
   if (crosslink.length() > 0) {
@@ -863,7 +863,7 @@ bool post_message(
       result += std::string(login_result.ptr, login_result.len);
       ret = true;
     } else {
-      log::LoggerFactory::getLogD("psplog")->info("post url:%s", url);
+      log::LoggerFactory::getLogD("psp")->info("post url:%s", url);
     }
 
     if (login_result.len > 0 && login_result.ptr != NULL) {
@@ -885,16 +885,16 @@ bool check_session(std::string session) {
   std::string ip = config.get_local_ip();
   char param[100] = {'\0'};
   if (ip.compare("127.0.0.1") == 0) {
-    log::LoggerFactory::getLogD("psplog")->error("server ip config error");
+    log::LoggerFactory::getLogD("psp")->error("server ip config error");
     return false;
   }
   std::string result;
   sprintf(param, "method=CHECK&ip=%s&port=%d&session=%s",
           ip.c_str(), port, session.c_str());
 
-  log::LoggerFactory::getLogD("psplog")->debug("post param:%s", param);
+  log::LoggerFactory::getLogD("psp")->debug("post param:%s", param);
   if ( post_message(url.c_str(), param, result) ) {
-    log::LoggerFactory::getLogD("psplog")->debug("get check infor:%s", result.c_str());
+    log::LoggerFactory::getLogD("psp")->debug("get check infor:%s", result.c_str());
     Json::Reader reader;
     Json::Value root;
     if (reader.parse(result, root)) {
@@ -927,16 +927,16 @@ bool update_session_timeout(const std::string& session) {
   sprintf(param, "method=REFRESH&session=%s",
           session.c_str());
 
-  log::LoggerFactory::getLogD("psplog")->debug("post param:%s", param);
+  log::LoggerFactory::getLogD("psp")->debug("post param:%s", param);
   if ( post_message(url.c_str(), param, result) ) {
-    log::LoggerFactory::getLogD("psplog")->debug("get update session infor:%s", result.c_str());
+    log::LoggerFactory::getLogD("psp")->debug("get update session infor:%s", result.c_str());
     Json::Reader reader;
     Json::Value root;
     if (reader.parse(result, root)) {
       int status = root["status"].asInt();
       if (status == 0) {  // call right
       } else {
-        log::LoggerFactory::getLogD("psplog")->error("update session timeout and return error");
+        log::LoggerFactory::getLogD("psp")->error("update session timeout and return error");
       }
     }
   }
@@ -999,7 +999,7 @@ int main(int argc, char *argv[]) {
     if (now - lastUpdteSession >= 30) {  // 30s
       lastUpdteSession = now;
       std::list<std::string> sessions = server.GetPlayerSession();
-      sails::log::LoggerFactory::getLogD("psplog")->info("playerNum:%d", sessions.size());
+      sails::log::LoggerFactory::getLogD("psp")->info("playerNum:%d", sessions.size());
       std::thread t(sails::update_sessions, sessions);
       t.detach();
     }
@@ -1012,7 +1012,7 @@ int main(int argc, char *argv[]) {
         std::map<std::string, std::list<std::string>> roomsMap
             = server.GetPlayerNameMap(gameCode);
         for (auto roominfo : roomsMap) {
-          sails::log::LoggerFactory::getLogD("psplog")->info("game %s, room name %s, playerNum:%d",
+          sails::log::LoggerFactory::getLogD("psp")->info("game %s, room name %s, playerNum:%d",
                              gameCode.c_str(), roominfo.first.c_str(),
                              roominfo.second.size());
         }

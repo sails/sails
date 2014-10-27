@@ -26,7 +26,7 @@ GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld) {
 
 bool GameRoom::connectPlayer(uint32_t playerId) {
 
-  log::LoggerFactory::getLogD("psplog")->debug("join game:%s, room :%s\n",gameWorld->getGameCode().c_str(), roomCode.c_str());
+  log::LoggerFactory::getLogD("psp")->debug("join game:%s, room :%s\n",gameWorld->getGameCode().c_str(), roomCode.c_str());
   // 加入map,再通过其它用户
   std::unique_lock<std::mutex> locker(playerMutex);
     
@@ -45,7 +45,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
     // Set Default BSSID(group host)
     bssid.mac = playerMac;
 
-    log::LoggerFactory::getLogD("psplog")->debug("connect room, ip:%s, port:%d, mac:%s\n", player->ip.c_str(), player->port, player->mac.c_str());
+    log::LoggerFactory::getLogD("psp")->debug("connect room, ip:%s, port:%d, mac:%s\n", player->ip.c_str(), player->port, player->mac.c_str());
 	
     // 循环通知玩家
     for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
@@ -69,7 +69,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 					
       // Send Data
       // 通知对方
-      log::LoggerFactory::getLogD("psplog")->debug("notify other side\n");
+      log::LoggerFactory::getLogD("psp")->debug("notify other side\n");
       std::string buffer((char*)&packet, sizeof(packet));
       gameWorld->getServer()->send(buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
 	    
@@ -109,7 +109,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
       }
     }
     player->roomCode = roomCode;
-    log::LoggerFactory::getLogD("psplog")->debug("user connect group\n");
+    log::LoggerFactory::getLogD("psp")->debug("user connect group\n");
 
     return true;
   }
@@ -122,12 +122,12 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
 
   std::map<uint32_t, Player*>::iterator playerIter = playerMap.find(playerId);
   if (playerIter == playerMap.end()) {
-    log::LoggerFactory::getLogD("psplog")->error("GameRoom::disConnectPlayer playerId:%u not finded", playerId);
+    log::LoggerFactory::getLogD("psp")->error("GameRoom::disConnectPlayer playerId:%u not finded", playerId);
     return STATE_PLAYER_NOT_EXISTS;
   }
   Player* player = playerIter->second;
   if (player->roomCode.length() == 0 || player->gameCode.length() == 0) {
-    log::LoggerFactory::getLogD("psplog")->error("GameRoom::disConnectPlayer playerId:%u not invalid roomCode or gameCode", playerId);
+    log::LoggerFactory::getLogD("psp")->error("GameRoom::disConnectPlayer playerId:%u not invalid roomCode or gameCode", playerId);
     return STATE_PLAYER_INVALID;
   }
     
