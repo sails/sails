@@ -63,7 +63,6 @@ void HttpServer::CleanUpConnectorData(
     if (parserFlag != NULL) {
       delete parserFlag;
     }
-    printf("delete parser\n");
     free(parser);
 
     connector->data.ptr = NULL;
