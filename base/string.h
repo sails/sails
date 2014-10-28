@@ -38,6 +38,10 @@ char* url_encode(const char *source_str, char *encode_str);
 
 std::vector<std::string> split(const std::string& str, const char* c);
 
+void SplitString(const std::string& full,
+                 const char* delim,
+                 std::vector<std::string>* result);
+
 }  // namespace base
 }  // namespace sails
 

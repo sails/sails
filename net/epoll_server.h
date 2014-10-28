@@ -253,7 +253,7 @@ void EpollServer<T, U>::Init(
 
 template<typename T, typename U>
 void EpollServer<T, U>::HandleSigpipe(int sig) {
-  log::LoggerFactory::getLogD("server")->warn("sigpipe %d", sig);
+  log::LoggerFactory::getLog("server")->warn("sigpipe %d", sig);
 }
 
 template<typename T, typename U>
@@ -330,7 +330,7 @@ void EpollServer<T, U>::ParseImp(
 template<typename T, typename U>
 void EpollServer<T, U>::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLogD("server")->debug("create connector cb %d\n", connector->get_connector_fd());
+  log::LoggerFactory::getLog("server")->debug("create connector cb %d\n", connector->get_connector_fd());
 }
 
 template<typename T, typename U>
@@ -440,13 +440,13 @@ void EpollServer<T, U>::CloseConnector(
 template<typename T, typename U>
 void EpollServer<T, U>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLogD("server")->debug(
+  log::LoggerFactory::getLog("server")->debug(
       "connetor %ld will be closed", connector->get_connector_fd());
 }
 
 template<typename T, typename U>
 void EpollServer<T, U>::ConnectorTimeoutCB(net::Connector* connector) {
-  log::LoggerFactory::getLogD("server")->debug(
+  log::LoggerFactory::getLog("server")->debug(
       "connector %d timeout, perhaps need to do something",
       connector->get_connector_fd());
 }
@@ -454,7 +454,7 @@ void EpollServer<T, U>::ConnectorTimeoutCB(net::Connector* connector) {
 template<typename T, typename U>
 void EpollServer<T, U>::CleanUpConnectorData(
     std::shared_ptr<Connector> connector) {
-  log::LoggerFactory::getLogD("server")->debug(
+  log::LoggerFactory::getLog("server")->debug(
       "connector %d will be deleted, perhaps need to clean up some thing",
       connector->get_connector_fd());
 }

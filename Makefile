@@ -1,4 +1,4 @@
-DIRS	= base crypto log net
+DIRS	= base crypto log net system
 
 all:
 	@for dir in $(DIRS); do make -C $$dir; echo; done

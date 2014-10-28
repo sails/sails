@@ -158,6 +158,19 @@ std::vector<std::string> split(const std::string& str, const char* c) {
   return res;
 }
 
+void SplitString(const std::string& str,
+                 const char* delim,
+                 std::vector<std::string>* result) {
+  char *cstr, *p;
+  cstr = new char[str.size()+1];
+  snprintf(cstr, str.length(), "%s", str.c_str());
+  p = strtok(cstr, delim);  // NOLINT'
+  while (p != NULL) {
+    result->push_back(p);
+    p = strtok(NULL, delim);  // NOLINT'
+  }
+  delete[] cstr;
+}
 
 }  // namespace base
 }  // namespace sails
