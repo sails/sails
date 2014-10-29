@@ -160,6 +160,8 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
   std::string path = request.GetRequestPath();
   HttpProcessor processor = ((HttpServer*)server)->FindProcessor(path);
   if (processor == NULL) {
+    // 检查是不是在请求本地资源文件
+    
     response->SetResponseStatus(HttpResponse::Status_NotFound);
     response->SetBody("404");
   }else {

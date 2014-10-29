@@ -148,7 +148,7 @@ std::vector<std::string> split(const std::string& str, const char* c) {
   char *cstr, *p;
   std::vector<std::string> res;
   cstr = new char[str.size()+1];
-  snprintf(cstr, str.length(), "%s", str.c_str());
+  snprintf(cstr, str.size()+1, "%s", str.c_str());
   p = strtok(cstr, c);  // NOLINT'
   while (p != NULL) {
     res.push_back(p);
@@ -163,7 +163,7 @@ void SplitString(const std::string& str,
                  std::vector<std::string>* result) {
   char *cstr, *p;
   cstr = new char[str.size()+1];
-  snprintf(cstr, str.length(), "%s", str.c_str());
+  snprintf(cstr, str.size()+1, "%s", str.c_str());
   p = strtok(cstr, delim);  // NOLINT'
   while (p != NULL) {
     result->push_back(p);

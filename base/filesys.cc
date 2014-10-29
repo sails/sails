@@ -35,7 +35,7 @@ bool make_directory(const char* path) {
   int len = strlen(path_name);
   if (path_name[len-1] != '/') {
     // strcat(path_name, "/");
-    snprintf(path_name, 1, "%s", "/");  // NOLINT'
+    snprintf(path_name, 2, "%s", "/");  // NOLINT'
   }
 
   len = strlen(path_name);
