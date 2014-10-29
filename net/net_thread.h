@@ -166,7 +166,7 @@ class NetThread {
   // 发送的数据队列
   send_queue sendlist;
 
-  int status;
+  RunStatus status;
   std::thread *thread;
   int listenfd;
   int listen_port;
