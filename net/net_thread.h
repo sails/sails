@@ -76,18 +76,15 @@ class NetThread {
   };
 
   // 状态
-  struct ThreadStatus {
-    int thread_num;
+  struct NetThreadStatus {
     RunStatus status;
-    long run_time;
     int listen_port;	// only for recv accept
-    int connector_num;	
-  };
-
-  // 监听端口信息
-  struct BindSocketInfo {
-    int listen_port;
-    long accept_times;
+    size_t connector_num;
+    uint64_t accept_times;
+    uint32_t recv_queue_capacity;
+    uint32_t recv_queue_size;
+    uint32_t send_queue_capacity;
+    uint32_t send_queue_size;
   };
 
   explicit NetThread(EpollServer<T, U> *server, uint32_t index);
@@ -152,6 +149,10 @@ class NetThread {
   // 获取服务
   EpollServer<T, U>* getServer();
 
+ public:
+  // 统计相关
+  NetThreadStatus GetStatus();
+  
  protected:
   void accept_socket(base::event* e, int revents);
 
@@ -169,6 +170,7 @@ class NetThread {
   std::thread *thread;
   int listenfd;
   int listen_port;
+  uint64_t accept_times;
 
   base::EventLoop *ev_loop;  // 事件循环
 
@@ -191,6 +193,7 @@ NetThread<T, U>::NetThread(EpollServer<T, U> *server, uint32_t index) {
   thread = NULL;
   listenfd = 0;
   listen_port = 0;
+  accept_times = 0;
   ev_loop = NULL;
   connector_list.init(10000, index);
   connect_timer = NULL;
@@ -335,7 +338,10 @@ void NetThread<T, U>::accept_socket(base::event* e, int revents) {
 
       if (connfd > 0) {
         sails::base::setnonblocking(connfd);
-
+        accept_times++;
+        if (accept_times > INT64_MAX-10) {
+          accept_times = 0;
+        }
         // 新建connector
         std::shared_ptr<net::Connector> connector(new net::Connector(connfd));
         int port = ntohs(local.sin_port);
@@ -565,6 +571,20 @@ void NetThread<T, U>::timeoutCb(net::Connector* connector) {
 template <typename T, typename U>
 EpollServer<T, U>* NetThread<T, U>::getServer() {
   return this->server;
+}
+
+template <typename T, typename U>
+typename NetThread<T, U>::NetThreadStatus NetThread<T, U>::GetStatus() {
+  NetThreadStatus stat;
+  stat.status = this->status;
+  stat.listen_port = this->listen_port;
+  stat.connector_num = this->get_connector_count();
+  stat.accept_times = this->accept_times;
+  stat.recv_queue_capacity = recvlist.MaxSize();
+  stat.recv_queue_size = recvlist.size();
+  stat.send_queue_capacity = sendlist.MaxSize();
+  stat.send_queue_size = sendlist.size();
+  return stat;
 }
 
 template <typename T, typename U>

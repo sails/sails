@@ -60,6 +60,10 @@ class ThreadQueue {
   // 设置队列最大大小
   void setMaxSize(size_t maxSize);
 
+  size_t MaxSize() {
+    return _maxSize;
+  }
+  
   // 清空队列
   void clear();
 

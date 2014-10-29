@@ -157,6 +157,15 @@ class EpollServer {
   unsigned int HandleThreadNum() {
     return handleThreadNum;
   }
+  typename NetThread<T, U>::NetThreadStatus GetNetThreadStatus(
+      int threadNum) {
+    if (netThreads[threadNum] != NULL) {
+      return netThreads[threadNum]->GetStatus();
+    }
+    typename NetThread<T, U>::NetThreadStatus status;
+    return status;
+  }
+  
  private:
   int listenPort;
   // 网络线程
