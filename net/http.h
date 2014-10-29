@@ -26,6 +26,7 @@ namespace net {
 #define MAX_HEADERS 13
 #define MAX_PATH_SIZE 1024
 #define MAX_ELEMENT_SIZE 2048
+#define MAX_BODY_SIZE 20480
 
 
 enum header_element { NONE = 0, FIELD, VALUE };
@@ -49,7 +50,7 @@ struct http_message {
   char request_url[MAX_PATH_SIZE];
   char fragment[MAX_ELEMENT_SIZE];
   char query_string[MAX_ELEMENT_SIZE];
-  char body[MAX_ELEMENT_SIZE];
+  char body[MAX_BODY_SIZE];
   size_t body_size;
   char *host;
   char *userinfo;
@@ -167,6 +168,8 @@ class HttpResponse {
   void SetResponseStatus(int response_status);
   int SetHeader(const char* key, const char *value);
   int SetBody(const char* body);
+  // 可能有些body中含有'\0',所以不能直接通过strlen(body)来进行赋值
+  int SetBody(const char* body, int len);
   char *GetBody();
 
   // 得到response的原始内容,传入一个char* data;方法会把原始值复制到data中

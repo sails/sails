@@ -136,7 +136,7 @@ HttpServerHandle::HttpServerHandle(
     : HandleThread<sails::net::HttpRequest, HttpServerHandle>(server) {
   
 }
-    
+
 void HttpServerHandle::handle(
     const sails::net::TagRecvData<sails::net::HttpRequest> &recvData) {
 
@@ -148,10 +148,13 @@ void HttpServerHandle::handle(
   sails::net::HttpRequest *request = recvData.data;
   process(*request, response);
 
-  char response_str[1024] = {'\0'};
-  response->ToString(response_str, 1024);
+  char response_str[MAX_BODY_SIZE*2] = {'\0'};
+  response->ToString(response_str, MAX_BODY_SIZE*2);
 
-  std::string buffer(response_str);
+  std::string buffer(response_str, MAX_BODY_SIZE*2);
+  for (int i = 0; i < buffer.size(); i++) {
+    //    printf("%c", buffer[i]);
+  }
   server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
   // 因为最后都被放到一个队列中处理,所以肯定会send之后,再close
   server->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
@@ -163,7 +166,7 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
              sails::net::HttpResponse* response) {
   std::string path = request.GetRequestPath();
   // 通过后缀名预设content-type
-  int extensionIndex = path.find_last_of(".", path.size()-7);  // 后缀长度7
+  int extensionIndex = path.find_last_of(".", path.size()); 
   if (extensionIndex > 0) {
     std::string fileExtension = path.substr(extensionIndex, 7);
     if (fileExtension.size() > 0) {
@@ -207,13 +210,16 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
       }else{
         filesize = statbuff.st_size;  
       }
-      if (filesize > 100*1024) {  // 100kB
+      printf("file size:%d\n", filesize);
+      if (filesize > MAX_BODY_SIZE) {
         response->SetBody("The File Too Large");
+        return;
       }
-      char* data = (char*)malloc(filesize+100);
-      memset(data, 0, filesize+100);
-      read(fd, data, filesize+100);
-      response->SetBody(data);
+      char* data = (char*)malloc(filesize+1);
+      memset(data, 0, filesize+1);
+      int readLen = read(fd, data, filesize+1);
+      printf("read len:%d\n", readLen);
+      response->SetBody(data, readLen);
     }
     
     

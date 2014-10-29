@@ -98,10 +98,13 @@ int message_to_string(struct http_message *msg, char* data, int len) {
     }
     headLen = headLen + 2;  // head和body之间的空行
     // body len
+    /*
     uint32_t bodyLen = strlen(msg->body)+2;
 
     int totalLen = statusLen + headLen + bodyLen + 1; // 加1,最后放str的结束符
-
+    */
+    int totalLen = statusLen + headLen + (msg->body_size+2) + 1;
+    
     // 分配原始内容空间
     msg->raw = (char*)malloc(totalLen);
     memset(msg->raw, 0, totalLen);
@@ -131,17 +134,20 @@ int message_to_string(struct http_message *msg, char* data, int len) {
     msg->raw[strlen(msg->raw)] = '\n';
 
     // body
+    /*
     strncpy(msg->raw+strlen(msg->raw),
             msg->body,
             strlen(msg->body));
+    */
+    memcpy(msg->raw+strlen(msg->raw),
+           msg->body,
+           msg->body_size);
+    msg->raw[totalLen-3] = '\r';
+    msg->raw[totalLen-2] = '\n';
 
-    msg->raw[strlen(msg->raw)] = '\r';
-    msg->raw[strlen(msg->raw)] = '\n';
 
-
-    int rawLen = strlen(msg->raw);
-    int cpyLen = rawLen > len ? len:rawLen;
-    strncpy(data, msg->raw, cpyLen);
+    int cpyLen = totalLen > len ? len:totalLen;
+    memcpy(data, msg->raw, cpyLen);
 
     return 0;
   }
@@ -238,7 +244,7 @@ int HttpRequest::SetHeader(const char* key, const char *value) {
 int HttpRequest::SetBody(const char* body) {
   if (body != NULL && strlen(body) > 0) {
     int body_size = strlen(body);
-    memset(raw_data->body, 0, MAX_ELEMENT_SIZE);
+    memset(raw_data->body, 0, MAX_BODY_SIZE);
     strncpy(raw_data->body, body, body_size);
     return 0;
   }
@@ -366,15 +372,27 @@ int HttpResponse::SetHeader(const char *key, const char *value) {
 
 int HttpResponse::SetBody(const char *body) {
   if (body != NULL && strlen(body) > 0) {
-    int body_size = strlen(body);
-    memset(raw_data->body, 0, MAX_ELEMENT_SIZE);
-    strncpy(raw_data->body, body, body_size);
+    raw_data->body_size = strlen(body);
+    memset(raw_data->body, 0, MAX_BODY_SIZE);
+    strncpy(raw_data->body, body, raw_data->body_size);
     char body_size_str[11];
-    sprintf(body_size_str, "%d", body_size);
+    sprintf(body_size_str, "%ld", raw_data->body_size);
     this->SetHeader("Content-Length", body_size_str);
     return 0;
   }
   return 1;
+}
+int HttpResponse::SetBody(const char *body, int len) {
+  if (len > MAX_BODY_SIZE) {
+    return 1;
+  }
+  raw_data->body_size = len;
+  memset(raw_data->body, 0, MAX_BODY_SIZE);
+  memcpy(raw_data->body, body, raw_data->body_size);
+  char body_size_str[11];
+  sprintf(body_size_str, "%ld", raw_data->body_size);
+  this->SetHeader("Content-Length", body_size_str);
+  return 0;
 }
 
 char *HttpResponse::GetBody() {
