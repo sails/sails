@@ -149,7 +149,14 @@ class EpollServer {
   friend class HandleThread<T, U>;
 
  public:
+  // 统计相关
   int ListenPort() { return listenPort;}
+  unsigned int NetThreadNum() {
+    return netThreadNum;
+  }
+  unsigned int HandleThreadNum() {
+    return handleThreadNum;
+  }
  private:
   int listenPort;
   // 网络线程
