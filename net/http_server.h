@@ -39,6 +39,13 @@ class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
   int RegisterProcessor(std::string path, HttpProcessor processor);
 
   HttpProcessor FindProcessor(std::string path);
+
+  void SetStaticResourcePath(std::string path) {
+    staticResourcePath = path;
+  }
+  const std::string& StaticResourcePath() {
+    return staticResourcePath;
+  }
   
  private:
   // HttpRequest删除器
@@ -56,6 +63,8 @@ class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
  private:
   struct http_parser_settings settings;
   std::map<std::string, HttpProcessor> processorMap;
+
+  std::string staticResourcePath;
 };
 
 

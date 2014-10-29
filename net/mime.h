@@ -57,7 +57,9 @@ class MimeType : public sails::base::Uncopyable {
   const std::string& SubType() {
     return _subtype;
   }
-  
+  std::string ToString() {
+    return _type+"/"+_subtype;
+  }
  private:
   std::string _type;
   std::string _subtype;

@@ -10,6 +10,10 @@
 // Created: 2014-10-15 16:22:41
 
 #include "sails/net/http_server.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "sails/net/mime.h"
 
 namespace sails {
 namespace net {
@@ -158,12 +162,61 @@ void HttpServerHandle::handle(
 void HttpServerHandle::process(sails::net::HttpRequest& request,
              sails::net::HttpResponse* response) {
   std::string path = request.GetRequestPath();
+  // 通过后缀名预设content-type
+  int extensionIndex = path.find_last_of(".", path.size()-7);  // 后缀长度7
+  if (extensionIndex > 0) {
+    std::string fileExtension = path.substr(extensionIndex, 7);
+    if (fileExtension.size() > 0) {
+      MimeType mimetype;
+      MimeTypeManager::instance()->GetMimeTypebyFileExtension(
+          fileExtension, &mimetype);
+      response->SetHeader("Content-Type", mimetype.ToString().c_str());
+    }
+  }
   HttpProcessor processor = ((HttpServer*)server)->FindProcessor(path);
   if (processor == NULL) {
-    // 检查是不是在请求本地资源文件
+    // 检查是不是在请求本地资源文件,存在则直接下载
+    // 这儿简单的一次性读取所有内容,所以资源文件不能太大
+    std::string filename;
+    if (path.size() == 1) {
+      if (path == "/") {
+        filename = "index.html";
+      }
+    } else if (path.size() == 0) {
+      filename = "index.html";
+    } else {
+      filename = path.substr(1, 100);
+    }
+    std::string filepath = ((HttpServer*)server)->StaticResourcePath()
+                           + filename;
+    int fd = open(filepath.c_str(), O_RDONLY);
+    if (fd < 0) {
+      log::LoggerFactory::getLog("server")->debug(
+          "error open %s", filepath.c_str());
+      response->SetResponseStatus(HttpResponse::Status_NotFound);
+      response->SetBody("404");
+      return;
+    } else {
+      // 得到文件大小
+      unsigned long filesize = -1;      
+      struct stat statbuff;  
+      if(stat(filepath.c_str(), &statbuff) < 0){  
+        response->SetResponseStatus(HttpResponse::Status_NotFound);
+        response->SetBody("404");
+        return;
+      }else{
+        filesize = statbuff.st_size;  
+      }
+      if (filesize > 100*1024) {  // 100kB
+        response->SetBody("The File Too Large");
+      }
+      char* data = (char*)malloc(filesize+100);
+      memset(data, 0, filesize+100);
+      read(fd, data, filesize+100);
+      response->SetBody(data);
+    }
     
-    response->SetResponseStatus(HttpResponse::Status_NotFound);
-    response->SetBody("404");
+    
   }else {
     processor(request, response);
   }
@@ -171,3 +224,9 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
 
 }  // namespace net          
 }  // namespace sails
+
+
+
+
+
+
