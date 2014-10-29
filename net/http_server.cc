@@ -152,9 +152,7 @@ void HttpServerHandle::handle(
   response->ToString(response_str, MAX_BODY_SIZE*2);
 
   std::string buffer(response_str, MAX_BODY_SIZE*2);
-  for (int i = 0; i < buffer.size(); i++) {
-    //    printf("%c", buffer[i]);
-  }
+
   server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
   // 因为最后都被放到一个队列中处理,所以肯定会send之后,再close
   server->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
@@ -173,7 +171,10 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
       MimeType mimetype;
       MimeTypeManager::instance()->GetMimeTypebyFileExtension(
           fileExtension, &mimetype);
-      response->SetHeader("Content-Type", mimetype.ToString().c_str());
+      if (mimetype.Type().size() > 0) {
+        response->SetHeader("Content-Type", mimetype.ToString().c_str());
+      }
+      
     }
   }
   HttpProcessor processor = ((HttpServer*)server)->FindProcessor(path);
@@ -197,7 +198,7 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
       log::LoggerFactory::getLog("server")->debug(
           "error open %s", filepath.c_str());
       response->SetResponseStatus(HttpResponse::Status_NotFound);
-      response->SetBody("404");
+      response->SetBody("404", 3);
       return;
     } else {
       // 得到文件大小
@@ -205,20 +206,19 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
       struct stat statbuff;  
       if(stat(filepath.c_str(), &statbuff) < 0){  
         response->SetResponseStatus(HttpResponse::Status_NotFound);
-        response->SetBody("404");
+        response->SetBody("404", 3);
         return;
       }else{
         filesize = statbuff.st_size;  
       }
-      printf("file size:%d\n", filesize);
       if (filesize > MAX_BODY_SIZE) {
-        response->SetBody("The File Too Large");
+        char errormsg[100] = {"The File Too Large"};
+        response->SetBody(errormsg, strlen(errormsg));
         return;
       }
       char* data = (char*)malloc(filesize+1);
       memset(data, 0, filesize+1);
       int readLen = read(fd, data, filesize+1);
-      printf("read len:%d\n", readLen);
       response->SetBody(data, readLen);
     }
     

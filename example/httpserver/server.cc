@@ -6,11 +6,11 @@ class HandleTest {
  public:
   void test1(sails::net::HttpRequest& request,
              sails::net::HttpResponse* response) {
-    response->SetBody("call test1");
+    response->SetBody("call test1", 10);
   }
   void test2(sails::net::HttpRequest& request,
              sails::net::HttpResponse* response) {
-    response->SetBody("call test2");
+    response->SetBody("call test2", 10);
   }
 };
 

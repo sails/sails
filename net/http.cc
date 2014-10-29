@@ -241,14 +241,17 @@ int HttpRequest::SetHeader(const char* key, const char *value) {
   }
   return 1;
 }
-int HttpRequest::SetBody(const char* body) {
-  if (body != NULL && strlen(body) > 0) {
-    int body_size = strlen(body);
-    memset(raw_data->body, 0, MAX_BODY_SIZE);
-    strncpy(raw_data->body, body, body_size);
-    return 0;
+int HttpRequest::SetBody(const char* body, int len) {
+  if (len > MAX_BODY_SIZE) {
+    return 1;
   }
-  return 1;
+  raw_data->body_size = len;
+  memset(raw_data->body, 0, MAX_BODY_SIZE);
+  memcpy(raw_data->body, body, raw_data->body_size);
+  char body_size_str[11];
+  sprintf(body_size_str, "%ld", raw_data->body_size);
+  this->SetHeader("Content-Length", body_size_str);
+  return 0;
 }
 int HttpRequest::ToString(char* data, int len) {
   if (this->raw_data != NULL) {
@@ -370,18 +373,6 @@ int HttpResponse::SetHeader(const char *key, const char *value) {
   return 1;
 }
 
-int HttpResponse::SetBody(const char *body) {
-  if (body != NULL && strlen(body) > 0) {
-    raw_data->body_size = strlen(body);
-    memset(raw_data->body, 0, MAX_BODY_SIZE);
-    strncpy(raw_data->body, body, raw_data->body_size);
-    char body_size_str[11];
-    sprintf(body_size_str, "%ld", raw_data->body_size);
-    this->SetHeader("Content-Length", body_size_str);
-    return 0;
-  }
-  return 1;
-}
 int HttpResponse::SetBody(const char *body, int len) {
   if (len > MAX_BODY_SIZE) {
     return 1;

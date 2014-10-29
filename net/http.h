@@ -94,7 +94,7 @@ class HttpRequest {
   void SetRequestMethod(int method);
   void SetDefaultHeader();
   int SetHeader(const char* key, const char *value);
-  int SetBody(const char* body);
+  int SetBody(const char* body, int len);
   // 得到request的原始内容,传入一个char* data;方法会把原始值复制到data中
   // 返回值,0表示成功,否则失败.
   int ToString(char *data, int len);
@@ -167,7 +167,6 @@ class HttpResponse {
   void SetHttpProto(int http_major, int http_minor);
   void SetResponseStatus(int response_status);
   int SetHeader(const char* key, const char *value);
-  int SetBody(const char* body);
   // 可能有些body中含有'\0',所以不能直接通过strlen(body)来进行赋值
   int SetBody(const char* body, int len);
   char *GetBody();
