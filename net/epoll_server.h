@@ -165,7 +165,7 @@ class EpollServer {
     typename NetThread<T, U>::NetThreadStatus status;
     return status;
   }
-  typename HandleThread<T, U>::HandleThreadStatus GetStatus(
+  typename HandleThread<T, U>::HandleThreadStatus GetHandleThreadStatus(
       int threadNum) {
     if (handleThreads[threadNum] != NULL) {
       return handleThreads[threadNum]->GetStatus();
