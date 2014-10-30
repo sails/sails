@@ -170,6 +170,8 @@ class EpollServer {
     if (handleThreads[threadNum] != NULL) {
       return handleThreads[threadNum]->GetStatus();
     }
+    typename HandleThread<T, U>::HandleThreadStatus status;
+    return status;
   }
  private:
   int listenPort;
