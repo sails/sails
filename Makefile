@@ -12,5 +12,5 @@ all:
 
 
 clean:
-	@for dir in $(DIRS); do rm $$dir/*.o; rm $$dir/*.a; echo; done
+	@for dir in $(DIRS); do rm $$dir/*.o; rm $$dir/*.a; rm $$dir/*.d; done
 	rm libsails.a

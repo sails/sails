@@ -24,16 +24,24 @@ namespace net {
 template <typename T, typename U>
 class HandleThread {
  public:
-  explicit HandleThread(EpollServer<T, U> *server);
-
-  virtual ~HandleThread();
-
 
   // 处理线程运行状态
   enum RunStatus {
     RUNING,
     STOPING
   };
+  
+  // 状态
+  struct HandleThreadStatus {
+    RunStatus status;
+    uint64_t handle_times;
+    uint32_t handle_queue_capacity;
+    uint32_t handle_queue_size;
+  };
+
+  explicit HandleThread(EpollServer<T, U> *server);
+
+  virtual ~HandleThread();
 
   // 获取服务
   EpollServer<T, U>* getEpollServer();
@@ -86,6 +94,10 @@ class HandleThread {
   // 线程马上要退出时调用
   virtual void stopHandle() {}
 
+ public:
+  // 统计相关
+  HandleThreadStatus GetStatus();
+  
  protected:
   EpollServer<T, U>  *server;
 
@@ -98,6 +110,7 @@ class HandleThread {
 
   std::thread *hthread;
   int status;
+  uint64_t handle_times;
 };
 
 
@@ -112,6 +125,7 @@ HandleThread<T, U>::HandleThread(EpollServer<T, U> *server) {
   this->server = server;
   this->status = HandleThread<T, U>::STOPING;
   continueHanle = true;
+  handle_times = 0;
 }
 
 template <typename T, typename U>
@@ -200,6 +214,10 @@ void HandleThread<T, U>::handleImp() {
     if (data != NULL) {
       TagRecvData<T>& recvData = *data;
       handle(recvData);
+      handle_times++;
+      if (handle_times > INT64_MAX-10) {
+        handle_times = 0;
+      }
       heartbeat();
       if (data->data != NULL) {
         server->Tdeleter(data->data);
@@ -211,6 +229,15 @@ void HandleThread<T, U>::handleImp() {
   }
 }
 
+template <typename T, typename U>
+typename HandleThread<T, U>::HandleThreadStatus HandleThread<T, U>::GetStatus() {
+  HandleThreadStatus stat;
+  stat.status = this->status;
+  stat.handle_times = this->handle_times;
+  stat.handle_queue_capacity = handlelist.MaxSize();
+  stat.handle_queue_size = handlelist.size();
+  return stat;
+}
 
 }  // namespace net
 }  // namespace sails
