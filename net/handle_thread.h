@@ -109,7 +109,7 @@ class HandleThread {
   uint32_t  _iWaitTime;
 
   std::thread *hthread;
-  int status;
+  RunStatus status;
   uint64_t handle_times;
 };
 
