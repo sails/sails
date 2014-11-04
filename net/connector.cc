@@ -147,7 +147,6 @@ ssize_t Connector::read() {
   ssize_t read_count = 0;
   if (!is_closed && this->connect_fd > 0) {
     read_count = this->in_buf.read(this->connect_fd, READBYTES);
-    printf("read %d data\n", read_count);
   }
 
   return read_count;
