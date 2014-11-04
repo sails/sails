@@ -144,14 +144,10 @@ bool Connector::haveSetTimer() {
 }
 
 ssize_t Connector::read() {
-  //    std::unique_lock<std::mutex> locker(this->mutex);
   ssize_t read_count = 0;
   if (!is_closed && this->connect_fd > 0) {
-    char tmp[READBYTES] = {'\0'};
-    read_count = ::read(this->connect_fd, tmp, READBYTES);
-    if (read_count > 0) {
-      this->in_buf.append(tmp, read_count);
-    }
+    read_count = this->in_buf.read(this->connect_fd, READBYTES);
+    printf("read %d data\n", read_count);
   }
 
   return read_count;

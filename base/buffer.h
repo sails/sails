@@ -10,6 +10,7 @@
 #ifndef SAILS_BASE_BUFFER_H_
 #define SAILS_BASE_BUFFER_H_
 
+#include <unistd.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
@@ -126,6 +127,15 @@ class Buffer : public Uncopyable {
     append(&be32, sizeof(int32_t));
   }
 
+  ssize_t read(int fd, size_t len) {
+    ensure_writeable(len);
+    ssize_t readLen = ::read(fd, begin()+write_index, len);
+    if (readLen > 0) {
+      write_index+=readLen;
+    }
+    return readLen;
+  }
+  
 
  private:
   std::vector<char> data;
