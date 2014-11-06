@@ -551,9 +551,9 @@ void HandleImpl::connect_user(
     }
   } else {
     Player* player = ((Server*)server)->GetPlayer(playerId);
-    log::LoggerFactory::getLogD("psp")->error("playerId %u valid_group_name, ip:%s, port:%d, mac:%s",
-                 playerId, player->ip.c_str(),
-                 player->port, player->mac.c_str());
+    log::LoggerFactory::getLogD("psp")->error("playerId %u valid_group_name %s, ip:%s, port:%d, mac:%s",
+                                              playerId, group->data, player->ip.c_str(),
+                                              player->port, player->mac.c_str());
   }
 
   // 不合法
