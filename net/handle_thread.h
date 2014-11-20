@@ -20,7 +20,8 @@
 namespace sails {
 namespace net {
 
-
+// T 指接收和发送的数据结构
+// U 在这儿是不需要的，但是因为EpollServer需要
 template <typename T, typename U>
 class HandleThread {
  public:

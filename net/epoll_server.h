@@ -25,7 +25,8 @@
 
 namespace sails {
 namespace net {
-
+// T 指接收和发送的数据结构
+// U 指handle的具体实现，为了server能新建handle实例
 template<typename T, typename U >
 class EpollServer {
   
