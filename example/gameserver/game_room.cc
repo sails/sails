@@ -133,6 +133,7 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
     
   player->roomCode = "";
   //  player->gameCode = "";
+  player->userState =  USER_STATE_LOGGED_IN;
   SceNetEtherAddr playerMac = HandleImpl::getMacStruct(player->mac);
   uint32_t playerIp = HandleImpl::getIp(player->ip);
   playerMap.erase(playerId);
