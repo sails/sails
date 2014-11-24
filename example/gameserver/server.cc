@@ -536,6 +536,8 @@ void HandleImpl::connect_user(
     // Iterate Characters, ADHOCCTL_GROUPNAME_LEN长度限制
     int i = 0;
     for (; i < ADHOCCTL_GROUPNAME_LEN && valid_group_name == 1; ++i) {
+      // End of Name
+      if(group->data[i] == 0) break;
       // A - Z
       if (group->data[i] >= 'A' && group->data[i] <= 'Z') continue;
       // a - z
@@ -563,7 +565,7 @@ void HandleImpl::connect_user(
     }
   } else {
     Player* player = ((Server*)server)->GetPlayer(playerId);
-    log::LoggerFactory::getLogD("psp")->error("playerId %u valid_group_name %s, ip:%s, port:%d, mac:%s",
+    log::LoggerFactory::getLogD("psp")->error("playerId %u invalid_group_name %s, ip:%s, port:%d, mac:%s",
                                               playerId, group->data, player->ip.c_str(),
                                               player->port, player->mac.c_str());
   }
