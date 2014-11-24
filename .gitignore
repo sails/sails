@@ -5,3 +5,4 @@
 core
 callgraph.*
 callgrind.out*
+*.a
