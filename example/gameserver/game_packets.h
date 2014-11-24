@@ -21,7 +21,7 @@ namespace sails {
 
 
 #define OPCODE_GAME_DATA 100
-
+#define OPCODE_LOGOUT 101
 
 #define PACKET_MAX 111
 

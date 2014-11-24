@@ -29,7 +29,6 @@ namespace net {
 // U 指handle的具体实现，为了server能新建handle实例
 template<typename T, typename U >
 class EpollServer {
-  
  public:
   // 构造函数
   explicit EpollServer();

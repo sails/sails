@@ -62,7 +62,7 @@ void Server::SendDisConnectDataToHandle(
   // 向handle线程发送消息
   SceNetAdhocctlDisconnectPacketS2C* disdata
       = new SceNetAdhocctlDisconnectPacketS2C();
-  disdata->base.opcode = OPCODE_DISCONNECT;
+  disdata->base.opcode = OPCODE_LOGOUT;
   disdata->ip = HandleImpl::getIp(ip);
   disdata->mac = HandleImpl::getMacStruct("EE:EE:EE:EE:EE");
 
@@ -409,6 +409,18 @@ void HandleImpl::handle(
           log::LoggerFactory::getLogD("psp")->error("disconnect from game room error:%d", disconnectState);
         }
       }
+      break;
+    }
+    case OPCODE_LOGOUT: {
+      log::LoggerFactory::getLogD("psp")->info("logout");
+      if (((Server*)server)->GetPlayerState(playerId)
+          == USER_STATE_CONNECTED_ROOM) {
+        // Leave Game Gro0x00000000019527a0up
+        DisconnectState disconnectState = disconnect_user(recvData);
+        if (disconnectState != STATE_SUCCESS) {
+          log::LoggerFactory::getLogD("psp")->error("disconnect from game room error:%d", disconnectState);
+        }
+      }
       logout_user(playerId);
       break;
     }
@@ -569,6 +581,7 @@ DisconnectState HandleImpl::disconnect_user(
   }
 
   if (player != NULL && player->gameCode.length() > 0
+      && player->roomCode.length() >0
       && player->ip == recvData.ip
       && player->port == recvData.port) {
     GameWorld* gameWorld = ((Server*)server)->GetGameWorld(player->gameCode);
