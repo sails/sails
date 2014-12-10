@@ -356,7 +356,6 @@ void EpollServer<T, U>::ParseImp(
 #else
     TagRecvData<T>* data = new TagRecvData<T>();
 #endif
-    printf("data:%ld\n", data);
     new(data) TagRecvData<T>();
     data->uid = connector->getId();
     data->data = packet;
