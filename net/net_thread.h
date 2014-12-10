@@ -31,9 +31,6 @@ namespace net {
 template <typename T, typename U> class HandleThread;
 template <typename T, typename U> class EpollServer;
 
-// 使用内存池
-//#define USE_MEMORY_POOL
-
 // 定义数据队列中的结构
 template <typename T>
 struct TagRecvData {
@@ -249,12 +246,12 @@ NetThread<T, U>::~NetThread() {
         server->Tdeleter(t);
         t = NULL;
       }
-#ifdef USE_MEMORY_POOL
-      data->~TagRecvData<T>();
-      this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
-#else
-      delete data;
-#endif
+      if (server->useMemoryPool) {
+        data->~TagRecvData<T>();
+        this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
+      } else {
+        delete data;
+      }
       data = NULL;
     }
   }while(hasRecvData);

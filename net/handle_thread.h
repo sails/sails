@@ -201,13 +201,13 @@ void HandleThread<T, U>::addForHandle(TagRecvData<T> *data) {
       server->Tdeleter(t);
       data->data = NULL;
     }
-#ifdef USE_MEMORY_POOL
+    if (server->useMemoryPool) {
       data->~TagRecvData<T>();
       this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
-#else
+    } else {
       delete data;
-#endif
-      data = NULL;
+    }
+    data = NULL;
   }
 }
 
@@ -230,12 +230,12 @@ void HandleThread<T, U>::handleImp() {
         server->Tdeleter(data->data);
         data->data = NULL;
       }
-#ifdef USE_MEMORY_POOL
-      data->~TagRecvData<T>();
-      this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
-#else
-      delete data;
-#endif
+      if (server->useMemoryPool) {
+        data->~TagRecvData<T>();
+        this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
+      } else {
+        delete data;
+      }
       data = NULL;
     } else {
     }

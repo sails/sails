@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     }
 
     TestServer server;
-    server.Init(8000, 2, 10, 1);
+    server.Init(8000, 2, 10, 1,true);
 
     while(isRun) {
 	sleep(2);

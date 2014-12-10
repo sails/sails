@@ -18,10 +18,7 @@
 #include <condition_variable>
 #include <mutex>
 #include "sails/base/thread_queue.h"
-#ifdef USE_MEMORY_POOL
-  #include "sails/base/memory_pool.h"
-#endif // USE_MEMORY_POOL
-
+#include "sails/base/memory_pool.h"
 #include "sails/net/handle_thread.h"
 #include "sails/net/dispatcher_thread.h"
 #include "sails/net/net_thread.h"
@@ -40,7 +37,7 @@ class EpollServer {
   virtual ~EpollServer();
 
   // 初始化
-  void Init(int port, int netThreadNum, int timeout, int handleThreadNum);
+  void Init(int port, int netThreadNum, int timeout, int handleThreadNum, bool useMemoryPool=false);
 
   // 停止服务器
   void Stop();
@@ -178,10 +175,10 @@ class EpollServer {
     return status;
   }
 
-#ifdef USE_MEMORY_POOL
   // 内存池
+  bool useMemoryPool;
   sails::base::MemoryPoll memory_pool;
-#endif
+
  private:
   int listenPort;
   // 网络线程
@@ -225,6 +222,7 @@ EpollServer<T, U>::EpollServer() {
   listenPort = 0;
   bTerminate = true;
   connectorTimeout = 0;
+  useMemoryPool = false;
 
   sigpipe_action.sa_handler = EpollServer<T, U>::HandleSigpipe;
   sigemptyset(&sigpipe_action.sa_mask);
@@ -241,15 +239,16 @@ EpollServer<T, U>::~EpollServer() {
           delete netThreads[i];
     }
   }
-#ifdef USE_MEMORY_POOL
-  sails::base::MemoryPoll::release_memory();
-#endif
+  if (useMemoryPool) {
+    sails::base::MemoryPoll::release_memory();    
+  }
 }
 
 
 template<typename T, typename U>
 void EpollServer<T, U>::Init(
-    int port, int netThreadNum, int timeout, int handleThreadNum) {
+    int port, int netThreadNum, int timeout, int handleThreadNum, bool useMemoryPool) {
+  this->useMemoryPool = useMemoryPool;
   // 新建网络线程
   this->netThreadNum = netThreadNum;
   if (this->netThreadNum < 0) {
@@ -350,12 +349,16 @@ void EpollServer<T, U>::ParseImp(
     std::shared_ptr<net::Connector> connector) {
   T* packet = NULL;
   while ((packet = this->Parse(connector)) != NULL) {
-#ifdef USE_MEMORY_POOL
-    // Use memory pool
-    TagRecvData<T>* data = (TagRecvData<T>*)memory_pool.allocate(sizeof(TagRecvData<T>));
-#else
-    TagRecvData<T>* data = new TagRecvData<T>();
-#endif
+    TagRecvData<T>* data = NULL;
+    if (useMemoryPool) {
+      // Use memory pool
+      data = (TagRecvData<T>*)memory_pool.allocate(sizeof(TagRecvData<T>));
+    } else {
+      data = new TagRecvData<T>();
+    }
+
+
+
     new(data) TagRecvData<T>();
     data->uid = connector->getId();
     data->data = packet;
