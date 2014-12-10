@@ -18,6 +18,10 @@
 #include <condition_variable>
 #include <mutex>
 #include "sails/base/thread_queue.h"
+#ifdef USE_MEMORY_POOL
+  #include "sails/base/memory_pool.h"
+#endif // USE_MEMORY_POOL
+
 #include "sails/net/handle_thread.h"
 #include "sails/net/dispatcher_thread.h"
 #include "sails/net/net_thread.h"
@@ -173,6 +177,11 @@ class EpollServer {
     typename HandleThread<T, U>::HandleThreadStatus status;
     return status;
   }
+
+#ifdef USE_MEMORY_POOL
+  // 内存池
+  sails::base::MemoryPoll memory_pool;
+#endif
  private:
   int listenPort;
   // 网络线程
@@ -232,6 +241,9 @@ EpollServer<T, U>::~EpollServer() {
           delete netThreads[i];
     }
   }
+#ifdef USE_MEMORY_POOL
+  sails::base::MemoryPoll::release_memory();
+#endif
 }
 
 
@@ -338,7 +350,14 @@ void EpollServer<T, U>::ParseImp(
     std::shared_ptr<net::Connector> connector) {
   T* packet = NULL;
   while ((packet = this->Parse(connector)) != NULL) {
+#ifdef USE_MEMORY_POOL
+    // Use memory pool
+    TagRecvData<T>* data = (TagRecvData<T>*)memory_pool.allocate(sizeof(TagRecvData<T>));
+#else
     TagRecvData<T>* data = new TagRecvData<T>();
+#endif
+    printf("data:%ld\n", data);
+    new(data) TagRecvData<T>();
     data->uid = connector->getId();
     data->data = packet;
     data->ip = connector->getIp();
