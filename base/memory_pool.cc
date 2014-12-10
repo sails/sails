@@ -37,7 +37,6 @@ void MemoryPoll::release_memory() {
 }
 
 char* MemoryPoll::allocate(size_t __bytes) {
-  printf("allocate:%zu\n", __bytes);
   if (__bytes > _S_max_bytes) {
     return (char*)::operator new(__bytes);
   }
@@ -49,8 +48,6 @@ void MemoryPoll::deallocate(char* pointer, size_t bytes) {
   if (pointer == NULL) {
     return;
   }
-  printf("data:%ld\n", pointer);
-  printf("deallocate:%zu\n", bytes);
   if (bytes > _S_max_bytes) {
     ::operator delete(pointer);
     return;
@@ -58,7 +55,6 @@ void MemoryPoll::deallocate(char* pointer, size_t bytes) {
 
   _Obj* free_list = _M_get_free_list(bytes);
   _Obj* obj = (_Obj*)pointer;
-  printf("obj->M_free_list address:%ld\n", &(obj->_M_free_list_link));
   obj->_M_free_list_link = free_list;
   free_list = obj;
   _S_free_list[_M_round_up(bytes)/_S_align-1] = free_list;
@@ -84,7 +80,6 @@ void* MemoryPoll::_M_refill(size_t __bytes, size_t n) {
   if (__bytes > 0 && n > 0) {
     int total_size = __bytes * n;
     void *p = ::operator new(total_size, std::nothrow);
-    printf("pool new block p:%ld and size:%zu\n", p, total_size);
     if (p != NULL) {
 
       ChunkData *chunk = new ChunkData();
