@@ -17,7 +17,7 @@ class HandleTest {
 
 bool isRun = true;
 
-void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
+void sails_signal_handle(int signo, siginfo_t *, void *) {
     switch(signo) {
 	case SIGINT:
 	{

@@ -28,8 +28,8 @@
 namespace sails {
 namespace net {
 
-template <typename T, typename U> class HandleThread;
-template <typename T, typename U> class EpollServer;
+template <typename T> class HandleThread;
+template <typename T> class EpollServer;
 
 // 定义数据队列中的结构
 template <typename T>
@@ -57,7 +57,7 @@ typedef base::ThreadQueue<TagSendData*,
                           std::deque<TagSendData*>> send_queue;
 
 
-template <typename T, typename U>
+template <typename T>
 class NetThread {
  public:
   // 链接状态
@@ -86,7 +86,7 @@ class NetThread {
     uint32_t send_queue_size;
   };
 
-  explicit NetThread(EpollServer<T, U> *server, uint32_t index);
+  explicit NetThread(EpollServer<T> *server, uint32_t index);
   virtual ~NetThread();
 
   // 创建一个epoll的事件循环
@@ -102,7 +102,7 @@ class NetThread {
 
   static void timeoutCb(net::Connector* connector);
 
-  static void startEvLoop(NetThread<T, U>* netThread);
+  static void startEvLoop(NetThread<T>* netThread);
 
   void run();
 
@@ -146,7 +146,7 @@ class NetThread {
   void close_connector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
 
   // 获取服务
-  EpollServer<T, U>* getServer();
+  EpollServer<T>* getServer();
 
  public:
   // 统计相关
@@ -158,7 +158,7 @@ class NetThread {
   void read_data(base::event* e, int revents);
 
  private:
-  EpollServer<T, U> *server;
+  EpollServer<T> *server;
   // 接收的数据队列
   recv_queue<T> recvlist;
 
@@ -185,8 +185,8 @@ class NetThread {
 
 
 
-template <typename T, typename U>
-NetThread<T, U>::NetThread(EpollServer<T, U> *server, uint32_t index) {
+template <typename T>
+NetThread<T>::NetThread(EpollServer<T> *server, uint32_t index) {
   this->server = server;
   status = NetThread::STOPING;
   thread = NULL;
@@ -200,8 +200,8 @@ NetThread<T, U>::NetThread(EpollServer<T, U> *server, uint32_t index) {
 }
 
 
-template <typename T, typename U>
-NetThread<T, U>::~NetThread() {
+template <typename T>
+NetThread<T>::~NetThread() {
   if (status != NetThread::STOPING) {
     this->terminate();
     this->join();
@@ -258,8 +258,8 @@ NetThread<T, U>::~NetThread() {
 }
 
 
-template <typename T, typename U>
-void NetThread<T, U>::create_event_loop() {
+template <typename T>
+void NetThread<T>::create_event_loop() {
   ev_loop = new base::EventLoop(this);
   ev_loop->init();
 
@@ -268,14 +268,14 @@ void NetThread<T, U>::create_event_loop() {
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_READ;
-  notify_ev.cb = NetThread<T, U>::read_pipe_cb;
+  notify_ev.cb = NetThread<T>::read_pipe_cb;
 
   assert(ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD,
                             &notify_ev));
 }
 
-template <typename T, typename U>
-int NetThread<T, U>::bind(int port) {
+template <typename T>
+int NetThread<T>::bind(int port) {
   if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("create listen socket");
     exit(EXIT_FAILURE);
@@ -303,7 +303,7 @@ int NetThread<T, U>::bind(int port) {
   emptyEvent(&listen_ev);
   listen_ev.fd = listenfd;
   listen_ev.events = sails::base::EventLoop::Event_READ;
-  listen_ev.cb = NetThread<T, U>::accept_socket_cb;
+  listen_ev.cb = NetThread<T>::accept_socket_cb;
 
   if (!ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_ADD,
                          &listen_ev)) {
@@ -314,17 +314,17 @@ int NetThread<T, U>::bind(int port) {
   return listenfd;
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::accept_socket_cb(base::event* e, int revents, void* owner) {
+template <typename T>
+void NetThread<T>::accept_socket_cb(base::event* e, int revents, void* owner) {
   if (owner != NULL) {
-    NetThread<T, U>* net_thread = (NetThread<T, U>*)owner;
+    NetThread<T>* net_thread = (NetThread<T>*)owner;
     net_thread->accept_socket(e, revents);
   }
 }
 
 
-template <typename T, typename U>
-void NetThread<T, U>::accept_socket(base::event* e, int revents) {
+template <typename T>
+void NetThread<T>::accept_socket(base::event* e, int revents) {
   if (revents & base::EventLoop::Event_READ) {
     struct sockaddr_in local;
     int addrlen = sizeof(struct sockaddr_in);
@@ -354,7 +354,7 @@ void NetThread<T, U>::accept_socket(base::event* e, int revents) {
         inet_ntop(AF_INET, &(local.sin_addr), sAddr, 20);
         std::string ip(sAddr);
         connector->setIp(ip);
-        connector->setTimeoutCB(NetThread<T, U>::timeoutCb);
+        connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
         server->AddConnector(connector, connfd);
 
@@ -370,8 +370,8 @@ void NetThread<T, U>::accept_socket(base::event* e, int revents) {
 
 
 // 增加connector
-template <typename T, typename U>
-void NetThread<T, U>::add_connector(std::shared_ptr<net::Connector> connector) {
+template <typename T>
+void NetThread<T>::add_connector(std::shared_ptr<net::Connector> connector) {
   connector->owner = this;
   uint32_t uid = connector_list.getUniqId();
   connector->setId(uid);
@@ -384,7 +384,7 @@ void NetThread<T, U>::add_connector(std::shared_ptr<net::Connector> connector) {
   emptyEvent(&ev);
   ev.fd = connector->get_connector_fd();
   ev.events = sails::base::EventLoop::Event_READ;
-  ev.cb = NetThread<T, U>::read_data_cb;
+  ev.cb = NetThread<T>::read_data_cb;
   ev.data.u32 = connector->getId();
 
   if (!ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD, &ev)) {
@@ -393,27 +393,27 @@ void NetThread<T, U>::add_connector(std::shared_ptr<net::Connector> connector) {
 }
 
 
-template <typename T, typename U>
-void NetThread<T, U>::read_data_cb(base::event* e, int revents, void* owner) {
+template <typename T>
+void NetThread<T>::read_data_cb(base::event* e, int revents, void* owner) {
   if (owner != NULL && (revents & base::EventLoop::Event_READ)) {
-    NetThread<T, U>* net_thread = (NetThread<T, U>*)owner;
+    NetThread<T>* net_thread = (NetThread<T>*)owner;
     net_thread->read_data(e, revents);
   }
 }
 
-template<typename T, typename U>
-size_t NetThread<T, U>::get_recvqueue_size() {
+template <typename T>
+size_t NetThread<T>::get_recvqueue_size() {
   return this->recvlist.size();
 }
 
 
-template<typename T, typename U>
-size_t NetThread<T, U>::get_sendqueue_size() {
+template <typename T>
+size_t NetThread<T>::get_sendqueue_size() {
   return this->sendlist.size();
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::read_data(base::event* ev, int revents) {
+template <typename T>
+void NetThread<T>::read_data(base::event* ev, int revents) {
   if (ev == NULL || ev->fd < 0 || revents != base::EventLoop::Event_READ) {
     return;
   }
@@ -495,11 +495,11 @@ void NetThread<T, U>::read_data(base::event* ev, int revents) {
 
 
 
-template <typename T, typename U>
-void NetThread<T, U>::read_pipe_cb(base::event* e, int revents, void* owner) {
-  NetThread<T, U>* net_thread = NULL;
+template <typename T>
+void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
+  NetThread<T>* net_thread = NULL;
   if (e != NULL && owner != NULL && revents == base::EventLoop::Event_WRITE) {
-    net_thread = (NetThread<T, U>*)owner;
+    net_thread = (NetThread<T>*)owner;
     if (net_thread == NULL) {
       return;
     }
@@ -554,17 +554,17 @@ void NetThread<T, U>::read_pipe_cb(base::event* e, int revents, void* owner) {
 }
 
 
-template <typename T, typename U>
-void NetThread<T, U>::setEmptyConnTimeout(int connector_read_timeout) {
+template <typename T>
+void NetThread<T>::setEmptyConnTimeout(int connector_read_timeout) {
   int timeout = connector_read_timeout > 0?connector_read_timeout:10;
   connect_timer = new ConnectorTimeout(timeout);
   connect_timer->init(ev_loop);
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::timeoutCb(net::Connector* connector) {
+template <typename T>
+void NetThread<T>::timeoutCb(net::Connector* connector) {
   if (connector != NULL && connector->owner != NULL) {
-    NetThread<T, U>* netThread = (NetThread<T, U>*)connector->owner;
+    NetThread<T>* netThread = (NetThread<T>*)connector->owner;
     netThread->server->ConnectorTimeoutCB(connector);
     netThread->server->CloseConnector(connector->getIp(),
                                  connector->getPort(),
@@ -572,13 +572,13 @@ void NetThread<T, U>::timeoutCb(net::Connector* connector) {
   }
 }
 
-template <typename T, typename U>
-EpollServer<T, U>* NetThread<T, U>::getServer() {
+template <typename T>
+EpollServer<T>* NetThread<T>::getServer() {
   return this->server;
 }
 
-template <typename T, typename U>
-typename NetThread<T, U>::NetThreadStatus NetThread<T, U>::GetStatus() {
+template <typename T>
+typename NetThread<T>::NetThreadStatus NetThread<T>::GetStatus() {
   NetThreadStatus stat;
   stat.status = this->status;
   stat.listen_port = this->listen_port;
@@ -591,20 +591,20 @@ typename NetThread<T, U>::NetThreadStatus NetThread<T, U>::GetStatus() {
   return stat;
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::startEvLoop(NetThread<T, U>* netThread) {
+template <typename T>
+void NetThread<T>::startEvLoop(NetThread<T>* netThread) {
   netThread->setEmptyConnTimeout();
   netThread->ev_loop->start_loop();
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::run() {
+template <typename T>
+void NetThread<T>::run() {
   thread = new std::thread(startEvLoop, this);
   status = NetThread::RUNING;
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::terminate() {
+template <typename T>
+void NetThread<T>::terminate() {
   if (thread != NULL) {
     // 向epoll管理的0号连接发一个终止事件,让epoll wait结束,然后再退出
     ev_loop->stop_loop();
@@ -612,8 +612,8 @@ void NetThread<T, U>::terminate() {
 }
 
 
-template <typename T, typename U>
-void NetThread<T, U>::addRecvList(TagRecvData<T> *data) {
+template <typename T>
+void NetThread<T>::addRecvList(TagRecvData<T> *data) {
   if (!recvlist.push_back(data)) {
     // 删除它
     T* t = data->data;
@@ -626,14 +626,14 @@ void NetThread<T, U>::addRecvList(TagRecvData<T> *data) {
   server->NotifyDispacher();
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::getRecvData(TagRecvData<T>* &data,  // NOLINT'
+template <typename T>
+void NetThread<T>::getRecvData(TagRecvData<T>* &data,  // NOLINT'
                                int millisecond) {
   recvlist.pop_front(data, millisecond);
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::send(const std::string &ip,
+template <typename T>
+void NetThread<T>::send(const std::string &ip,
                         uint16_t port, uint32_t uid, const std::string &s) {
   TagSendData* data = new TagSendData();
   data->cmd = 's';
@@ -649,12 +649,12 @@ void NetThread<T, U>::send(const std::string &ip,
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_WRITE;
-  notify_ev.cb = NetThread<T, U>::read_pipe_cb;
+  notify_ev.cb = NetThread<T>::read_pipe_cb;
   ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
 }
 
-template <typename T, typename U>
-void NetThread<T, U>::close_connector(const std::string &ip,
+template <typename T>
+void NetThread<T>::close_connector(const std::string &ip,
                                    uint16_t port, uint32_t uid, int fd) {
   if (ip.length() == 0 || port <= 0 || uid <= 0 || fd <= 0) {
     return;
@@ -674,7 +674,7 @@ void NetThread<T, U>::close_connector(const std::string &ip,
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_WRITE;
-  notify_ev.cb = NetThread<T, U>::read_pipe_cb;
+  notify_ev.cb = NetThread<T>::read_pipe_cb;
   ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
 }
 
@@ -682,8 +682,8 @@ void NetThread<T, U>::close_connector(const std::string &ip,
 
 
 
-template <typename T, typename U>
-void NetThread<T, U>::join() {
+template <typename T>
+void NetThread<T>::join() {
   if (thread != NULL) {
     thread->join();
     status = NetThread::STOPING;

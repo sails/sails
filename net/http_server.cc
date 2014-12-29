@@ -129,15 +129,7 @@ HttpProcessor HttpServer::FindProcessor(std::string path) {
 
 
 
-
-
-HttpServerHandle::HttpServerHandle(
-    EpollServer<HttpRequest, HttpServerHandle>* server)
-    : HandleThread<sails::net::HttpRequest, HttpServerHandle>(server) {
-  
-}
-
-void HttpServerHandle::handle(
+void HttpServer::handle(
     const sails::net::TagRecvData<sails::net::HttpRequest> &recvData) {
 
   char data[10*1024] = {'\0'};
@@ -153,14 +145,14 @@ void HttpServerHandle::handle(
 
   std::string buffer(response_str, MAX_BODY_SIZE*2);
 
-  server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+  this->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
   // 因为最后都被放到一个队列中处理,所以肯定会send之后,再close
-  server->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
+  this->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
   delete response;
 }
 
-void HttpServerHandle::process(sails::net::HttpRequest& request,
+void HttpServer::process(sails::net::HttpRequest& request,
              sails::net::HttpResponse* response) {
   std::string path = request.GetRequestPath();
   // 通过后缀名预设content-type
@@ -177,7 +169,7 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
       
     }
   }
-  HttpProcessor processor = ((HttpServer*)server)->FindProcessor(path);
+  HttpProcessor processor = FindProcessor(path);
   if (processor == NULL) {
     // 检查是不是在请求本地资源文件,存在则直接下载
     // 这儿简单的一次性读取所有内容,所以资源文件不能太大
@@ -191,7 +183,7 @@ void HttpServerHandle::process(sails::net::HttpRequest& request,
     } else {
       filename = path.substr(1, 100);
     }
-    std::string filepath = ((HttpServer*)server)->StaticResourcePath()
+    std::string filepath = this->StaticResourcePath()
                            + filename;
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd < 0) {

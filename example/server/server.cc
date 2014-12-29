@@ -23,9 +23,8 @@ sails::log::Logger serverlog(sails::log::Logger::LOG_LEVEL_DEBUG,
 				  "./log/server.log", sails::log::Logger::SPLIT_DAY);
 }
 
-class HandleImpl;
 
-class TestServer : public sails::net::EpollServer<EchoStruct, HandleImpl> {
+class TestServer : public sails::net::EpollServer<EchoStruct> {
 public:
     TestServer() {
 	
@@ -46,28 +45,20 @@ public:
 	connector->retrieve(read_able);
 	return data;
     }
-};
-
-
-class HandleImpl : public sails::net::HandleThread<EchoStruct, HandleImpl> {
-public:
-  HandleImpl(sails::net::EpollServer<EchoStruct, HandleImpl>* server) : sails::net::HandleThread<EchoStruct, HandleImpl>(server) {
-	
-    }
     
     void handle(const sails::net::TagRecvData<EchoStruct> &recvData) {
-//	    server->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
+//     CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
 	printf("uid:%u, ip:%s, port:%d, msg:%s", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
 	std::string buffer = std::string(recvData.data->msg);
-	server->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+        send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
     }
 };
 
 
 bool isRun = true;
 
-void sails_signal_handle(int signo, siginfo_t *info, void *ext) {
+void sails_signal_handle(int signo, siginfo_t *, void *) {
     switch(signo) {
 	case SIGINT:
 	{

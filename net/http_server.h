@@ -30,7 +30,7 @@ server->RegisterProcessor(path, std::bind(&fun, obj, std::placeholders::_1, std:
 
 class HttpServerHandle;
 
-class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
+class HttpServer : public EpollServer<HttpRequest> {
  public:
   HttpServer();
   ~HttpServer();
@@ -57,6 +57,14 @@ class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
   // 调用http parser进行解析
   HttpRequest* Parse(std::shared_ptr<net::Connector> connector);
 
+  // 处理
+  void handle(
+      const sails::net::TagRecvData<sails::net::HttpRequest> &recvData);
+
+  // 找到对应的processor来处理
+  void process(sails::net::HttpRequest& request,
+               sails::net::HttpResponse* response);
+  
   // 删除http parser
   void CleanUpConnectorData(std::shared_ptr<net::Connector> connector);
   
@@ -65,19 +73,8 @@ class HttpServer : public EpollServer<HttpRequest, HttpServerHandle> {
   std::map<std::string, HttpProcessor> processorMap;
 
   std::string staticResourcePath;
-};
 
 
-class HttpServerHandle : public HandleThread<sails::net::HttpRequest, HttpServerHandle> {
- public:
-  HttpServerHandle(EpollServer<HttpRequest, HttpServerHandle>* server);
-    
-  void handle(
-      const sails::net::TagRecvData<sails::net::HttpRequest> &recvData);
-
-  // 找到对应的processor来处理
-  void process(sails::net::HttpRequest& request,
-               sails::net::HttpResponse* response);
   
 };
 

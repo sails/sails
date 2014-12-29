@@ -36,8 +36,8 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
   int maxAge = -1;
   if (player != NULL) {
 
-    SceNetEtherAddr playerMac = HandleImpl::getMacStruct(player->mac);
-    uint32_t playerIp = HandleImpl::getIp(player->ip);
+    SceNetEtherAddr playerMac = Server::getMacStruct(player->mac);
+    uint32_t playerIp = Server::getIp(player->ip);
     // BSSID Packet
     SceNetAdhocctlConnectBSSIDPacketS2C bssid;
     // Set BSSID Opcode
@@ -77,10 +77,10 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
       strcpy((char *)packet.name.data, peer->playerName.c_str());
 	    
       // Set Player MAC
-      packet.mac = HandleImpl::getMacStruct(peer->mac);
+      packet.mac = Server::getMacStruct(peer->mac);
 					
       // Set Player IP
-      packet.ip = HandleImpl::getIp(peer->ip);
+      packet.ip = Server::getIp(peer->ip);
 					
       // 通知自己
       std::string buffer2((char*)&packet, sizeof(packet));
@@ -89,7 +89,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 
       // 最先加入的当这个组的host
       if (peer->age > maxAge) {
-        bssid.mac = HandleImpl::getMacStruct(peer->mac);
+        bssid.mac = Server::getMacStruct(peer->mac);
         maxAge = peer->age;
       }
     }
@@ -134,8 +134,8 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
   player->roomCode = "";
   //  player->gameCode = "";
   player->userState =  USER_STATE_LOGGED_IN;
-  SceNetEtherAddr playerMac = HandleImpl::getMacStruct(player->mac);
-  uint32_t playerIp = HandleImpl::getIp(player->ip);
+  SceNetEtherAddr playerMac = Server::getMacStruct(player->mac);
+  uint32_t playerIp = Server::getIp(player->ip);
   playerMap.erase(playerId);
 
 

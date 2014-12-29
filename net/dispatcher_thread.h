@@ -19,10 +19,10 @@ namespace sails {
 namespace net {
 
 
-template<typename T, typename U>
+template <typename T>
 class DispatcherThread {
  public:
-  explicit DispatcherThread(EpollServer<T, U>* server);
+  explicit DispatcherThread(EpollServer<T>* server);
 
   // 网络线程运行状态
   enum RunStatus {
@@ -35,10 +35,10 @@ class DispatcherThread {
   void terminate();
   void join();
 
-  static void dispatch(DispatcherThread<T, U>* dispacher);
+  static void dispatch(DispatcherThread<T>* dispacher);
 
  private:
-  EpollServer<T, U>* server;
+  EpollServer<T>* server;
   int status;
   std::thread *thread;
   bool continueRun;
@@ -47,24 +47,24 @@ class DispatcherThread {
 
 
 
-template<typename T, typename U>
-DispatcherThread<T, U>::DispatcherThread(EpollServer<T, U>* server) {
+template <typename T>
+DispatcherThread<T>::DispatcherThread(EpollServer<T>* server) {
   this->server = server;
-  status = DispatcherThread<T, U>::STOPING;
+  status = DispatcherThread<T>::STOPING;
   thread = NULL;
   continueRun = false;
 }
 
-template<typename T, typename U>
-void DispatcherThread<T, U>::run() {
+template <typename T>
+void DispatcherThread<T>::run() {
   continueRun = true;
   thread = new std::thread(dispatch, this);
-  status = DispatcherThread<T, U>::RUNING;
+  status = DispatcherThread<T>::RUNING;
 }
 
 
-template<typename T, typename U>
-void DispatcherThread<T, U>::dispatch(DispatcherThread<T, U>* dispacher) {
+template <typename T>
+void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
   while (dispacher->continueRun) {
     dispacher->server->DipacherWait();
 
@@ -85,17 +85,17 @@ void DispatcherThread<T, U>::dispatch(DispatcherThread<T, U>* dispacher) {
   }
 }
 
-template<typename T, typename U>
-void DispatcherThread<T, U>::terminate() {
+template <typename T>
+void DispatcherThread<T>::terminate() {
   continueRun = false;
   server->NotifyDispacher();
 }
 
-template<typename T, typename U>
-void DispatcherThread<T, U>::join() {
+template <typename T>
+void DispatcherThread<T>::join() {
   if (thread != NULL) {
     thread->join();
-    status = DispatcherThread<T, U>::STOPING;
+    status = DispatcherThread<T>::STOPING;
     delete thread;
     thread = NULL;
   }

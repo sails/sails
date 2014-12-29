@@ -22,7 +22,7 @@ namespace net {
 
 // T 指接收和发送的数据结构
 // U 在这儿是不需要的，但是因为EpollServer需要
-template <typename T, typename U>
+template <typename T>
 class HandleThread {
  public:
 
@@ -40,12 +40,12 @@ class HandleThread {
     uint32_t handle_queue_size;
   };
 
-  explicit HandleThread(EpollServer<T, U> *server);
+  explicit HandleThread(EpollServer<T> *server);
 
   virtual ~HandleThread();
 
   // 获取服务
-  EpollServer<T, U>* getEpollServer();
+  EpollServer<T>* getEpollServer();
 
   // 线程处理方法
   virtual void run();
@@ -71,13 +71,13 @@ class HandleThread {
   void close(unsigned int uid, int fd);
   */
  protected:
-  static void runThread(HandleThread<T, U>* handle);
+  static void runThread(HandleThread<T>* handle);
   // 具体的处理逻辑
   virtual void handleImp();
 
   // 处理函数
   // @param stRecvData: 接收到的数据
-  virtual void handle(const TagRecvData<T> &recvData) = 0;
+  virtual void handle(const TagRecvData<T> &recvData);
 
   // 处理连接关闭通知，包括
   // 1.close by peer
@@ -100,7 +100,7 @@ class HandleThread {
   HandleThreadStatus GetStatus();
   
  protected:
-  EpollServer<T, U>  *server;
+  EpollServer<T>  *server;
 
   // 将要处理的数据队列
   recv_queue<T> handlelist;
@@ -121,17 +121,17 @@ class HandleThread {
 
 
 
-template <typename T, typename U>
-HandleThread<T, U>::HandleThread(EpollServer<T, U> *server) {
+template <typename T>
+HandleThread<T>::HandleThread(EpollServer<T> *server) {
   this->server = server;
-  this->status = HandleThread<T, U>::STOPING;
+  this->status = HandleThread<T>::STOPING;
   continueHanle = true;
   handle_times = 0;
 }
 
-template <typename T, typename U>
-HandleThread<T, U>::~HandleThread() {
-  if (status != HandleThread<T, U>::STOPING) {
+template <typename T>
+HandleThread<T>::~HandleThread() {
+  if (status != HandleThread<T>::STOPING) {
     terminate();
     join();
     delete hthread;
@@ -157,43 +157,43 @@ HandleThread<T, U>::~HandleThread() {
   } while (hashandleData);
 }
 
-template <typename T, typename U>
-EpollServer<T, U>* HandleThread<T, U>::getEpollServer() {
+template <typename T>
+EpollServer<T>* HandleThread<T>::getEpollServer() {
   return server;
 }
 
-template <typename T, typename U>
-void HandleThread<T, U>::run() {
+template <typename T>
+void HandleThread<T>::run() {
   initialize();
   startHandle();
   hthread = new std::thread(runThread, this);
-  this->status = HandleThread<T, U>::RUNING;
+  this->status = HandleThread<T>::RUNING;
 }
 
-template <typename T, typename U>
-void HandleThread<T, U>::runThread(HandleThread<T, U>* handle) {
+template <typename T>
+void HandleThread<T>::runThread(HandleThread<T>* handle) {
   if (handle != NULL) {
     handle->handleImp();
   }
 }
 
-template <typename T, typename U>
-void HandleThread<T, U>::terminate() {
+template <typename T>
+void HandleThread<T>::terminate() {
   continueHanle = false;
   stopHandle();
 }
 
-template <typename T, typename U>
-void HandleThread<T, U>::join() {
+template <typename T>
+void HandleThread<T>::join() {
   hthread->join();
-  status = HandleThread<T, U>::STOPING;
+  status = HandleThread<T>::STOPING;
   delete hthread;
   hthread = NULL;
 }
 
 
-template <typename T, typename U>
-void HandleThread<T, U>::addForHandle(TagRecvData<T> *data) {
+template <typename T>
+void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
   if (!handlelist.push_back(data)) {
     // 删除它
     T* t = data->data;
@@ -212,8 +212,8 @@ void HandleThread<T, U>::addForHandle(TagRecvData<T> *data) {
 }
 
 
-template <typename T, typename U>
-void HandleThread<T, U>::handleImp() {
+template <typename T>
+void HandleThread<T>::handleImp() {
   // 从接收队列中得到数据,然后调用handle()处理
   while (continueHanle) {
     TagRecvData<T>* data = NULL;
@@ -242,8 +242,14 @@ void HandleThread<T, U>::handleImp() {
   }
 }
 
-template <typename T, typename U>
-typename HandleThread<T, U>::HandleThreadStatus HandleThread<T, U>::GetStatus() {
+template <typename T>
+void HandleThread<T>::handle(const TagRecvData<T> &recvData) {
+  this->server->handle(recvData);
+}
+
+
+template <typename T>
+typename HandleThread<T>::HandleThreadStatus HandleThread<T>::GetStatus() {
   HandleThreadStatus stat;
   stat.status = this->status;
   stat.handle_times = this->handle_times;
