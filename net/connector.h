@@ -85,6 +85,7 @@ class Connector {
   void setPort(int port);
 
   int get_listen_fd();
+  void set_listen_fd(int listen_fd);
   int get_connector_fd();
 
   void set_timeout();

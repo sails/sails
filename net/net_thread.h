@@ -354,6 +354,7 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
         inet_ntop(AF_INET, &(local.sin_addr), sAddr, 20);
         std::string ip(sAddr);
         connector->setIp(ip);
+        connector->set_listen_fd(e->fd);
         connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
         server->AddConnector(connector, connfd);

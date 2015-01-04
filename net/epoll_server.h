@@ -49,7 +49,7 @@ class EpollServer {
   void SetEmptyConnTimeout(int timeout) { connectorTimeout = timeout;}
 
   // 绑定一个网络线程去监听端口
-  void Bind(int port);
+  int Bind(int port);
 
   // 开始运行网络线程
   bool StartNetThread();
@@ -304,9 +304,9 @@ void EpollServer<T>::CreateEpoll() {
 
 
 template<typename T>
-void EpollServer<T>::Bind(int port) {
+int EpollServer<T>::Bind(int port) {
   listenPort = port;
-  netThreads[0]->bind(port);
+  return netThreads[0]->bind(port);
 }
 
 // 开始运行网络线程

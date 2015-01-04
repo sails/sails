@@ -24,11 +24,13 @@ Connector::Connector(int conn_fd) {
   is_closed = false;
   is_timeout = false;
   timeoutCB = NULL;
-  owner = NULL;
+  owner = NULL; 
 }
 
 Connector::Connector() {
   id = 0;
+  this->port = 0;
+  this->ip = "";
   listen_fd = 0;
   connect_fd = 0;
   has_set_timer = false;
@@ -111,6 +113,10 @@ void Connector::setPort(int port) {
 
 int Connector::get_listen_fd() {
   return this->listen_fd;
+}
+
+void Connector::set_listen_fd(int listen_fd) {
+  this->listen_fd = listen_fd;
 }
 
 int Connector::get_connector_fd() {
