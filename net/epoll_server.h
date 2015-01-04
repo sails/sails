@@ -184,7 +184,7 @@ class EpollServer {
   bool useMemoryPool;
   sails::base::MemoryPoll memory_pool;
 
- private:
+ protected:
   int listenPort;
   // 网络线程
   std::vector<NetThread<T>*> netThreads;
