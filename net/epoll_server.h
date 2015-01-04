@@ -41,7 +41,7 @@ class EpollServer {
   // 停止服务器
   void Stop();
 
- protected:
+ public:
   // 创建epoll
   void CreateEpoll();
 
