@@ -218,6 +218,8 @@ void HandleThread<T>::handleImp() {
   while (continueHanle) {
     TagRecvData<T>* data = NULL;
     handlelist.pop_front(data, 100);
+    // 为了实现所有主逻辑的单线程化，在每次循环中，给业务处理自有消息的机会
+    this->server->handleCustomMessage();
     if (data != NULL) {
       TagRecvData<T>& recvData = *data;
       handle(recvData);

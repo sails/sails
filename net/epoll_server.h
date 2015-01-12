@@ -84,7 +84,14 @@ class EpollServer {
   virtual void handle(const TagRecvData<T> &recvData) {
     printf("need implement handle packet(uid:%d) in server class(will be call handle thread)\n", recvData.uid);
   };
-  
+
+  // 每次handle被唤醒后都会调用，实现在主线程中处理自有数据的功能
+  // 比如定时器任务或自有网络的异步响应;
+  // 一般它需要配合业务自有的队列使用，先把要处理的custome消息放到队列中
+  // 在这个函数中从队列中取出来处理.
+  virtual void handleCustomMessage() {
+    
+  }
 
   // 当epoll读到0个数据时，客户端主动close.
   // 在调用函数之后,netThread会主动调用connect close
