@@ -89,7 +89,7 @@ class EpollServer {
   // 比如定时器任务或自有网络的异步响应;
   // 一般它需要配合业务自有的队列使用，先把要处理的custome消息放到队列中
   // 在这个函数中从队列中取出来处理.
-  virtual void handleCustomMessage(HandleThread*) {
+  virtual void handleCustomMessage(HandleThread<T>*) {
     
   }
 
