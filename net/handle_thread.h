@@ -96,13 +96,14 @@ class HandleThread {
   virtual void stopHandle() {}
 
  public:
+
+  size_t id;
+  
   // 统计相关
   HandleThreadStatus GetStatus();
   
  protected:
   EpollServer<T>  *server;
-  
-  size_t id;
 
   // 将要处理的数据队列
   recv_queue<T> handlelist;
