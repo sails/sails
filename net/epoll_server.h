@@ -286,6 +286,7 @@ void EpollServer<T>::Init(
   }
   for (size_t i = 0; i < this->handleThreadNum; i++) {
     HandleThread<T>* handleThread = new HandleThread<T>(this);
+    handleThread->id = i;
     handleThreads.push_back(handleThread);
   }
   

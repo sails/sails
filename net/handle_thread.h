@@ -101,6 +101,8 @@ class HandleThread {
   
  protected:
   EpollServer<T>  *server;
+  
+  size_t id;
 
   // 将要处理的数据队列
   recv_queue<T> handlelist;
@@ -127,6 +129,7 @@ HandleThread<T>::HandleThread(EpollServer<T> *server) {
   this->status = HandleThread<T>::STOPING;
   continueHanle = true;
   handle_times = 0;
+  id = 0;
 }
 
 template <typename T>
