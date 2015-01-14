@@ -142,6 +142,10 @@ class NetThread {
             uint16_t port, uint32_t uid,
             const std::string &data);
 
+  void send(const std::string &ip,
+            uint16_t port, uint32_t uid,
+            const char* message, int len);
+  
   // 关闭连接
   void close_connector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
 
@@ -652,6 +656,14 @@ void NetThread<T>::send(const std::string &ip,
   notify_ev.events = sails::base::EventLoop::Event_WRITE;
   notify_ev.cb = NetThread<T>::read_pipe_cb;
   ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
+}
+
+template <typename T>
+void NetThread<T>::send(const std::string &ip,
+          uint16_t port, uint32_t uid,
+          const char* message, int len) {
+  std::string sendbuffer(message, len);
+  send(ip, port, uid, sendbuffer);
 }
 
 template <typename T>
