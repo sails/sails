@@ -31,7 +31,7 @@ class ConstantPtrList : public Uncopyable {
   ~ConstantPtrList();
 
   // 初始化大小
-  void init(uint32_t size);
+  void init(uint32_t size, bool needMagicNum=true);
 
   /**
    * 获取惟一ID
@@ -111,7 +111,7 @@ ConstantPtrList<T>::~ConstantPtrList() {
 
 
 template<typename T>
-void ConstantPtrList<T>::init(uint32_t size) {
+void ConstantPtrList<T>::init(uint32_t size, bool needMagicNum) {
   total = size;
 
   free_size  = 0;
@@ -122,10 +122,13 @@ void ConstantPtrList<T>::init(uint32_t size) {
   // 分配total+1个空间(多分配一个空间, 第一个空间其实无效)
   vList = new T*[total+1];
 
-  magic_num = time(NULL);
-
-  magic_num = (((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24);
-
+  if (needMagicNum) {
+    magic_num = time(NULL);
+    magic_num = (((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24);
+  } else {
+    magic_num = 0;
+  }
+  
   vList[0] = NULL;
   // free从1开始分配, 这个值为uid
   for (uint32_t i = 1; i <= total; i++) {
@@ -135,6 +138,8 @@ void ConstantPtrList<T>::init(uint32_t size) {
     ++free_size;
   }
 }
+
+
 
 
 template<typename T>
