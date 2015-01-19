@@ -15,6 +15,7 @@
 #define SAILS_NET_HANDLE_THREAD_H_
 
 #include <string>
+#include <exception>
 #include "sails/net/net_thread.h"
 
 namespace sails {
@@ -250,7 +251,13 @@ void HandleThread<T>::handleImp() {
 
 template <typename T>
 void HandleThread<T>::handle(const TagRecvData<T> &recvData) {
-  this->server->handle(recvData);
+  try {
+    this->server->handle(recvData);
+  } catch (std::exception &ex) {  // 增加异常处理机制,防止客户逻辑错误让整个程序崩溃
+    log::LoggerFactory::getLog("server")->error("handle %s", ex.what());
+  } catch (...) {
+    log::LoggerFactory::getLog("server")->error("handle unknown error");
+  }
 }
 
 
