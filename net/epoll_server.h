@@ -36,7 +36,7 @@ class EpollServer {
   virtual ~EpollServer();
 
   // 初始化
-  void Init(int port, int netThreadNum, int timeout, int handleThreadNum, bool useMemoryPool=false);
+  void Init(int port, int netThreadNum=1, int timeout=10, int handleThreadNum=1, bool useMemoryPool=false);
 
   // 停止服务器
   void Stop();
