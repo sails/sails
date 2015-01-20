@@ -598,7 +598,7 @@ typename NetThread<T>::NetThreadStatus NetThread<T>::GetStatus() {
 
 template <typename T>
 void NetThread<T>::startEvLoop(NetThread<T>* netThread) {
-  netThread->setEmptyConnTimeout();
+  netThread->setEmptyConnTimeout(netThread->server->GetEmptyConnTimeout());
   netThread->ev_loop->start_loop();
 }
 
