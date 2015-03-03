@@ -42,8 +42,9 @@ void HttpServer::CreateConnectorCB(
   http_message_init(parserFlag->message);
 }
 
-void HttpServer::CleanUpConnectorData(
+void HttpServer::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
+  printf("closeconnect cb \n");
   if (connector->data.ptr != NULL) {
     http_parser *parser = (http_parser*)connector->data.ptr;
     if (parser == NULL) {
@@ -67,6 +68,7 @@ void HttpServer::CleanUpConnectorData(
     if (parserFlag != NULL) {
       delete parserFlag;
     }
+    printf("free connector parser\n");
     free(parser);
 
     connector->data.ptr = NULL;
@@ -212,6 +214,7 @@ void HttpServer::process(sails::net::HttpRequest& request,
       memset(data, 0, filesize+1);
       int readLen = read(fd, data, filesize+1);
       response->SetBody(data, readLen);
+      free(data);
     }
     
     

@@ -273,7 +273,6 @@ void NetThread<T>::create_event_loop() {
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_READ;
   notify_ev.cb = NetThread<T>::read_pipe_cb;
-
   assert(ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD,
                             &notify_ev));
 }
@@ -391,7 +390,6 @@ void NetThread<T>::add_connector(std::shared_ptr<net::Connector> connector) {
   ev.events = sails::base::EventLoop::Event_READ;
   ev.cb = NetThread<T>::read_data_cb;
   ev.data.u32 = connector->getId();
-
   if (!ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD, &ev)) {
     connector_list.del(connector->getId());
   }
@@ -484,9 +482,6 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
   }
 
   if (readerror) {
-    // 客户端主动close
-    this->server->ClosedConnectCB(connector);
-
     if (!connector->isClosed()) {
       this->server->CloseConnector(connector->getIp(),
                     connector->getPort(),
@@ -541,7 +536,7 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
         if (connector != NULL) {
           // 从event loop中删除
           if (connector->getPort() == port && connector->getIp() == ip) {
-            net_thread->server->CleanUpConnectorData(connector);
+            net_thread->server->ClosedConnectCB(connector);
             net_thread->ev_loop->event_stop(connector->get_connector_fd());
             connector->close();
             connector->data.u64 = 0;
@@ -570,7 +565,6 @@ template <typename T>
 void NetThread<T>::timeoutCb(net::Connector* connector) {
   if (connector != NULL && connector->owner != NULL) {
     NetThread<T>* netThread = (NetThread<T>*)connector->owner;
-    netThread->server->ConnectorTimeoutCB(connector);
     netThread->server->CloseConnector(connector->getIp(),
                                  connector->getPort(),
                                  connector->getId(), connector->get_connector_fd());

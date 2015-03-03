@@ -90,7 +90,6 @@ int main(int argc, char *argv[])
 	sleep(2);
     }
     
-    printf("stop netthread\n");
     server.Stop();
 
     return 0;

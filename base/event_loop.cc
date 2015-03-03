@@ -291,6 +291,7 @@ bool EventLoop::event_stop(int fd) {
 
     // delete all epoll event
     if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL)) {
+      printf("fd:%d\n", fd);
       perror("event stop and delete fd from epoll");
     }
   }

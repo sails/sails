@@ -66,7 +66,7 @@ class HttpServer : public EpollServer<HttpRequest> {
                sails::net::HttpResponse* response);
   
   // 删除http parser
-  void CleanUpConnectorData(std::shared_ptr<net::Connector> connector);
+  void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
   
  private:
   struct http_parser_settings settings;

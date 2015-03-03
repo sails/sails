@@ -59,7 +59,6 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
   }
 
   if (!ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD, &ev)) {
-    printf("timerfd:%d\n", timerfd);
     close(timerfd);
     timerfd = 0;
     return false;
@@ -71,6 +70,7 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
 
 bool Timer::disarms()  {
   if (timerfd > 0) {
+    ev_loop->event_stop(timerfd);
     close(timerfd);
     timerfd = 0;
   }
@@ -96,8 +96,7 @@ void Timer::read_timerfd_data(base::event* ev, int revents, void* owner) {
 
 Timer::~Timer() {
   if (timerfd > 0) {
-    close(timerfd);
-    timerfd = 0;
+    disarms();
   }
   if (self_evloop > 0) {
     ev_loop->stop_loop();

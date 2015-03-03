@@ -93,18 +93,12 @@ class EpollServer {
     
   }
 
-  // 当epoll读到0个数据时，客户端主动close.
-  // 在调用函数之后,netThread会主动调用connect close
-  // 如果要处理额外情况,在子类中重新实现它
+  // 在NetThread关闭连接之前调用，用来删除用户数据
+  // 比如在连接时创建了player，在此时可以进行删除
+  // 注意，它是在NetThread中调用，所以要区别资源是在哪里删除，有些可以直接在NetThread中删除
+  // 有些只能通过消息让handle线程删除
   virtual void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
-
-  // 当连接超时时,提供应用层处理机会
-  // 在调用函数之后,netThread会自己关闭连接,所有子类中不用再调用close connector
-  virtual void ConnectorTimeoutCB(net::Connector* connector);
-
-   // 最后的机会,在io线程中删除资源
-  virtual void CleanUpConnectorData(std::shared_ptr<Connector> connector);
-
+  
  public:
   int GetEmptyConnTimeout() { return connectorTimeout;}
   
@@ -150,14 +144,9 @@ class EpollServer {
   // 提供给处理调用,它通过向io线程发送命令来达到目的,所以是多线程安全的
   // 关闭连接,关闭连接有三种情况,1:客户端主动关闭,2:服务器超时,3:服务器业务中关闭
   // 不管哪种情况,最后都会通过调用这个函数来向netThread线程中发送命令来操作
-  // 所以如果在创建连接时,绑定了资源,可能会想到可以在这里来统一释放.
-  // 当然也可以把资源释放放在三种情况ClosedConnectCB,ConnectorTimeoutCB,业务
-  // 中去分别不同处理.
-  // 但要注意的是,为了多线程安全,删除时要考虑清楚谁在使用就应该由谁来删除
-  // (handle线程,io线程),不要多个线程中都可以来处理.而这里多个线程都可以调用
-  // 所以,CloseConnector,ClosedConnectCB,ConnectorTimeoutCB一般都不直接删除它,
-  // 而是把它交给handle线程或者io线程,如在例子中gameserver中user数据就放在handle线程中
-  // httpserver中的parser数据就放在netThread的io线程中删除
+  // 如果在创建连接时,绑定了资源, 为了能达到三种情况下都能统一删除资源，
+  // 在NetThread删除connector时，会调用ClosedConnectCB，所以千万不要在其它地方去删除，
+  // 否则可能造成资源泄漏
   void CloseConnector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
   // sigpipe信号处理函数
   static void HandleSigpipe(int sig);
@@ -333,9 +322,8 @@ bool EpollServer<T>::StartNetThread() {
 // 终止网络线程
 template<typename T>
 bool EpollServer<T>::StopNetThread() {
+  printf("stop NetThread\n");
   for (size_t i = 0; i < netThreadNum; i++) {
-    netThreads[i]->terminate();
-    netThreads[i]->join();
     // 因为当网络线程结束时,要进行一些后续处理
     // 比如关闭连接,删除用户数据等,所以不能等到server析构时再来delete
     // 这里是要删除全部网络线程,所以不用把后面的线程往前移
@@ -421,7 +409,6 @@ bool EpollServer<T>::StopHandleThread() {
   dispacher_thread->join();
   delete dispacher_thread;
   dispacher_thread = NULL;
-  printf(" end stop dispacher\n");
 
   printf("stop handle thread\n");
   for (uint32_t i = 0; i < handleThreads.size(); i++) {
@@ -513,21 +500,6 @@ void EpollServer<T>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
   log::LoggerFactory::getLog("server")->debug(
       "connetor %ld will be closed", connector->get_connector_fd());
-}
-
-template<typename T>
-void EpollServer<T>::ConnectorTimeoutCB(net::Connector* connector) {
-  log::LoggerFactory::getLog("server")->debug(
-      "connector %d timeout, perhaps need to do something",
-      connector->get_connector_fd());
-}
-
-template<typename T>
-void EpollServer<T>::CleanUpConnectorData(
-    std::shared_ptr<Connector> connector) {
-  log::LoggerFactory::getLog("server")->debug(
-      "connector %d will be deleted, perhaps need to clean up some thing",
-      connector->get_connector_fd());
 }
 
 }  // namespace net
