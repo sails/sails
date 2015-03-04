@@ -37,7 +37,6 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
   uint32_t CreatePlayer(std::string ip, int port, int fd, uint32_t connectUid);
 
   // 数据解析
-  void ParseImp(std::shared_ptr<net::Connector> connector);
   SceNetAdhocctlPacketBase* Parse(
       std::shared_ptr<sails::net::Connector> connector);
 

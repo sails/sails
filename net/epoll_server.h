@@ -369,6 +369,7 @@ void EpollServer<T>::ParseImp(
     data->ip = connector->getIp();
     data->port= connector->getPort();
     data->fd = connector->get_connector_fd();
+    data->extdata = connector->data;
 
     NetThread<T>* netThread = GetNetThreadOfFd(connector->get_connector_fd());
     netThread->addRecvList(data);

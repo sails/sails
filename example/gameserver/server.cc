@@ -81,7 +81,7 @@ void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
   data->ip = connector->getIp();
   data->port= connector->getPort();
   data->fd = connector->get_connector_fd();
-  data->extId = playerId;
+  data->extdata = connector->data;
   
   int handleNum = GetHandleNum();
   int selectedHandle = connector->get_connector_fd() % handleNum;
@@ -138,24 +138,6 @@ uint32_t Server::CreatePlayer(
   playerList.add(player, uid);
 
   return uid;
-}
-
-void Server::ParseImp(std::shared_ptr<net::Connector> connector) {
-  SceNetAdhocctlPacketBase* packet = NULL;
-  while ((packet = this->Parse(connector)) != NULL) {
-    net::TagRecvData<SceNetAdhocctlPacketBase>* data
-        = new net::TagRecvData<SceNetAdhocctlPacketBase>();
-    data->uid = connector->getId();
-    data->data = packet;
-    data->ip = connector->getIp();
-    data->port= connector->getPort();
-    data->fd = connector->get_connector_fd();
-    data->extId = connector->data.u32;
-
-    net::NetThread<SceNetAdhocctlPacketBase>* netThread
-        = GetNetThreadOfFd(connector->get_connector_fd());
-    netThread->addRecvList(data);
-  }
 }
 
 SceNetAdhocctlPacketBase* Server::Parse(
@@ -330,7 +312,7 @@ void Server::handle(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
 
   SceNetAdhocctlPacketBase *data = recvData.data;
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
 
   switch (data->opcode) {
     case OPCODE_PING: {
@@ -417,7 +399,7 @@ void Server::login_user_data(
 
   SceNetAdhocctlLoginPacketC2S * data
       = (SceNetAdhocctlLoginPacketC2S*)recvData.data;
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
   // 找到对应的游戏
 
   int valid_product_code = 1;
@@ -482,7 +464,7 @@ void Server::login_user_data(
 
 void Server::connect_user(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
   SceNetAdhocctlConnectPacketC2S * packet
       = (SceNetAdhocctlConnectPacketC2S *)recvData.data;
   SceNetAdhocctlGroupName* group
@@ -534,7 +516,7 @@ void Server::connect_user(
 
 DisconnectState Server::disconnect_user(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
   Player* player = GetPlayer(playerId);
   if (player == NULL) {
     return STATE_PLAYER_NOT_EXISTS;
@@ -581,7 +563,7 @@ void Server::logout_user(uint32_t playerId) {
 
 void Server::send_scan_results(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
   Player* player = GetPlayer(playerId);
   if (player != NULL && player->gameCode.length()> 0) {
     GameWorld* gameWorld
@@ -623,7 +605,7 @@ void Server::send_scan_results(
 
 void Server::spread_message(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
   Player* player = GetPlayer(playerId);
 
   SceNetAdhocctlChatPacketC2S * packet
@@ -644,7 +626,7 @@ void Server::spread_message(
 
 void Server::transfer_message(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
-  uint32_t playerId = recvData.extId;
+  uint32_t playerId = recvData.extdata.u32;
   Player* player = GetPlayer(playerId);
 
   // printf("get transfer message from ip:%s, port :%d\n",

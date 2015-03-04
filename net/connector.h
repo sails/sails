@@ -45,11 +45,11 @@ class ConnectorTimeout;
 
 typedef void (*TimeoutCB)(Connector* connector);
 
-typedef union Conn_Data {
+typedef union ExtData {
   void *ptr;
   uint32_t u32;
   uint64_t u64;
-} ConnData;
+} ExtData;
 
 
 class Connector {
@@ -97,7 +97,7 @@ class Connector {
   bool haveSetTimer();
 
   void *owner;  // 为了当回调时能找到对应的拥有者
-  ConnData data;
+  ExtData data;
 
  protected:
   sails::base::Buffer in_buf;
