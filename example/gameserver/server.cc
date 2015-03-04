@@ -69,7 +69,8 @@ void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
   log::LoggerFactory::getLogD("psp")->debug("sendDisConnectDataToHandle playerId:%u", playerId);
   // 向handle线程发送消息
   SceNetAdhocctlDisconnectPacketS2C* disdata
-      = new SceNetAdhocctlDisconnectPacketS2C();
+      = (SceNetAdhocctlDisconnectPacketS2C*)malloc(
+          sizeof(SceNetAdhocctlDisconnectPacketS2C));
   disdata->base.opcode = OPCODE_LOGOUT;
   disdata->ip = Server::getIp(connector->getIp());
   disdata->mac = Server::getMacStruct("EE:EE:EE:EE:EE");
