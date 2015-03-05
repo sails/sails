@@ -42,16 +42,21 @@ public:
 	EchoStruct *data = (EchoStruct*)malloc(sizeof(EchoStruct));
 	memset(data, '\0', sizeof(EchoStruct));
 	strncpy(data->msg, connector->peek(), read_able);
-	connector->retrieve(read_able);
+	connector->retrieve(read_able);        
 	return data;
     }
     
     void handle(const sails::net::TagRecvData<EchoStruct> &recvData) {
 //     CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
 
-	printf("uid:%u, ip:%s, port:%d, msg:%s", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
+	printf("uid:%u, ip:%s, port:%d, msg:%s\n", recvData.uid, recvData.ip.c_str(), recvData.port, recvData.data->msg);
 	std::string buffer = std::string(recvData.data->msg);
         send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+        static uint32_t testnum = 0;
+        testnum++;
+        sails::net::ExtData data;
+        data.u32 = testnum;
+        SetConnectorData(recvData.ip, recvData.port, recvData.uid, recvData.fd, data);
     }
 };
 

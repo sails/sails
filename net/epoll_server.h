@@ -148,6 +148,12 @@ class EpollServer {
   // 在NetThread删除connector时，会调用ClosedConnectCB，所以千万不要在其它地方去删除，
   // 否则可能造成资源泄漏
   void CloseConnector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
+
+  // 设置connector数据，它最终会在netThread中设置
+  // 如果执行逻辑在NetThread中，可以直接修改而不通过这个接口
+  void SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid, int fd,
+                        ExtData data);
+  
   // sigpipe信号处理函数
   static void HandleSigpipe(int sig);
 
@@ -494,6 +500,19 @@ void EpollServer<T>::CloseConnector(
   if (netThread != NULL) {
     netThread->close_connector(ip, port, uid, fd);
   }
+}
+
+template<typename T>
+void EpollServer<T>::SetConnectorData(const std::string &ip,
+                      uint16_t port,
+                      uint32_t uid,
+                      int fd,
+                      ExtData data) {
+  NetThread<T>* netThread = GetNetThreadOfFd(fd);
+  if (netThread != NULL) {
+    netThread->SetConnectorData(ip, port, uid, fd, data);
+  }
+
 }
 
 template<typename T>

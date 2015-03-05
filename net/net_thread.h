@@ -149,6 +149,10 @@ class NetThread {
   // 关闭连接
   void close_connector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
 
+  // 修改connector数据
+  void SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid,
+                        int fd, ExtData data);
+  
   // 获取服务
   EpollServer<T>* getServer();
 
@@ -545,6 +549,17 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
             // printf("connect use count :%d\n", connector.use_count());
           }
         }
+      } else if (cmd == 'm') {  // 修改connector的data
+        std::shared_ptr<Connector> connector
+            = net_thread->connector_list.get(uid);
+        if (connector != NULL) {
+          if (connector->getPort() == port && connector->getIp() == ip) {
+            ExtData cdata;
+            const char *temp = data->buffer.c_str();
+            memcpy((void*)&cdata, (void*)temp, sizeof(cdata));
+            connector->data = cdata;
+          }
+        }
       }
     }
     if (data != NULL) {
@@ -685,6 +700,32 @@ void NetThread<T>::close_connector(const std::string &ip,
   ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
 }
 
+template <typename T>
+void  NetThread<T>::SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid, int fd, ExtData data) {
+  if (ip.length() == 0 || port <= 0 || uid <= 0 || fd <= 0) {
+    return;
+  }
+  log::LoggerFactory::getLog("server")->debug("call close connector\n");
+  
+  TagSendData* sdata = new TagSendData();
+  sdata->cmd = 'm';
+  sdata->uid = uid;
+  char temp[50] = {'\0'};
+  memcpy((void*)temp, (void*)&data, sizeof(data));
+  sdata->buffer = std::string(temp);
+  sdata->ip = ip;
+  sdata->port = port;
+  if (!sendlist.push_back(sdata)) {
+    delete sdata;
+  }
+  // 通知epoll_wait
+  sails::base::event notify_ev;
+  emptyEvent(&notify_ev);
+  notify_ev.fd = notify;
+  notify_ev.events = sails::base::EventLoop::Event_WRITE;
+  notify_ev.cb = NetThread<T>::read_pipe_cb;
+  ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
+}
 
 
 

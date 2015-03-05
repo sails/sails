@@ -55,6 +55,8 @@ class ConstantPtrList : public Uncopyable {
   // 大小
   size_t size();
 
+  uint32_t magic() { return magic_num; }
+  
  protected:
   // 内部删除, 不加锁
   void _del(uint32_t uid);
