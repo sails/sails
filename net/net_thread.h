@@ -712,7 +712,7 @@ void  NetThread<T>::SetConnectorData(const std::string &ip, uint16_t port, uint3
   sdata->uid = uid;
   char temp[50] = {'\0'};
   memcpy((void*)temp, (void*)&data, sizeof(data));
-  sdata->buffer = std::string(temp);
+  sdata->buffer = std::string(temp, sizeof(data));
   sdata->ip = ip;
   sdata->port = port;
   if (!sendlist.push_back(sdata)) {
