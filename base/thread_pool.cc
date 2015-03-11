@@ -10,14 +10,15 @@
 
 #include "sails/base/thread_pool.h"
 #include <stdio.h>
-#include <sys/sysinfo.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 namespace sails {
 namespace base {
 
 
 ThreadPool::ThreadPool(int queue_size) {
-  int processor_num = get_nprocs();
+  long processor_num = sysconf(_SC_NPROCESSORS_CONF);
   if (processor_num < 0) {
     printf("error get num of porcessor .\n");
     exit(0);

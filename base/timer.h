@@ -11,8 +11,12 @@
 
 #ifndef SAILS_BASE_TIMER_H_
 #define SAILS_BASE_TIMER_H_
-
+#ifdef __linux__
 #include <sys/timerfd.h>
+#elif __APPLE__
+#include <sys/time.h>
+#include <sys/socket.h>
+#endif
 #include "sails/base/event_loop.h"
 
 namespace sails {
@@ -36,7 +40,7 @@ class Timer {
  private:
   int tick;
   int timerfd;
-  struct itimerspec *new_value;
+
   EventLoop *ev_loop;
   int self_evloop;
   ExpiryAction action;

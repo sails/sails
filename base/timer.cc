@@ -34,24 +34,30 @@ Timer::Timer(int tick) {
 }
 
 bool Timer::init(ExpiryAction action, void *data, int when = 1) {
+#ifdef __linux__
   timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
 
-  new_value = (struct itimerspec*)malloc(sizeof(struct itimerspec));
-  new_value->it_interval.tv_sec = tick;
-  new_value->it_interval.tv_nsec = 0;
-  new_value->it_value.tv_sec = when;
-  new_value->it_value.tv_nsec = 0;
-  timerfd_settime(timerfd, 0, new_value, NULL);
-
+  struct itimerspec new_value;
+  new_value.it_interval.tv_sec = tick;
+  new_value.it_interval.tv_nsec = 0;
+  new_value.it_value.tv_sec = when;
+  new_value.it_value.tv_nsec = 0;
+  timerfd_settime(timerfd, 0, &new_value, NULL);
+  sails::base::EventLoop::Events events = sails::base::EventLoop::Event_READ;
+#elif __APPLE__
+  // 在这儿的fd可以随便指定，但是不要和其它重复
+  timerfd = socket(AF_INET, SOCK_STREAM, 0);
+  sails::base::EventLoop::Events events = sails::base::EventLoop::Event_TIMER;
+#endif
   sails::base::event ev;
   emptyEvent(&ev);
   ev.fd = timerfd;
-  ev.events = sails::base::EventLoop::Event_READ;
+  ev.events = events;
   ev.cb = sails::base::Timer::read_timerfd_data;
   ev.data.ptr = this;
   ev.stop_cb = NULL;
   ev.next = NULL;
-
+  
   if (ev_loop == NULL) {
     ev_loop = new EventLoop(this);
     ev_loop->init();
@@ -104,9 +110,6 @@ Timer::~Timer() {
   }
   ev_loop = NULL;
   action = NULL;
-  if (new_value != NULL) {
-    free(new_value);
-  }
 }
 
 void Timer::pertick_processing() {

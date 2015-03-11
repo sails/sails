@@ -11,7 +11,13 @@
 
 #ifndef SAILS_BASE_EVENT_LOOP_H_
 #define SAILS_BASE_EVENT_LOOP_H_
+#ifdef __linux__
 #include <sys/epoll.h>
+#elif __APPLE__
+#include <sys/types.h>
+#include <sys/event.h>
+#include <sys/time.h>
+#endif
 #include "sails/base/uncopyable.h"
 
 namespace sails {
@@ -49,13 +55,20 @@ class EventLoop : private Uncopyable{
  public:
   static const int INIT_EVENTS = 1000;
   enum OperatorType {
-    EVENT_CTL_ADD = 1,
-    EVENT_CTL_DEL = 2,
-    EVENT_CTL_MOD = 3
+    EVENT_CTL_ADD = 1
+    ,EVENT_CTL_DEL = 2
+    ,EVENT_CTL_MOD = 3
+#ifdef __APPLE__
+    ,EVENT_CTL_DISABLE = 4
+    ,EVENT_CTR_ENABLE = 5
+#endif
   };
   enum Events {
-    Event_READ = 1,
-    Event_WRITE = 2
+    Event_READ = 1
+    ,Event_WRITE = 2
+#ifdef __APPLE__
+    ,Event_TIMER = 3
+#endif
   };
 
 
@@ -77,12 +90,22 @@ class EventLoop : private Uncopyable{
   void process_event(int fd, int events);
   bool array_needsize(int need_cnt);
   void init_events(int start, int count);
+
+#ifdef __linux__
   int epollfd;
-  struct epoll_event *events;
+  // 虽然中会在epoll_wait中使用，但是由于要动态增长，所以不能是start_loop的局部变量
+  struct epoll_event* events;
+#elif __APPLE__
+  int kqfd;
+  struct kevent* events;
+#endif
+  // 注意，kqueue中对同一个fd增加事件时，会覆盖，也就是说同一个fd只会有一个events结构存在
+  // 当对它add时，要把anfds中以前的结构删除
   struct ANFD *anfds;
   int max_events;
 
   bool stop;
+  // 用于通知结束wait事件循环
   int shutdownfd = 0;
 };
 
