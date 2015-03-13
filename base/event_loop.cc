@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -49,7 +50,11 @@ EventLoop::EventLoop(void* owner) {
   memset(anfds, 0, 1000*sizeof(struct ANFD));
   max_events = INIT_EVENTS;
   stop = false;
+#ifdef __linux__
   shutdownfd = socket(AF_INET, SOCK_STREAM, 0);
+#elif __APPLE__
+  shutdownfd = open("/tmp/temp_sails_event_poll.txt", O_CREAT | O_RDWR, 0644);
+#endif
   assert(shutdownfd > 0);
   this->owner = owner;
 }
@@ -83,32 +88,33 @@ void EventLoop::init() {
   }
 
   // shutdown fd
+  
 #ifdef __linux__
   struct epoll_event ev;
   memset(&ev, 0, sizeof(ev));
   ev.events = 0; ev.data.fd = 0;
   
   // 一开始设置监听成可读而不是可写事件，这样在调用epoll_ctl之前，就不会触发一次
+  // 通过mod触发shutdownfd发出writeable事件的前提必须是已经加入了
   ev.events = EPOLLIN | EPOLLET; 
   ev.data.fd = shutdownfd;
   assert(epoll_ctl(epollfd, EPOLL_CTL_ADD, shutdownfd, &ev) == 0);
 #elif __APPLE__
-  struct kevent changes[1];
-
   // kqueue可以设置默认是水平触发，也可以设置边缘触发EV_CLEAR
   // kqueue与epoll不同在于epoll可以通过ctl_mod来触发epoll_wait事件返回
-  // 而kqueue不行，它只有add,delete，没有modify.它可以EV_DISABLE,EV_ENABLE，
-  // 所以我们可以在这里直接注册EVFILT_WRITE,以EV_DISABLE，
-  // 通过时再ENABLE就可以了,而netthread中的发数据的通知fd也可以通过
-  // 这两个标识的改变来达成。
+  // 而kqueue没有mod操作，不过它的ADD会把之前的覆盖，并且重新ADD之后，也会触发
+  // 由于kqueue创建的是一个可写的fd，所以这里不用提前add
+  /*
+    struct kevent changes[1];
   EV_SET(&changes[0], shutdownfd, EVFILT_WRITE | EV_CLEAR,
          EV_ADD | EV_DISABLE, 0, 0, NULL);
   assert(kevent(kqfd, changes, 1, NULL, 0, NULL) != -1);
+  */
 #endif
 }
 
 // 把事件加到已有事件列表的最后
-bool EventLoop::add_event(const struct event*ev, bool ctl_epoll) {
+bool EventLoop::add_event(const struct event*ev, bool ctl_poll) {
   if (ev->fd >= max_events) {
     // malloc new events and anfds
     if (!array_needsize(ev->fd+1)) {
@@ -130,7 +136,6 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_epoll) {
   // 把事件加到事件列表之后
   int need_add_to_epoll = false;
   if (anfds[fd].isused == 1) {
-#ifdef __linux__
     if ((anfds[fd].events | e->events) != anfds[fd].events) {
       need_add_to_epoll = true;
       struct event *t_e = anfds[fd].next;
@@ -139,22 +144,13 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_epoll) {
       }
       t_e->next = e;
     }
-#elif __APPLE__
-    // 只会有一个事件
-    struct event *t_e = anfds[fd].next;
-    if (t_e != NULL) {
-      free(t_e);
-    }
-    anfds[fd].next = e;
-#endif
-
   } else {
     anfds[fd].isused = 1;
     need_add_to_epoll = true;
     anfds[fd].next = e;
   }
   // 修改epoll或kevent监听事件
-  if (need_add_to_epoll && ctl_epoll) {
+  if (need_add_to_epoll && ctl_poll) {
 #ifdef __linux__
     struct epoll_event epoll_ev;
     memset(&epoll_ev, 0, sizeof(epoll_ev));
@@ -174,21 +170,21 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_epoll) {
 #elif __APPLE__
     struct kevent changes[1];
     int16_t filter = 0;
+    // 注意,kqueue同一次只能增加一种事件
     if (ev->events & Event_READ) {
-      filter = filter | EVFILT_READ | EV_CLEAR;
+      filter = filter | EVFILT_READ;
     }
     if (ev->events & Event_WRITE) {
-      filter = filter | EVFILT_WRITE | EV_CLEAR;
+      filter = filter | EVFILT_WRITE;
     }
     if (ev->events & Event_TIMER) {
       filter = filter | EVFILT_TIMER;
     }
-    EV_SET(&changes[0], ev->fd, filter, EV_ADD, 0, 0, NULL);
+    EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_CLEAR, 0, 0, NULL);
     if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
       perror("epoll_ctl");
       return false;
     }
-    
 #endif
   }
 
@@ -211,7 +207,7 @@ void EventLoop::delete_all_event() {
   }
 }
 
-bool EventLoop::delete_event(const struct event* ev, bool ctl_epoll) {
+bool EventLoop::delete_event(const struct event* ev, bool ctl_poll) {
   int fd = ev->fd;
   if (fd < 0 || fd > max_events) {
     return false;
@@ -256,7 +252,7 @@ bool EventLoop::delete_event(const struct event* ev, bool ctl_epoll) {
     }
 
     // 修改epoll或者kqueue
-    if (ctl_epoll) {
+    if (ctl_poll) {
 #ifdef __linux__
       // delete from epoll
       struct epoll_event epoll_ev;
@@ -276,10 +272,10 @@ bool EventLoop::delete_event(const struct event* ev, bool ctl_epoll) {
       struct kevent changes[1];
       int16_t filter = 0;
       if (ev->events & Event_READ) {
-        filter = filter | EVFILT_READ | EV_CLEAR;
+        filter = filter | EVFILT_READ;
       }
       if (ev->events & Event_WRITE) {
-        filter = filter | EVFILT_WRITE | EV_CLEAR;
+        filter = filter | EVFILT_WRITE;
       }
       if (ev->events & Event_TIMER) {
         filter = filter | EVFILT_TIMER;
@@ -296,7 +292,7 @@ bool EventLoop::delete_event(const struct event* ev, bool ctl_epoll) {
 }
 
 
-bool EventLoop::mod_event(const struct event*ev, bool ctl_epoll) {
+bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
   // 删除fd上绑定的所有struct event事件,然后再绑定新的事件,修改epoll event
   int fd = ev->fd;
   if (fd < 0 || fd > max_events) {
@@ -324,10 +320,10 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_epoll) {
       pre = NULL;
     }
 
-    // epoll 在mod操作,可以直接修改，而kqueue没有，所以要先删除再修改
+    // epoll 在mod操作,可以直接修改，而kqueue没有，所以直接覆盖
     // 增加新事件
     if (add_event(ev, false)) {
-      if (ctl_epoll) {
+      if (ctl_poll) {
 #ifdef __linux__
         // 修改epoll
         struct epoll_event epoll_ev;
@@ -352,15 +348,16 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_epoll) {
         struct kevent changes[1];
         int16_t filter = 0;
         if (ev->events & Event_READ) {
-          filter = filter | EVFILT_READ | EV_CLEAR;
+          filter = filter | EVFILT_READ;
         }
         if (ev->events & Event_WRITE) {
-          filter = filter | EVFILT_WRITE | EV_CLEAR;
+          filter = filter | EVFILT_WRITE;
         }
         if (ev->events & Event_TIMER) {
           filter = filter | EVFILT_TIMER;
         }
-        EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_ENABLE, 0, 0, NULL);
+        EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_ENABLE | EV_CLEAR,
+               0, 0, NULL);
         if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
           perror("epoll_ctl");
           return false;
@@ -400,8 +397,15 @@ bool EventLoop::event_stop(int fd) {
     }
 #elif __APPLE__
     struct kevent deletechange[1];
-    // 只要filter中包含的都会被删除
-    int16_t filter =  EVFILT_READ | EVFILT_WRITE | EVFILT_TIMER | EV_CLEAR;
+    // 因为kqueue是通过《indent,filter》来标志一个过滤器，所以只能
+    // 一个一个的删除
+    int16_t filter =  EVFILT_READ;
+    EV_SET(&deletechange[0], fd, filter, EV_DELETE, 0, 0, NULL);
+    kevent(kqfd, deletechange, 1, NULL, 0, NULL);
+    filter =  EVFILT_WRITE;
+    EV_SET(&deletechange[0], fd, filter, EV_DELETE, 0, 0, NULL);
+    kevent(kqfd, deletechange, 1, NULL, 0, NULL);
+    filter =  EVFILT_TIMER;
     EV_SET(&deletechange[0], fd, filter, EV_DELETE, 0, 0, NULL);
     kevent(kqfd, deletechange, 1, NULL, 0, NULL);
 #endif
@@ -420,7 +424,8 @@ bool EventLoop::event_ctl(OperatorType op, const struct event* ev) {
     return this->delete_event(ev);
   } else if (op == EventLoop::EVENT_CTL_MOD) {
     return this->mod_event(ev);
-  } else {
+  }
+  else {
     perror("event_ctl can't know the value of op");
   }
 
@@ -456,6 +461,7 @@ void EventLoop::start_loop() {
       // 因为fd未连接,所以会发生一个epollhup事件
       // 因为fd是et模式,所以只会触发一次,由于没有设置stop flag,所以没有影响
       if (shutdownfd == fd) {
+        printf("shutdwon event\n");
         continue;
       }
       if (anfds[fd].isused == 1) {
@@ -469,14 +475,13 @@ void EventLoop::start_loop() {
           ev |= Event_WRITE;
         }
 #elif __APPLE__
-        if (events[n].filter & EVFILT_READ) {
-          ev |= Event_READ;
-        }
-        if (events[n].filter & EVFILT_WRITE) {
-          ev |= Event_WRITE;
-        }
-        if (events[n].filter & EVFILT_TIMER) {
-          ev |= Event_TIMER;
+        // 一次只会有一个事件，所以可以直接用==
+        if (events[n].filter == EVFILT_READ) {
+          ev = Event_READ;
+        } else if (events[n].filter == EVFILT_WRITE) {
+          ev = Event_WRITE;
+        } else if (events[n].filter == EVFILT_TIMER) {
+          ev = Event_TIMER;
         }
 #endif
         process_event(fd, ev);
@@ -501,8 +506,9 @@ void EventLoop::stop_loop() {
     epoll_ctl(epollfd, EPOLL_CTL_MOD, this->shutdownfd, &epoll_ev);
 #elif __APPLE__
     struct kevent changes[1];
-    int16_t filter = EVFILT_WRITE | EV_CLEAR;
-    EV_SET(&changes[0], shutdownfd, filter, EV_ADD | EV_ENABLE, 0, 0, NULL);
+    int16_t filter = EVFILT_WRITE;
+    EV_SET(&changes[0], shutdownfd, filter, EV_ADD | EV_ENABLE | EV_CLEAR,
+           0, 0, NULL);
     kevent(kqfd, changes, 1, NULL, 0, NULL);
 #endif
   }
@@ -519,6 +525,7 @@ void EventLoop::process_event(int fd, int events) {
   if (anfds[fd].events & events) {
     struct event* io_w = anfds[fd].next;
     while (io_w != NULL && io_w->cb != NULL) {
+      // events是大于0的1,2,4，所以要以用&来断定是否有相同的
       if (io_w->events & events && io_w->fd == fd) {
         io_w->cb(io_w, io_w->events, owner);
       }

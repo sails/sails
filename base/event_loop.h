@@ -67,7 +67,7 @@ class EventLoop : private Uncopyable{
     Event_READ = 1
     ,Event_WRITE = 2
 #ifdef __APPLE__
-    ,Event_TIMER = 3
+    ,Event_TIMER = 4
 #endif
   };
 
@@ -84,23 +84,22 @@ class EventLoop : private Uncopyable{
 
  private:
   void *owner;
-  bool add_event(const struct event*, bool ctl_epoll = true);
+  bool add_event(const struct event*, bool ctl_poll = true);
   bool delete_event(const struct event*, bool ctl_epoll = true);
-  bool mod_event(const struct event*, bool ctl_epoll = true);
+  bool mod_event(const struct event*, bool ctl_poll = true);
   void process_event(int fd, int events);
   bool array_needsize(int need_cnt);
   void init_events(int start, int count);
 
 #ifdef __linux__
   int epollfd;
+  // 因为epoll中使用的是ET模式，它只通知一次，所以要在这里保证足够的events.
   // 虽然中会在epoll_wait中使用，但是由于要动态增长，所以不能是start_loop的局部变量
   struct epoll_event* events;
 #elif __APPLE__
   int kqfd;
   struct kevent* events;
 #endif
-  // 注意，kqueue中对同一个fd增加事件时，会覆盖，也就是说同一个fd只会有一个events结构存在
-  // 当对它add时，要把anfds中以前的结构删除
   struct ANFD *anfds;
   int max_events;
 

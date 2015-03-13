@@ -18,6 +18,7 @@
 #include <list>
 #include <memory>
 #include <thread>
+#include <fcntl.h>
 #include "sails/base/util.h"
 #include "sails/base/thread_queue.h"
 #include "sails/base/event_loop.h"
@@ -204,7 +205,11 @@ NetThread<T>::NetThread(EpollServer<T> *server, uint32_t index) {
   ev_loop = NULL;
   connector_list.init(10000, index);
   connect_timer = NULL;
+#ifdef __linux__
   notify = socket(AF_INET, SOCK_STREAM, 0);
+#elif __APPLE__
+  notify = open("/tmp/temp_sails_event_poll.txt", O_CREAT | O_RDWR, 0644);
+#endif
 }
 
 
@@ -272,6 +277,7 @@ void NetThread<T>::create_event_loop() {
   ev_loop->init();
 
   // 创建 notify 事件
+#ifdef __linux__
   sails::base::event notify_ev;
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
@@ -279,6 +285,7 @@ void NetThread<T>::create_event_loop() {
   notify_ev.cb = NetThread<T>::read_pipe_cb;
   assert(ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD,
                             &notify_ev));
+#endif
 }
 
 template <typename T>
