@@ -56,7 +56,6 @@ public:
         testnum++;
         sails::net::ExtData data;
         data.u32 = testnum;
-        SetConnectorData(recvData.ip, recvData.port, recvData.uid, recvData.fd, data);
     }
 };
 

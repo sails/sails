@@ -35,10 +35,10 @@ typedef union Event_Data {
 struct event {
   int fd;
   int events;
-  event_cb cb;
-  Event_Data data;
-  struct event* next;
-  STOPEVENT_CB stop_cb;
+  int64_t edata;  // event可能需要，如kqueue中的timer要传一个时间进kqueue中
+  event_cb cb;  // 事件发生时回调
+  Event_Data data;  // 用于回调时传递数据
+  struct event* next;  // private
 };
 
 void emptyEvent(struct event* ev);

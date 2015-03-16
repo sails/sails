@@ -32,8 +32,8 @@ void emptyEvent(struct event* ev) {
   ev->fd = 0;
   ev->events = 0;
   ev->cb = NULL;
+  ev->edata = 0;
   ev->data.ptr = 0;
-  ev->stop_cb = NULL;
   ev->next = NULL;
 }
 
@@ -126,9 +126,9 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_poll) {
   emptyEvent(e);
   e->fd = ev->fd;
   e->events = ev->events;
+  e->edata = ev->edata;
   e->cb = ev->cb;
   e->data = ev->data;
-  e->stop_cb = ev->stop_cb;
   e->next = NULL;
 
   int fd = e->fd;
@@ -180,7 +180,7 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_poll) {
     if (ev->events & Event_TIMER) {
       filter = filter | EVFILT_TIMER;
     }
-    EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_CLEAR, 0, 0, NULL);
+    EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_CLEAR, 0, ev->edata, NULL);
     if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
       perror("epoll_ctl");
       return false;
@@ -227,9 +227,6 @@ bool EventLoop::delete_event(const struct event* ev, bool ctl_poll) {
           // can delete it from the list
           isdelete = 1;
           cur = cur->next;
-          if (pre->next->stop_cb != NULL) {
-            pre->next->stop_cb(pre->next, owner);
-          }
           free(pre->next);
           pre->next = cur;
         }
@@ -299,7 +296,11 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
     return false;
   }
 
+#ifdef __linux__
   if (anfds[fd].isused == 1) {
+#elif __APPLE__
+  if (true) {  // kqueue可以直接mod
+#endif
     anfds[fd].isused = 0;
     // detele event list
     struct event* cur = anfds[fd].next;
@@ -310,11 +311,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
       struct event* pre = NULL;
       pre = cur;
       cur = cur->next;
-      if (pre->stop_cb != NULL) {
-        pre->stop_cb(pre, owner);
-      }
       pre->next = NULL;
-      pre->stop_cb = NULL;
       pre->data.ptr = NULL;
       free(pre);
       pre = NULL;
@@ -357,7 +354,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
           filter = filter | EVFILT_TIMER;
         }
         EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_ENABLE | EV_CLEAR,
-               0, 0, NULL);
+               0, ev->edata, NULL);
         if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
           perror("epoll_ctl");
           return false;
@@ -367,6 +364,8 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
     } else {
       perror("in mod event call add event");
     }
+  } else {
+    perror("mod event, but fd isused equal 0");
   }
   return false;
 }
@@ -382,9 +381,6 @@ bool EventLoop::event_stop(int fd) {
       struct event* pre = NULL;
       pre = cur;
       cur = cur->next;
-      if (pre->stop_cb != NULL) {
-        pre->stop_cb(pre, owner);
-      }
       free(pre);
       pre = NULL;
     }

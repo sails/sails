@@ -125,8 +125,6 @@ int Connector::get_connector_fd() {
 
 void Connector::close() {
   if (!is_closed && this->connect_fd > 0) {
-    // connector.close -> close_cb -> event.stop
-    // -> event.stop_cb -> connector.close
     is_closed = true;
     std::unique_lock<std::mutex> locker(this->mutex);
     ::close(this->connect_fd);

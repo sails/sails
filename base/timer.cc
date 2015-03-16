@@ -15,7 +15,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include "sails/base/event_loop.h"
+#ifdef __linux__
+#include <sys/timerfd.h>
+#elif __APPLE__
+#include <fcntl.h>
+#endif
+
 
 namespace sails {
 namespace base {
@@ -46,7 +51,8 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
   sails::base::EventLoop::Events events = sails::base::EventLoop::Event_READ;
 #elif __APPLE__
   // 在这儿的fd可以随便指定，但是不要和其它重复
-  timerfd = socket(AF_INET, SOCK_STREAM, 0);
+  //  timerfd = open("/tmp/temp_sails_event_poll.txt", O_CREAT | O_RDWR, 0644);
+  timerfd = 1;
   sails::base::EventLoop::Events events = sails::base::EventLoop::Event_TIMER;
 #endif
   sails::base::event ev;
@@ -54,8 +60,10 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
   ev.fd = timerfd;
   ev.events = events;
   ev.cb = sails::base::Timer::read_timerfd_data;
+#ifdef __APPLE__
+  ev.edata = tick*1000;  // ms为单位
+#endif
   ev.data.ptr = this;
-  ev.stop_cb = NULL;
   ev.next = NULL;
   
   if (ev_loop == NULL) {
@@ -84,17 +92,19 @@ bool Timer::disarms()  {
 }
 
 void Timer::read_timerfd_data(base::event* ev, int revents, void* owner) {
-  if (revents != EventLoop::Event_READ || owner == NULL) {
+  if (owner == NULL) {
     return;
   }
   Timer *timer = reinterpret_cast<Timer*>(ev->data.ptr);
   if (timer != NULL) {
+#ifdef __linux__
+    // linux的timer有数据要读
     memset(timer->temp_data, '\0', 50);
     int n = read(ev->fd, timer->temp_data, sizeof(uint64_t));
     if (n != sizeof(uint64_t)) {
       return;
     }
-
+#endif
     timer->pertick_processing();
   }
 }
