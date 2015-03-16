@@ -34,7 +34,7 @@
 #endif
 
 #ifndef MIN
-# define MIN(a,b) ((a) < (b) ? (a) : (b))
+# define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 #ifndef ARRAY_SIZE
@@ -44,7 +44,7 @@
 #ifndef BIT_AT
 # define BIT_AT(a, i)                                                \
   (!!((unsigned int) (a)[(unsigned int) (i) >> 3] &                  \
-   (1 << ((unsigned int) (i) & 7))))
+      (1 << ((unsigned int) (i) & 7))))
 #endif
 
 #ifndef ELEM_AT
@@ -54,7 +54,7 @@
 #define SET_ERRNO(e)                                                 \
 do {                                                                 \
   parser->http_errno = (e);                                          \
-} while(0)
+} while (0)
 
 
 /* Run the notify callback FOR, returning ER if it fails */
@@ -128,7 +128,7 @@ do {                                                                 \
 
 
 static const char *method_strings[] =
-  {
+{
 #define XX(num, name, string) #string,
   HTTP_METHOD_MAP(XX)
 #undef XX
