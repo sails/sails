@@ -31,7 +31,7 @@ namespace net {
 
 enum header_element { NONE = 0, FIELD, VALUE };
 
-//enum http_parser_type { HTTP_REQUEST, HTTP_RESPONSE, HTTP_BOTH };
+// enum http_parser_type { HTTP_REQUEST, HTTP_RESPONSE, HTTP_BOTH };
 
 
 #undef TRUE
@@ -40,7 +40,6 @@ enum header_element { NONE = 0, FIELD, VALUE };
 #define FALSE 0
 
 struct http_message {
-  
   char *raw;
   enum http_parser_type type;
   int method;
@@ -157,13 +156,14 @@ class HttpResponse {
     Status_GatewayTimeout          = 504,
     Status_HTTPVersionNotSupported = 505,
   };
+
  public:
   HttpResponse();
   explicit HttpResponse(struct http_message *raw_data);
   ~HttpResponse();
 
   static const char* StatusCodeToReasonPhrase(int status_code);
-  
+
   void SetHttpProto(int http_major, int http_minor);
   void SetResponseStatus(int response_status);
   int SetHeader(const char* key, const char *value);
@@ -174,8 +174,10 @@ class HttpResponse {
   // 得到response的原始内容,传入一个char* data;方法会把原始值复制到data中
   // 返回值,0表示成功,否则失败.
   int ToString(char* data, int len);
+
  public:
   int connfd;
+
  private:
   struct http_message *raw_data;
   void SetDefaultHeader();
@@ -188,7 +190,8 @@ class ParserFlag {
  public:
   ParserFlag() {flag = 0; message = NULL;}
   int flag;  // 解析状态(0成功,-1失败)
-  std::list<http_message*> messageList;  // 用来缓存在解析过程中已经解析出来的消息
+  // 用来缓存在解析过程中已经解析出来的消息
+  std::list<http_message*> messageList;
   http_message *message;  // 正在解析的消息
 };
 
@@ -199,15 +202,15 @@ class ParserFlag {
 int sails_http_parser(
     http_parser* paser, const char* buf, ParserFlag* flag);
 
-int message_begin_cb (http_parser *p);
-int header_field_cb (http_parser *p, const char *buf, size_t len);
-int header_value_cb (http_parser *p, const char *buf, size_t len);
-int request_url_cb (http_parser *p, const char *buf, size_t len);
-int response_status_cb (http_parser *p, const char *buf, size_t len);
-int body_cb (http_parser *p, const char *buf, size_t len);
-void check_body_is_final (const http_parser *p);
-int headers_complete_cb (http_parser *p);
-int message_complete_cb (http_parser *p);
+int message_begin_cb(http_parser *p);
+int header_field_cb(http_parser *p, const char *buf, size_t len);
+int header_value_cb(http_parser *p, const char *buf, size_t len);
+int request_url_cb(http_parser *p, const char *buf, size_t len);
+int response_status_cb(http_parser *p, const char *buf, size_t len);
+int body_cb(http_parser *p, const char *buf, size_t len);
+void check_body_is_final(const http_parser *p);
+int headers_complete_cb(http_parser *p);
+int message_complete_cb(http_parser *p);
 void parser_url(struct http_message* message);
 
 }  // namespace net

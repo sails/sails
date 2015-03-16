@@ -11,6 +11,7 @@
 
 #include "sails/net/mime.h"
 #include <iostream>
+#include <vector>
 #include <fstream>
 #include "sails/base/string.h"
 #include "sails/log/logging.h"
@@ -40,7 +41,7 @@ void MimeTypeManager::init() {
     if (line.empty() || line[0] == '#') {
       continue;
     }
-    
+
     sails::base::SplitString(line, " \t", &result);
     for (std::vector<std::string>::iterator iter = result.begin() + 1;
          iter != result.end(); ++iter) {
@@ -64,7 +65,5 @@ bool MimeTypeManager::GetMimeTypebyFileExtension(const std::string& ext,
   }
   return false;
 }
-
-          
-}  // namespace net          
+}  // namespace net
 }  // namespace sails

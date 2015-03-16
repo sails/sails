@@ -16,7 +16,7 @@
 
 #include <string>
 #include <map>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include "sails/base/uncopyable.h"
 
 
@@ -34,7 +34,7 @@ class MimeType : public sails::base::Uncopyable {
   }
 
   ~MimeType() {}
-  
+
   void Set(const std::string& type, const std::string& subtype) {
     _type = type;
     _subtype = subtype;
@@ -49,7 +49,7 @@ class MimeType : public sails::base::Uncopyable {
     }
     return false;
   }
-  
+
   const std::string& Type() {
     return _type;
   }
@@ -60,6 +60,7 @@ class MimeType : public sails::base::Uncopyable {
   std::string ToString() {
     return _type+"/"+_subtype;
   }
+
  private:
   std::string _type;
   std::string _subtype;
@@ -72,10 +73,10 @@ class MimeTypeManager : public sails::base::Uncopyable {
 
   // 通过文件/etc/mime.types初始化
   void init();
-  
+
  public:
   static MimeTypeManager* instance() {
-    if ( _instance == NULL) {
+    if (_instance == NULL) {
       std::unique_lock<std::mutex> locker(MimeTypeMutex);
       if (_instance == NULL) {
         static MimeTypeManager manager;
@@ -88,7 +89,7 @@ class MimeTypeManager : public sails::base::Uncopyable {
 
   // 通过文件扩展名得到MimeType
   bool GetMimeTypebyFileExtension(const std::string& ext, MimeType* type);
-  
+
  private:
   std::map<std::string, std::string> typemap;
   static MimeTypeManager* _instance;

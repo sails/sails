@@ -70,25 +70,25 @@ int message_to_string(struct http_message *msg, char* data, int len) {
     if (msg->type == HTTP_REQUEST) {
       char method_str[10] = {0};
       if (msg->method == 1) {
-        sprintf(method_str, "%s", "GET");
+        snprintf(method_str, sizeof(method_str), "%s", "GET");
       } else {
-        sprintf(method_str, "%s", "POST");
+        snprintf(method_str, sizeof(method_str), "%s", "GET");
       }
-      sprintf(statusLine, "%s %s HTTP/%d.%d",
+
+      snprintf(statusLine, sizeof(statusLine), "%s %s HTTP/%d.%d",
               method_str,
               msg->request_url,
               msg->http_major,
-              msg->http_minor);    
+              msg->http_minor);
     } else {
-      sprintf(statusLine, "HTTP/%d.%d %d %s",
+      snprintf(statusLine, sizeof(statusLine), "HTTP/%d.%d %d %s",
             msg->http_major,
             msg->http_minor,
             msg->status_code,
             HttpResponse::StatusCodeToReasonPhrase(msg->status_code));
-
     }
     uint32_t statusLen = strlen(statusLine)+2;  // status
-    
+
     uint32_t headLen = 0;
     // header len
     for (int i = 0; i < msg->num_headers; i++) {
@@ -104,12 +104,12 @@ int message_to_string(struct http_message *msg, char* data, int len) {
     int totalLen = statusLen + headLen + bodyLen + 1; // 加1,最后放str的结束符
     */
     int totalLen = statusLen + headLen + (msg->body_size+2) + 1;
-    
+
     // 分配原始内容空间
-    msg->raw = (char*)malloc(totalLen);
+    msg->raw = reinterpret_cast<char*>(malloc(totalLen));
     memset(msg->raw, 0, totalLen);
 
-    // 开始to string    
+    // 开始to string
 
     // status line
     strncpy(msg->raw, statusLine, strlen(statusLine));
@@ -249,7 +249,7 @@ int HttpRequest::SetBody(const char* body, int len) {
   memset(raw_data->body, 0, MAX_BODY_SIZE);
   memcpy(raw_data->body, body, raw_data->body_size);
   char body_size_str[11];
-  sprintf(body_size_str, "%ld", raw_data->body_size);
+  snprintf(body_size_str, sizeof(body_size_str), "%ld", raw_data->body_size);
   this->SetHeader("Content-Length", body_size_str);
   return 0;
 }
@@ -272,7 +272,8 @@ static const struct {
   const char* status_description;
 } kResponseStatus[] = {
   { 100, "Continue", "Request received, please continue" },
-  { 101, "Switching Protocols", "Switching to new protocol; obey Upgrade header" },
+  { 101, "Switching Protocols",
+    "Switching to new protocol; obey Upgrade header" },
   { 200, "OK", "Request fulfilled, document follows" },
   { 201, "Created", "Document created, URL follows" },
   { 202, "Accepted", "Request accepted, processing continues off-line" },
@@ -285,16 +286,19 @@ static const struct {
   { 302, "Found", "Object moved temporarily -- see URI list" },
   { 303, "See Other", "Object moved -- see Method and URL list" },
   { 304, "Not Modified", "Document has not changed since given time" },
-  { 305, "Use Proxy", "You must use proxy specified in Location to access this resource." },
+  { 305, "Use Proxy",
+    "You must use proxy specified in Location to access this resource." },
   { 307, "Temporary Redirect", "Object moved temporarily -- see URI list" },
   { 400, "Bad Request", "Bad request syntax or unsupported method" },
   { 401, "Unauthorized", "No permission -- see authorization schemes" },
   { 402, "Payment Required", "No payment -- see charging schemes" },
   { 403, "Forbidden", "Request forbidden -- authorization will not help" },
   { 404, "Not Found", "Nothing matches the given URI" },
-  { 405, "Method Not Allowed", "Specified method is invalid for this resource." },
+  { 405, "Method Not Allowed",
+    "Specified method is invalid for this resource." },
   { 406, "Not Acceptable", "URI not available in preferred format." },
-  { 407, "Proxy Authentication Required", "You must authenticate with this proxy before proceeding." },
+  { 407, "Proxy Authentication Required",
+    "You must authenticate with this proxy before proceeding." },
   { 408, "Request Timeout", "Request timed out; try again later." },
   { 409, "Conflict", "Request conflict." },
   { 410, "Gone", "URI no longer exists and has been permanently removed." },
@@ -308,8 +312,10 @@ static const struct {
   { 500, "Internal Server Error", "Server got itself in trouble" },
   { 501, "Not Implemented", "Server does not support this operation" },
   { 502, "Bad Gateway", "Invalid responses from another server/proxy." },
-  { 503, "Service Unavailable", "The server cannot process the request due to a high load" },
-  { 504, "Gateway Timeout", "The gateway server did not receive a timely response" },
+  { 503, "Service Unavailable",
+    "The server cannot process the request due to a high load" },
+  { 504, "Gateway Timeout",
+    "The gateway server did not receive a timely response" },
   { 505, "HTTP Version Not Supported", "Cannot fulfill request." },
   { -1, NULL, NULL },
 };
@@ -357,17 +363,20 @@ int HttpResponse::SetHeader(const char *key, const char *value) {
       if (strcasecmp(raw_data->headers[i][0], key) == 0) {
         memset(raw_data->headers[i][1],
                0, MAX_ELEMENT_SIZE);
-        strcpy(raw_data->headers[i][1], value);
+        snprintf(raw_data->headers[i][1], sizeof(raw_data->headers[i][1]),
+                 "%s", value);
         exist = 1;
       }
     }
     if (!exist) {
       // add header
       raw_data->num_headers++;
-      strcpy(raw_data->headers[raw_data->num_headers-1][0],
-             key);
-      strcpy(raw_data->headers[raw_data->num_headers-1][1],
-             value);
+      snprintf(raw_data->headers[raw_data->num_headers-1][0],
+               sizeof(raw_data->headers[raw_data->num_headers-1][0]),
+               "%s", key);
+      snprintf(raw_data->headers[raw_data->num_headers-1][1],
+               sizeof(raw_data->headers[raw_data->num_headers-1][1]),
+               "%s", value);
     }
   }
   return 1;
@@ -381,7 +390,7 @@ int HttpResponse::SetBody(const char *body, int len) {
   memset(raw_data->body, 0, MAX_BODY_SIZE);
   memcpy(raw_data->body, body, raw_data->body_size);
   char body_size_str[11];
-  sprintf(body_size_str, "%ld", raw_data->body_size);
+  snprintf(body_size_str, sizeof(body_size_str), "%ld", raw_data->body_size);
   this->SetHeader("Content-Length", body_size_str);
   return 0;
 }
@@ -416,7 +425,8 @@ void HttpResponse::SetDefaultHeader() {
     this->SetHeader(headers[i][0], headers[i][1]);
   }
   // local time
-  char *time_str = ctime(&timep);
+  char time_str[40] = {'\0'};
+  ctime_r(&timep, time_str);
   time_str[strlen(time_str)-1] = 0;  // delete '\n'
   this->SetHeader("Date", time_str);
   this->SetHeader("Expires", time_str);
@@ -461,17 +471,15 @@ static http_parser_settings settings =
 };
 
 
-int message_begin_cb (http_parser *p)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int message_begin_cb(http_parser *p) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   flag->message->message_begin_cb_called = TRUE;
   return 0;
 }
 
 
-int header_field_cb (http_parser *p, const char *buf, size_t len)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int header_field_cb(http_parser *p, const char *buf, size_t len) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
 
   if (m->last_header_element != FIELD)
@@ -487,9 +495,8 @@ int header_field_cb (http_parser *p, const char *buf, size_t len)
   return 0;
 }
 
-int header_value_cb (http_parser *p, const char *buf, size_t len)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int header_value_cb(http_parser *p, const char *buf, size_t len) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
 
   base::strlncat(m->headers[m->num_headers-1][1],
@@ -502,9 +509,8 @@ int header_value_cb (http_parser *p, const char *buf, size_t len)
   return 0;
 }
 
-int request_url_cb (http_parser *p, const char *buf, size_t len)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int request_url_cb(http_parser *p, const char *buf, size_t len) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
 
   base::strlncat(m->request_url,
@@ -514,9 +520,8 @@ int request_url_cb (http_parser *p, const char *buf, size_t len)
   return 0;
 }
 
-int response_status_cb (http_parser *p, const char *buf, size_t len)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int response_status_cb(http_parser *p, const char *buf, size_t len) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
   base::strlncat(m->response_status,
                  sizeof(m->response_status),
@@ -525,11 +530,10 @@ int response_status_cb (http_parser *p, const char *buf, size_t len)
   return 0;
 }
 
-int body_cb (http_parser *p, const char *buf, size_t len)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int body_cb(http_parser *p, const char *buf, size_t len) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
-  
+
   base::strlncat(m->body,
                  sizeof(m->body),
                  buf,
@@ -540,9 +544,8 @@ int body_cb (http_parser *p, const char *buf, size_t len)
   return 0;
 }
 
-void check_body_is_final (const http_parser *p)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+void check_body_is_final(const http_parser *p) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
   if (m->body_is_final) {
     fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
@@ -554,11 +557,10 @@ void check_body_is_final (const http_parser *p)
   m->body_is_final = http_body_is_final(p);
 }
 
-int headers_complete_cb (http_parser *p)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int headers_complete_cb(http_parser *p) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
-  
+
   m->method = p->method;
   m->status_code = p->status_code;
   m->http_major = p->http_major;
@@ -568,12 +570,10 @@ int headers_complete_cb (http_parser *p)
   return 0;
 }
 
-int message_complete_cb (http_parser *p)
-{
-  ParserFlag* flag = (ParserFlag*)p->data;
+int message_complete_cb(http_parser *p) {
+  ParserFlag* flag = reinterpret_cast<ParserFlag*>(p->data);
   struct http_message *m = flag->message;
-  if (m->should_keep_alive != http_should_keep_alive(p))
-  {
+  if (m->should_keep_alive != http_should_keep_alive(p)) {
     fprintf(stderr, "\n\n *** Error http_should_keep_alive() should have same "
             "value in both on_message_complete and on_headers_complete "
             "but it doesn't! ***\n\n");
@@ -596,7 +596,8 @@ int message_complete_cb (http_parser *p)
   m->message_complete_on_eof = TRUE;
   parser_url(m);
   flag->messageList.push_back(flag->message);
-  http_message* message = (http_message*)malloc(sizeof(http_message));
+  http_message* message = reinterpret_cast<http_message*>(
+      malloc(sizeof(http_message)));
   http_message_init(message);
   flag->message = message;
 
@@ -607,8 +608,8 @@ void parser_url(struct http_message* m) {
   char url[MAX_PATH_SIZE];
   memset(url, 0, MAX_PATH_SIZE);
   strncat(url, "http://", strlen("http://"));
-  for(int i = 0; i < m->num_headers; i++) {
-    if(strcmp("Host", m->headers[i][0]) == 0) {
+  for (int i = 0; i < m->num_headers; i++) {
+    if (strcmp("Host", m->headers[i][0]) == 0) {
       strncat(url, m->headers[i][1], strlen(m->headers[i][1]));
       break;
     }
@@ -618,29 +619,29 @@ void parser_url(struct http_message* m) {
   struct http_parser_url u;
   int url_result = 0;
 
-  if((url_result = http_parser_parse_url(url, strlen(url), 0, &u)) == 0)
-  {
-    if(u.field_set & (1 << UF_PORT)) {
+  if ((url_result = http_parser_parse_url(url, strlen(url), 0, &u)) == 0) {
+    if (u.field_set & (1 << UF_PORT)) {
       m->port = u.port;
-    }else {
+    } else {
       m->port = 80;
     }
-    if(m->host) {
+    if (m->host) {
       free(m->host);
     }
-    if(u.field_set & (1 << UF_HOST)) {
-      m->host = (char*)malloc(u.field_data[UF_HOST].len+1);
-      strncpy(m->host, url+u.field_data[UF_HOST].off, u.field_data[UF_HOST].len);  
+    if (u.field_set & (1 << UF_HOST)) {
+      m->host = reinterpret_cast<char*>(
+          malloc(u.field_data[UF_HOST].len+1));
+      strncpy(
+          m->host, url+u.field_data[UF_HOST].off, u.field_data[UF_HOST].len);
       m->host[u.field_data[UF_HOST].len] = 0;
     }
     memset(m->request_path, 0, strlen(m->request_path));
-    if(u.field_set & (1 << UF_PATH))  
-    {  
-      strncpy(m->request_path, url+u.field_data[UF_PATH].off, u.field_data[UF_PATH].len);  
-      m->request_path[u.field_data[UF_PATH].len] = 0;  
+    if (u.field_set & (1 << UF_PATH)) {
+      strncpy(m->request_path, url+u.field_data[UF_PATH].off,
+              u.field_data[UF_PATH].len);
+      m->request_path[u.field_data[UF_PATH].len] = 0;
     }
-
-  }else {
+  } else {
     printf("url parser error:%d\n", url_result);
   }
 }
@@ -653,7 +654,7 @@ int sails_http_parser(
 
   int parsed
       = http_parser_execute(parser, &settings, buf, strlen(buf));
-  
+
   return parsed;
 }
 
