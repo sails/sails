@@ -12,6 +12,7 @@
 #include <vector>
 #include "sails/base/string.h"
 #include "sails/log/logging.h"
+#include <locale.h>
 
 namespace sails {
 namespace system {
@@ -27,6 +28,8 @@ namespace system {
 #ifndef NOTE_NOT_FOUND
 #define NOTE_NOT_FOUND  42
 #endif
+
+extern char **environ;
 
 // namespace common {
 
