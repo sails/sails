@@ -14,9 +14,9 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
+#include <thread>  // NOLINT
+#include <condition_variable>  // NOLINT
+#include <mutex>  // NOLINT
 #include "sails/base/thread_queue.h"
 #include "sails/base/memory_pool.h"
 #include "sails/net/handle_thread.h"
@@ -31,12 +31,14 @@ template<typename T>
 class EpollServer {
  public:
   // 构造函数
-  explicit EpollServer();
+  EpollServer();
   // 析构函数
   virtual ~EpollServer();
 
   // 初始化
-  void Init(int port, int netThreadNum=1, int timeout=10, int handleThreadNum=1, bool useMemoryPool=false);
+  void Init(int port, int netThreadNum = 1,
+            int timeout = 10, int handleThreadNum = 1,
+            bool useMemoryPool = false);
 
   // 停止服务器
   void Stop();
@@ -66,7 +68,7 @@ class EpollServer {
   // T 的删除器,用于用户处理接收到的消息后,框架层删除它
   // 默认是用户free,如果T是通过new建立,一定重载它
   virtual void Tdeleter(T *data);
-  
+
   // 创建连接后调用,可能用户层需要在连接建立后创建一些用户相关信息
   // 注意,如果在这里分配了内存,那么记得在关闭时释放
   virtual void CreateConnectorCB(std::shared_ptr<net::Connector> connector);
@@ -82,26 +84,25 @@ class EpollServer {
 
   // 处理函数
   virtual void handle(const TagRecvData<T> &recvData) {
-    printf("need implement handle packet(uid:%d) in server class(will be call handle thread)\n", recvData.uid);
-  };
+    printf("need implement handle packet(uid:%d) in server class(will be call handle thread)\n", recvData.uid);  // NOLINT
+  }
 
   // 每次handle被唤醒后都会调用，实现在主线程中处理自有数据的功能
   // 比如定时器任务或自有网络的异步响应;
   // 一般它需要配合业务自有的队列使用，先把要处理的custome消息放到队列中
   // 在这个函数中从队列中取出来处理.
   virtual void handleCustomMessage(HandleThread<T>*) {
-    
   }
 
   // 在NetThread关闭连接之前调用，用来删除用户数据
   // 比如在连接时创建了player，在此时可以进行删除
-  // 注意，它是在NetThread中调用，所以要区别资源是在哪里删除，有些可以直接在NetThread中删除
-  // 有些只能通过消息让handle线程删除
+  // 注意，它是在NetThread中调用，所以要区别资源是在哪里删除，
+  // 有些可以直接在NetThread中删除,有些只能通过消息让handle线程删除
   virtual void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
-  
+
  public:
   int GetEmptyConnTimeout() { return connectorTimeout;}
-  
+
   // 增加连接
   void AddConnector(std::shared_ptr<net::Connector> connector, int fd);
 
@@ -142,18 +143,21 @@ class EpollServer {
             uint16_t port, uint32_t uid, int fd);
 
   // 提供给处理调用,它通过向io线程发送命令来达到目的,所以是多线程安全的
-  // 关闭连接,关闭连接有三种情况,1:客户端主动关闭,2:服务器超时,3:服务器业务中关闭
-  // 不管哪种情况,最后都会通过调用这个函数来向netThread线程中发送命令来操作
+  // 关闭连接,关闭连接有三种情况,1:客户端主动关闭,2:服务器超时,
+  // 3:服务器业务中关闭,不管哪种情况,最后都会通过调用这个函数来
+  // 向netThread线程中发送命令来操作
   // 如果在创建连接时,绑定了资源, 为了能达到三种情况下都能统一删除资源，
-  // 在NetThread删除connector时，会调用ClosedConnectCB，所以千万不要在其它地方去删除，
-  // 否则可能造成资源泄漏
-  void CloseConnector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
+  // 在NetThread删除connector时，会调用ClosedConnectCB，
+  // 所以千万不要在其它地方去删除，否则可能造成资源泄漏
+  void CloseConnector(
+      const std::string &ip, uint16_t port, uint32_t uid, int fd);
 
   // 设置connector数据，它最终会在netThread中设置
   // 如果执行逻辑在NetThread中，可以直接修改而不通过这个接口
-  void SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid, int fd,
+  void SetConnectorData(
+      const std::string &ip, uint16_t port, uint32_t uid, int fd,
                         ExtData data);
-  
+
   // sigpipe信号处理函数
   static void HandleSigpipe(int sig);
 
@@ -250,14 +254,15 @@ EpollServer<T>::~EpollServer() {
     }
   }
   if (useMemoryPool) {
-    sails::base::MemoryPoll::release_memory();    
+    sails::base::MemoryPoll::release_memory();
   }
 }
 
 
 template<typename T>
 void EpollServer<T>::Init(
-    int port, int netThreadNum, int timeout, int handleThreadNum, bool useMemoryPool) {
+    int port, int netThreadNum,
+    int timeout, int handleThreadNum, bool useMemoryPool) {
   this->useMemoryPool = useMemoryPool;
   // 新建网络线程
   this->netThreadNum = netThreadNum;
@@ -287,7 +292,7 @@ void EpollServer<T>::Init(
     handleThread->id = i;
     handleThreads.push_back(handleThread);
   }
-  
+
   // 开始网络线程
   StartNetThread();
   // 开始处理线程
@@ -319,7 +324,7 @@ int EpollServer<T>::Bind(int port) {
 template<typename T>
 bool EpollServer<T>::StartNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
-    printf("start net thread i:%lu\n", i);
+    printf("start net thread i:%zu\n", i);
     netThreads[i]->run();
   }
   return true;
@@ -373,7 +378,7 @@ void EpollServer<T>::ParseImp(
     data->uid = connector->getId();
     data->data = packet;
     data->ip = connector->getIp();
-    data->port= connector->getPort();
+    data->port = connector->getPort();
     data->fd = connector->get_connector_fd();
     data->extdata = connector->data;
 
@@ -385,7 +390,8 @@ void EpollServer<T>::ParseImp(
 template<typename T>
 void EpollServer<T>::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLog("server")->debug("create connector cb %d\n", connector->get_connector_fd());
+  log::LoggerFactory::getLog("server")->debug(
+      "create connector cb %d\n", connector->get_connector_fd());
 }
 
 template<typename T>
@@ -512,7 +518,6 @@ void EpollServer<T>::SetConnectorData(const std::string &ip,
   if (netThread != NULL) {
     netThread->SetConnectorData(ip, port, uid, fd, data);
   }
-
 }
 
 template<typename T>

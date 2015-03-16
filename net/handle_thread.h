@@ -26,13 +26,12 @@ namespace net {
 template <typename T>
 class HandleThread {
  public:
-
   // 处理线程运行状态
   enum RunStatus {
     RUNING,
     STOPING
   };
-  
+
   // 状态
   struct HandleThreadStatus {
     RunStatus status;
@@ -97,12 +96,10 @@ class HandleThread {
   virtual void stopHandle() {}
 
  public:
-
   size_t id;
-  
   // 统计相关
   HandleThreadStatus GetStatus();
-  
+
  protected:
   EpollServer<T>  *server;
 
@@ -146,7 +143,7 @@ HandleThread<T>::~HandleThread() {
   // 删除handlelist中的数据
   bool hashandleData = false;
   do {
-    hashandleData= false;
+    hashandleData = false;
     TagRecvData<T>* data = NULL;
     handlelist.pop_front(data, 100);
     if (data != NULL) {
@@ -208,7 +205,8 @@ void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
     }
     if (server->useMemoryPool) {
       data->~TagRecvData<T>();
-      this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
+      this->server->memory_pool.deallocate(
+          reinterpret_cast<char*>(data), sizeof(TagRecvData<T>));
     } else {
       delete data;
     }
@@ -239,7 +237,8 @@ void HandleThread<T>::handleImp() {
       }
       if (server->useMemoryPool) {
         data->~TagRecvData<T>();
-        this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
+        this->server->memory_pool.deallocate(
+            reinterpret_cast<char*>(data), sizeof(TagRecvData<T>));
       } else {
         delete data;
       }
@@ -253,7 +252,8 @@ template <typename T>
 void HandleThread<T>::handle(const TagRecvData<T> &recvData) {
   try {
     this->server->handle(recvData);
-  } catch (std::exception &ex) {  // 增加异常处理机制,防止客户逻辑错误让整个程序崩溃
+  } catch (std::exception &ex) {
+    // 增加异常处理机制,防止客户逻辑错误让整个程序崩溃
     log::LoggerFactory::getLog("server")->error("handle %s", ex.what());
   } catch (...) {
     log::LoggerFactory::getLog("server")->error("handle unknown error");

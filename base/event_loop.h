@@ -56,18 +56,18 @@ class EventLoop : private Uncopyable{
   static const int INIT_EVENTS = 1000;
   enum OperatorType {
     EVENT_CTL_ADD = 1
-    ,EVENT_CTL_DEL = 2
-    ,EVENT_CTL_MOD = 3
+    , EVENT_CTL_DEL = 2
+    , EVENT_CTL_MOD = 3
 #ifdef __APPLE__
-    ,EVENT_CTL_DISABLE = 4
-    ,EVENT_CTR_ENABLE = 5
+    , EVENT_CTL_DISABLE = 4
+    , EVENT_CTR_ENABLE = 5
 #endif
   };
   enum Events {
     Event_READ = 1
-    ,Event_WRITE = 2
+    , Event_WRITE = 2
 #ifdef __APPLE__
-    ,Event_TIMER = 4
+    , Event_TIMER = 4
 #endif
   };
 
@@ -94,7 +94,8 @@ class EventLoop : private Uncopyable{
 #ifdef __linux__
   int epollfd;
   // 因为epoll中使用的是ET模式，它只通知一次，所以要在这里保证足够的events.
-  // 虽然中会在epoll_wait中使用，但是由于要动态增长，所以不能是start_loop的局部变量
+  // 虽然中会在epoll_wait中使用，但是由于要动态增长，
+  // 所以不能是start_loop的局部变量
   struct epoll_event* events;
 #elif __APPLE__
   int kqfd;

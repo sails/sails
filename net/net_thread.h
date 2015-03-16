@@ -13,12 +13,12 @@
 #ifndef SAILS_NET_NET_THREAD_H_
 #define SAILS_NET_NET_THREAD_H_
 
+#include <fcntl.h>
 #include <string>
 #include <deque>
 #include <list>
 #include <memory>
-#include <thread>
-#include <fcntl.h>
+#include <thread>  // NOLINT
 #include "sails/base/util.h"
 #include "sails/base/thread_queue.h"
 #include "sails/base/event_loop.h"
@@ -146,21 +146,22 @@ class NetThread {
   void send(const std::string &ip,
             uint16_t port, uint32_t uid,
             const char* message, int len);
-  
+
   // 关闭连接
-  void close_connector(const std::string &ip, uint16_t port, uint32_t uid, int fd);
+  void close_connector(const std::string &ip,
+                       uint16_t port, uint32_t uid, int fd);
 
   // 修改connector数据
   void SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid,
                         int fd, ExtData data);
-  
+
   // 获取服务
   EpollServer<T>* getServer();
 
  public:
   // 统计相关
   NetThreadStatus GetStatus();
-  
+
  protected:
   void accept_socket(base::event* e, int revents);
 
@@ -195,8 +196,8 @@ class NetThread {
 
 
 template <typename T>
-NetThread<T>::NetThread(EpollServer<T> *server, uint32_t index) {
-  this->server = server;
+NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
+  this->server = ser;
   status = NetThread::STOPING;
   thread = NULL;
   listenfd = 0;
@@ -232,7 +233,7 @@ NetThread<T>::~NetThread() {
   }
 
   // 关闭所有的连接
-  
+
 
   // 删除sendlist中没有处理的数据
   bool hasData = false;
@@ -261,7 +262,8 @@ NetThread<T>::~NetThread() {
       }
       if (server->useMemoryPool) {
         data->~TagRecvData<T>();
-        this->server->memory_pool.deallocate((char*)data, sizeof(TagRecvData<T>));
+        this->server->memory_pool.deallocate(
+            reinterpret_cast<char*>(data), sizeof(TagRecvData<T>));
       } else {
         delete data;
       }
