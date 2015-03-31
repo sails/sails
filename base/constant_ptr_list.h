@@ -16,7 +16,7 @@
 #include <time.h>
 #include <list>
 #include <memory>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include "sails/base/uncopyable.h"
 
 // 注意,这里保存的是T类型的指针,ConstantPtrList<Person>保存的是
@@ -31,7 +31,7 @@ class ConstantPtrList : public Uncopyable {
   ~ConstantPtrList();
 
   // 初始化大小
-  void init(uint32_t size, bool needMagicNum=true);
+  void init(uint32_t size, bool needMagicNum = true);
 
   /**
    * 获取惟一ID
@@ -56,7 +56,7 @@ class ConstantPtrList : public Uncopyable {
   size_t size();
 
   uint32_t magic() { return magic_num; }
-  
+
  protected:
   // 内部删除, 不加锁
   void _del(uint32_t uid);
@@ -130,7 +130,7 @@ void ConstantPtrList<T>::init(uint32_t size, bool needMagicNum) {
   } else {
     magic_num = 0;
   }
-  
+
   vList[0] = NULL;
   // free从1开始分配, 这个值为uid
   for (uint32_t i = 1; i <= total; i++) {

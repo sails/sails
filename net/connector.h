@@ -119,7 +119,8 @@ class Connector {
   std::weak_ptr<ConnectorTimerEntry> timer_entry;  // 超时管理项
 };
 
-
+// 不直接使用connector的share_ptr的原因是其它地方也会用到connector，这样
+// 如果在ConnectorTimeout中保存connector的share_ptr，会永远不能删除
 class ConnectorTimerEntry : public base::Uncopyable {
  public:
   ConnectorTimerEntry(std::shared_ptr<Connector> connector,

@@ -590,8 +590,9 @@ void NetThread<T>::timeoutCb(net::Connector* connector) {
   if (connector != NULL && connector->owner != NULL) {
     NetThread<T>* netThread = (NetThread<T>*)connector->owner;
     netThread->server->CloseConnector(connector->getIp(),
-                                 connector->getPort(),
-                                 connector->getId(), connector->get_connector_fd());
+                                      connector->getPort(),
+                                      connector->getId(),
+                                      connector->get_connector_fd());
   }
 }
 

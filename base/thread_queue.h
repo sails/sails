@@ -24,7 +24,10 @@ namespace base {
 template<typename T, typename D = std::deque<T> >
 class ThreadQueue {
  public:
-  ThreadQueue():_size(0) { _maxSize = 100000; isTerminate = false;}
+  ThreadQueue():_size(0) {
+    _maxSize = 100000;
+    isTerminate = false;
+  }
 
  public:
   typedef D queue_type;
@@ -63,7 +66,7 @@ class ThreadQueue {
   size_t MaxSize() {
     return _maxSize;
   }
-  
+
   // 清空队列
   void clear();
 

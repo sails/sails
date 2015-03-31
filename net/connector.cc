@@ -24,7 +24,7 @@ Connector::Connector(int conn_fd) {
   is_closed = false;
   is_timeout = false;
   timeoutCB = NULL;
-  owner = NULL; 
+  owner = NULL;
 }
 
 Connector::Connector() {
