@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+// #include <iconv.h>
 
 namespace sails {
 namespace base {
@@ -172,5 +173,22 @@ void SplitString(const std::string& str,
   delete[] cstr;
 }
 
+// 从一种编码转为另一种编码
+/*
+int code_convert(
+    char *from_charset, char *to_charset,
+    char *inbuf, size_t inlen, char *outbuf, size_t outlen) {
+  iconv_t cd;
+  char **pin = &inbuf;
+  char **pout = &outbuf;
+
+  cd = iconv_open(to_charset, from_charset);
+  if (cd == 0) return -1;
+  memset(outbuf, 0, outlen);
+  if (iconv(cd, pin, &inlen, pout, &outlen) == (size_t)(-1)) return -1;
+  iconv_close(cd);
+  return 0;
+}
+*/
 }  // namespace base
 }  // namespace sails

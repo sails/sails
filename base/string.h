@@ -42,6 +42,12 @@ void SplitString(const std::string& full,
                  const char* delim,
                  std::vector<std::string>* result);
 
+// 字符转换 code_convert("utf-8","gb2312",inbuf,inlen,outbuf,outlen);
+/*
+int code_convert(
+    char *from_charset, char *to_charset,
+    char *inbuf, int inlen, char *outbuf, int outlen);
+*/
 }  // namespace base
 }  // namespace sails
 
