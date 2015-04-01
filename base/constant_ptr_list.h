@@ -129,7 +129,9 @@ void ConstantPtrList<T>::init(uint32_t size, bool needMagicNum) {
     magic_num = (((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24);
     // 取时间的最后1个字节的值，可能为0
     if (magic_num == 0) {
-      magic_num = 0x01000000;
+      static int default_magic_num = 0x01000000;
+      magic_num = default_magic_num;
+      default_magic_num += 0x01000000;
     }
   } else {
     magic_num = 0;
