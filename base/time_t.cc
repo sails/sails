@@ -57,7 +57,7 @@ size_t TimeT::time_with_millisecond(char* s, size_t max) {
     s[strlen(s)] = ' ';
 
     snprintf(s+strlen(s),
-             3, "%d", static_cast<int>(t2.tv_usec/1000));  // NOTLINT'
+             4, "%d", static_cast<int>(t2.tv_usec/1000));  // NOTLINT'
 #endif
     return strlen(s);
   } else {
