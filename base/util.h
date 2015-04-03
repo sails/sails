@@ -12,6 +12,7 @@
 #define SAILS_BASE_UTIL_H_
 
 #include <stdio.h>
+#include <stdint.h>
 
 namespace sails {
 namespace base {
@@ -19,6 +20,8 @@ namespace base {
 void setnonblocking(int fd);
 
 size_t readline(int fd, void *vptr, size_t maxlen);
+
+uint64_t GetUID(int node = 0);
 
 }  // namespace base
 }  // namespace sails

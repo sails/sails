@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/time.h>
 
 namespace sails {
 namespace base {
@@ -56,6 +57,31 @@ readline(int fd, char *vptr, size_t maxlen) {
     *ptr = 0;
     return(n);
 }
+
+// 时间毫秒(42) + 节点(12) + 自增长id(10位)
+// 时间可以保证100年不重复
+// 节点可以用于有多个机器同时产生id时，可以设置不同node
+// 每一毫秒能生成最多1024个id,但是由于机器的限制，
+// 一毫秒内光调用GetSession也不能达到1000次
+// 所以综合总论100年内不可能有重复
+// 0           42     54          64
+// +-----------+------+------------+
+// |timestamp  |node  |increment   |
+// +-----------+------+------------+
+uint64_t GetUID(int node) {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  uint64_t time_num = t.tv_sec*1000+t.tv_usec/1000;
+  static int i = 0;
+  i++;
+  if (i > 1024) {
+    i = 0;
+  }
+  uint64_t value = (time_num << 22) + (node << 10) + i;
+
+  return value;
+}
+
 
 }  // namespace base
 }  // namespace sails
