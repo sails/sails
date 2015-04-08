@@ -96,6 +96,8 @@ class Connector {
   std::weak_ptr<ConnectorTimerEntry> getTimerEntry();
   bool haveSetTimer();
 
+  void SetDefaultOpt();
+
   void *owner;  // 为了当回调时能找到对应的拥有者
   ExtData data;
 

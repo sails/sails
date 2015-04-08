@@ -9,6 +9,7 @@
 
 
 #include "sails/net/connector.h"
+#include <netinet/tcp.h>
 
 namespace sails {
 namespace net {
@@ -17,6 +18,7 @@ namespace net {
 Connector::Connector(int conn_fd) {
   id = 0;
   connect_fd = conn_fd;
+
   this->port = 0;
   this->ip = "";
   this->listen_fd = 0;
@@ -25,6 +27,7 @@ Connector::Connector(int conn_fd) {
   is_timeout = false;
   timeoutCB = NULL;
   owner = NULL;
+  SetDefaultOpt();
 }
 
 Connector::Connector() {
@@ -64,6 +67,7 @@ bool Connector::connect(const char *ip, uint16_t port, bool keepalive) {
     printf("connect failed\n");
     return false;
   }
+  SetDefaultOpt();
   this->ip = std::string(ip);
   this->port = port;
   if (keepalive) {
@@ -192,6 +196,15 @@ int Connector::send() {
   }
   return ret;
 }
+
+
+void Connector::SetDefaultOpt() {
+  // 禁用Nagle算法(小包组合之后发送,这样会出现不可预知的延迟)，提高发送效率
+  int noDelay = 1;
+  setsockopt(connect_fd, IPPROTO_TCP, TCP_NODELAY,
+             reinterpret_cast<char*>(&noDelay), sizeof(int));
+}
+
 
 
 
