@@ -19,17 +19,17 @@ namespace sails {
 namespace base {
 
 void setnonblocking(int fd) {
-     int opts;
-     opts = fcntl(fd, F_GETFL);
-     if (opts < 0) {
-          perror("fcntl(fd,GETFL)");
-          exit(EXIT_FAILURE);
-     }
-     opts = opts|O_NONBLOCK;
-     if (fcntl(fd, F_SETFL, opts) < 0) {
-          perror("fcntl(fd,SETFL,opts)");
-          exit(EXIT_FAILURE);
-     }
+  int opts;
+  opts = fcntl(fd, F_GETFL);
+  if (opts < 0) {
+    perror("fcntl(fd,GETFL)");
+    exit(EXIT_FAILURE);
+  }
+  opts = opts|O_NONBLOCK;
+  if (fcntl(fd, F_SETFL, opts) < 0) {
+    perror("fcntl(fd,SETFL,opts)");
+    exit(EXIT_FAILURE);
+  }
 }
 
 size_t
@@ -37,25 +37,25 @@ readline(int fd, char *vptr, size_t maxlen) {
   size_t n;
   char c, *ptr;
 
-    ptr = vptr;
-    for (n = 1; n < maxlen; n++) {
-      size_t rc = 0;
-      if ((rc = read(fd, &c, 1)) == 1) {
-        *ptr++ = c;
-        if (c == '\n')
-          break;
-      } else if (rc == 0) {
-        if (n == 1)
-          return(0);  // EOF, no data read
-        else
-          break;  // EOF, some data was read
-      } else {
-        return(-1);  // error
-      }
+  ptr = vptr;
+  for (n = 1; n < maxlen; n++) {
+    size_t rc = 0;
+    if ((rc = read(fd, &c, 1)) == 1) {
+      *ptr++ = c;
+      if (c == '\n')
+        break;
+    } else if (rc == 0) {
+      if (n == 1)
+        return(0);  // EOF, no data read
+      else
+        break;  // EOF, some data was read
+    } else {
+      return(-1);  // error
     }
+  }
 
-    *ptr = 0;
-    return(n);
+  *ptr = 0;
+  return(n);
 }
 
 // 时间毫秒(42) + 节点(12) + 自增长id(10位)
