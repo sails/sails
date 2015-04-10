@@ -14,9 +14,9 @@
 
 #include <assert.h>
 #include <deque>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
+#include <thread>  // NOLINT
+#include <condition_variable>  // NOLINT
+#include <mutex>  // NOLINT
 
 namespace sails {
 namespace base {
@@ -24,7 +24,8 @@ namespace base {
 template<typename T, typename D = std::deque<T> >
 class ThreadQueue {
  public:
-  ThreadQueue():_size(0) {
+  ThreadQueue() {
+    _size = 0;
     _maxSize = 100000;
     isTerminate = false;
   }
@@ -75,6 +76,7 @@ class ThreadQueue {
 
   // 等待
   void wait(std::unique_lock<std::mutex>& locker);  // NOLINT'
+
   bool timedWait(int millisecond, std::unique_lock<std::mutex>& locker);  // NOLINT
 
  private:
@@ -86,6 +88,7 @@ class ThreadQueue {
   size_t              _size;
   // 互斥量
   std::mutex          queue_mutex;
+
   std::condition_variable     notify;
   bool                isTerminate;
 };
