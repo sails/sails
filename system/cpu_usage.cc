@@ -18,6 +18,7 @@
 namespace sails {
 namespace system {
 
+#ifdef __LINUX__
 
 #define LINUX_VERSION(x, y, z)   (0x10000*(x) + 0x100*(y) + z)
 #define PATH_MAX 1024
@@ -33,8 +34,7 @@ extern char **environ;
 
 // namespace common {
 
-static inline int GetLinuxVersion()
-{
+static inline int GetLinuxVersion() {
   static struct utsname uts;
   int x = 0, y = 0, z = 0;    /* cleared in case sscanf() < 3 */
 
@@ -465,6 +465,8 @@ bool GetThreadCpuUsage(
 bool GetCpuUsage(int32_t pid, double* cpu) {
   return GetCpuUsageSinceLastCall(pid, cpu);
 }
+
+#endif
 
 }  // namespace system
 }  // namespace sails

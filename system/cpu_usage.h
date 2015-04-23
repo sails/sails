@@ -20,6 +20,7 @@
 namespace sails {
 namespace system {
 
+#ifdef __LINUX__
 // 得到进程cpu使用情况,从开始运行到当前状态(/proc/pid/stat
 // 先算出cpu总进行时间,再除以进程开始到现在总的实际时间)
 bool GetCpuUsageSinceLastCall(int32_t pid, double* cpu);
@@ -40,6 +41,8 @@ bool GetProcessCpuTime(int32_t pid, uint64_t* process_cpu_time);
 
 // 线程运行时间(/proc/pid/task/tid/stat)
 bool GetThreadCpuTime(int32_t pid, int tid, uint64_t* thread_cpu_time);
+
+#endif
 
 }  // namespace system
 }  // namespace sails
