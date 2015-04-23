@@ -13,19 +13,22 @@
 #ifndef SAILS_NET_HTTP_SERVER_H_
 #define SAILS_NET_HTTP_SERVER_H_
 
+#include <string>
+#include <map>
+#include <functional>
 #include "sails/net/http.h"
 #include "sails/net/epoll_server.h"
 #include "sails/net/http_parser.h"
-#include <functional>
 
 namespace sails {
 namespace net {
 
-typedef std::function<void(sails::net::HttpRequest& request,
-                           sails::net::HttpResponse* response )> HttpProcessor;
+typedef std::function<void(sails::net::HttpRequest* request,
+                           sails::net::HttpResponse* response)> HttpProcessor;
 
 #define HTTPBIND(server, path, obj, fun)                                 \
-server->RegisterProcessor(path, std::bind(&fun, obj, std::placeholders::_1, std::placeholders::_2));
+server->RegisterProcessor(path,                                          \
+std::bind(&fun, obj, std::placeholders::_1, std::placeholders::_2));
 
 
 class HttpServerHandle;
@@ -46,7 +49,7 @@ class HttpServer : public EpollServer<HttpRequest> {
   const std::string& StaticResourcePath() {
     return staticResourcePath;
   }
-  
+
  private:
   // HttpRequest删除器
   void Tdeleter(HttpRequest* data);
@@ -62,23 +65,20 @@ class HttpServer : public EpollServer<HttpRequest> {
       const sails::net::TagRecvData<sails::net::HttpRequest> &recvData);
 
   // 找到对应的processor来处理
-  void process(sails::net::HttpRequest& request,
+  void process(sails::net::HttpRequest* request,
                sails::net::HttpResponse* response);
-  
+
   // 删除http parser
   void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
-  
+
  private:
   struct http_parser_settings settings;
   std::map<std::string, HttpProcessor> processorMap;
 
   std::string staticResourcePath;
-
-
-  
 };
 
-}  // namespace net          
+}  // namespace net
 }  // namespace sails
 
 

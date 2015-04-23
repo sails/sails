@@ -55,7 +55,7 @@ typedef struct {
   char *data;
 } ResponseContent;
 
-} // namespace net
-} // namespace sails
+}  // namespace net
+}  // namespace sails
 
 #endif  // SAILS_NET_PACKETS_H_

@@ -18,7 +18,7 @@ namespace base {
 
 
 ThreadPool::ThreadPool(int queue_size) {
-  long processor_num = sysconf(_SC_NPROCESSORS_CONF);
+  int64_t processor_num = sysconf(_SC_NPROCESSORS_CONF);
   if (processor_num < 0) {
     printf("error get num of porcessor .\n");
     exit(0);

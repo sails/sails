@@ -10,25 +10,24 @@ namespace sails {
 
 // parser configure file
 
-class Config
-{
-public:
-    Config(std::string file);
-    int get_listen_port();
-    int get_max_connfd();
-    int get_handle_thread_pool();
-    int get_handle_request_queue_size();
+class Config {
+ public:
+  explicit Config(std::string file);
+  int get_listen_port();
+  int get_max_connfd();
+  int get_handle_thread_pool();
+  int get_handle_request_queue_size();
 
-    std::string get_store_api_url();
-    std::string get_local_ip();// for check room
-    std::string get_game_code();
-private:
-    Json::Value root;
+  std::string get_store_api_url();
+  std::string get_local_ip();  // for check room
+  std::string get_game_code();
+ private:
+  Json::Value root;
 };
 
-} // namespace sails
+}  // namespace sails
 
-#endif /* _CONFIG_H_ */
+#endif  // _CONFIG_H_
 
 
 

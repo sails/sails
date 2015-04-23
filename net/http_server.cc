@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <utility>
 #include "sails/net/mime.h"
 
 namespace sails {
@@ -33,12 +34,14 @@ void HttpServer::Tdeleter(HttpRequest* data) {
 void HttpServer::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
   // connector的data属性设置成parser,parser的data设置成解析的msg
-  http_parser *parser = (http_parser*)malloc(sizeof(http_parser));
+  http_parser *parser =
+      reinterpret_cast<http_parser*>(malloc(sizeof(http_parser)));
   connector->data.ptr = parser;
   http_parser_init(parser, HTTP_REQUEST);
   ParserFlag* parserFlag = new ParserFlag();
   parser->data = parserFlag;
-  parserFlag->message = (http_message*)malloc(sizeof(http_message));
+  parserFlag->message =
+      reinterpret_cast<http_message*>(malloc(sizeof(http_message)));
   http_message_init(parserFlag->message);
 }
 
@@ -46,12 +49,12 @@ void HttpServer::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
   printf("closeconnect cb \n");
   if (connector->data.ptr != NULL) {
-    http_parser *parser = (http_parser*)connector->data.ptr;
+    http_parser *parser = reinterpret_cast<http_parser*>(connector->data.ptr);
     if (parser == NULL) {
       connector->data.ptr = NULL;
       return;
     }
-    ParserFlag* parserFlag = (ParserFlag*)parser->data;
+    ParserFlag* parserFlag = reinterpret_cast<ParserFlag*>(parser->data);
     if (parserFlag != NULL && parserFlag->message != NULL) {
       free(parserFlag->message);
       if (parserFlag->messageList.size() > 0) {
@@ -78,16 +81,18 @@ void HttpServer::ClosedConnectCB(
 HttpRequest* HttpServer::Parse(std::shared_ptr<net::Connector> connector) {
   HttpRequest* request = NULL;
   if (connector->data.ptr != NULL) {
-    http_parser *parser = (http_parser*)connector->data.ptr;
-    ParserFlag* flag = (ParserFlag*)parser->data;
-    // 有数据解析,可能一次就已经解析出了多个数据包,所以即使connector中没有数据,依然会执行多次
+    http_parser *parser = reinterpret_cast<http_parser*>(connector->data.ptr);
+    ParserFlag* flag = reinterpret_cast<ParserFlag*>(parser->data);
+    // 有数据解析,可能一次就已经解析出了多个数据包,
+    // 所以即使connector中没有数据,依然会执行多次
     if (connector->readable() > 0) {
       char data[10000];
       memset(data, '\0', 10000);
 
       strncpy(data, connector->peek(), 10000);
-      // 默认不是直接返回的,这儿通过把它这次解析过程中解析到的消息放到messagelist中
-      http_parser *parser = (http_parser*)connector->data.ptr;
+      // 默认不是直接返回的,这儿通过把它这次解析过程中解析到
+      // 的消息放到messagelist中
+      http_parser *parser = reinterpret_cast<http_parser*>(connector->data.ptr);
       size_t nparsed = sails_http_parser(parser,
                                          data,
                                          flag);
@@ -136,11 +141,13 @@ void HttpServer::handle(
 
   char data[10*1024] = {'\0'};
   recvData.data->ToString(data, 10*1024);
-  log::LoggerFactory::getLogD("access")->info("uid:%u, ip:%s, port:%d, msg:\n%s", recvData.uid, recvData.ip.c_str(), recvData.port, data);
+  log::LoggerFactory::getLogD("access")->info(
+      "uid:%u, ip:%s, port:%d, msg:\n%s",
+      recvData.uid, recvData.ip.c_str(), recvData.port, data);
 
   sails::net::HttpResponse *response = new sails::net::HttpResponse();
   sails::net::HttpRequest *request = recvData.data;
-  process(*request, response);
+  process(request, response);
 
   char response_str[MAX_BODY_SIZE*2] = {'\0'};
   response->ToString(response_str, MAX_BODY_SIZE*2);
@@ -154,11 +161,11 @@ void HttpServer::handle(
   delete response;
 }
 
-void HttpServer::process(sails::net::HttpRequest& request,
+void HttpServer::process(sails::net::HttpRequest* request,
              sails::net::HttpResponse* response) {
-  std::string path = request.GetRequestPath();
+  std::string path = request->GetRequestPath();
   // 通过后缀名预设content-type
-  int extensionIndex = path.find_last_of(".", path.size()); 
+  int extensionIndex = path.find_last_of(".", path.size());
   if (extensionIndex > 0) {
     std::string fileExtension = path.substr(extensionIndex, 7);
     if (fileExtension.size() > 0) {
@@ -168,7 +175,6 @@ void HttpServer::process(sails::net::HttpRequest& request,
       if (mimetype.Type().size() > 0) {
         response->SetHeader("Content-Type", mimetype.ToString().c_str());
       }
-      
     }
   }
   HttpProcessor processor = FindProcessor(path);
@@ -196,34 +202,32 @@ void HttpServer::process(sails::net::HttpRequest& request,
       return;
     } else {
       // 得到文件大小
-      unsigned long filesize = -1;      
-      struct stat statbuff;  
-      if(stat(filepath.c_str(), &statbuff) < 0){  
+      uint32_t filesize = -1;
+      struct stat statbuff;
+      if (stat(filepath.c_str(), &statbuff) < 0) {
         response->SetResponseStatus(HttpResponse::Status_NotFound);
         response->SetBody("404", 3);
         return;
-      }else{
-        filesize = statbuff.st_size;  
+      } else {
+        filesize = statbuff.st_size;
       }
       if (filesize > MAX_BODY_SIZE) {
         char errormsg[100] = {"The File Too Large"};
         response->SetBody(errormsg, strlen(errormsg));
         return;
       }
-      char* data = (char*)malloc(filesize+1);
+      char* data = reinterpret_cast<char*>(malloc(filesize+1));
       memset(data, 0, filesize+1);
       int readLen = read(fd, data, filesize+1);
       response->SetBody(data, readLen);
       free(data);
     }
-    
-    
-  }else {
+  } else {
     processor(request, response);
   }
 }
 
-}  // namespace net          
+}  // namespace net
 }  // namespace sails
 
 
