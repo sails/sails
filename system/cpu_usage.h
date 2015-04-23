@@ -29,7 +29,8 @@ bool GetCpuUsageSinceLastCall(int32_t pid, double* cpu);
 bool GetProcessCpuUsage(int32_t pid, uint64_t sample_period, double* cpu);
 
 // 得到线程cpu使用情况
-bool GetThreadCpuUsage(int32_t pid, int tid, uint64_t sample_period, double* cpu);
+bool GetThreadCpuUsage(
+    int32_t pid, int tid, uint64_t sample_period, double* cpu);
 
 // 得到当前开机之后总运行时间(/proc/stat第一行)
 bool GetTotalCpuTime(uint64_t* total_cpu_time);
@@ -41,6 +42,6 @@ bool GetProcessCpuTime(int32_t pid, uint64_t* process_cpu_time);
 bool GetThreadCpuTime(int32_t pid, int tid, uint64_t* thread_cpu_time);
 
 }  // namespace system
-} // namespace sails
+}  // namespace sails
 
 #endif // SAILS_SYSTEM_CPU_USAGE_H
