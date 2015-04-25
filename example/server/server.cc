@@ -53,6 +53,8 @@ class TestServer : public sails::net::EpollServer<EchoStruct> {
     */
     std::string buffer = std::string(recvData.data->msg);
     send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+    // char *data = recvData.data->msg;
+    // send(data, 20, recvData.ip, recvData.port, recvData.uid, recvData.fd);
   }
 };
 
