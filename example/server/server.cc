@@ -15,7 +15,7 @@
 
 
 typedef struct {
-  char msg[100];
+  char msg[20];
 } __attribute__((packed)) EchoStruct;
 
 namespace sails {
@@ -46,17 +46,13 @@ class TestServer : public sails::net::EpollServer<EchoStruct> {
   }
 
   void handle(const sails::net::TagRecvData<EchoStruct> &recvData) {
-    // CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
-
+    /*
     printf("uid:%u, ip:%s, port:%d, msg:%s\n",
            recvData.uid, recvData.ip.c_str(),
            recvData.port, recvData.data->msg);
+    */
     std::string buffer = std::string(recvData.data->msg);
     send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
-    static uint32_t testnum = 0;
-    testnum++;
-    sails::net::ExtData data;
-    data.u32 = testnum;
   }
 };
 
