@@ -61,6 +61,7 @@ void test() {
         }
         recvNum++;
       }
+      printf("recvnum:%d\n", recvNum);
     }
 }
 int main(int argc, char* argv[]) {
