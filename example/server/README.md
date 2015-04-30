@@ -1,3 +1,2 @@
-echo server.
-
-client test: telnet 127.0.0.1 8000
+用client作性能测试：
+![test](./test.png)
