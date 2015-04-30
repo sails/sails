@@ -33,8 +33,7 @@ class MemoryPoll {
   enum { _S_max_bytes = 256 };
   enum { _S_free_list_size = (size_t)_S_max_bytes / (size_t)_S_align };
 
-  union _Obj
-  {
+  union _Obj {
     union _Obj* _M_free_list_link;
     char        _M_client_data[1];    // The client sees this.
   };
@@ -59,7 +58,7 @@ class MemoryPoll {
  private:
   std::mutex mutex;
 
-  typedef struct chunk_data{
+  typedef struct chunk_data {
     struct chunk_data* next_chunk;
     void* data;
   } ChunkData;
@@ -67,7 +66,7 @@ class MemoryPoll {
   static ChunkData* end_chunk;
 };
 
-}  // namespace base          
+}  // namespace base
 }  // namespace sails
 
 
