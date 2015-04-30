@@ -5,6 +5,9 @@ OBJECTS = server.o
 server:$(OBJECTS)
 	g++  $(CFLAGS) -Wl,-rpath,../../ -o server $(OBJECTS) -lsails -pthread -ldl -ljsoncpp  -lsails
 
+client: client.o
+	g++ -std=c++11 client.cc -o client -pthread
+
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<
 

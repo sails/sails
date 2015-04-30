@@ -553,7 +553,7 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
             net_thread->ev_loop->event_stop(connector->get_connector_fd());
             connector->close();
             connector->data.u64 = 0;
-            
+
             net_thread->connector_list.del(uid);
             // printf("connect use count :%d\n", connector.use_count());
           }

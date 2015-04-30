@@ -18,6 +18,8 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
+#include <thread>
+#include <vector>
 
 int connectserver(const char* ip, int port) {
   struct sockaddr_in serveraddr;
@@ -43,19 +45,39 @@ int connectserver(const char* ip, int port) {
   return connect_fd;
 }
 
-int main() {
+void test() {
   int fd = connectserver("127.0.0.1", 8000);
-  if (fd > 0) {
-    char buffer[20] = {"hello, world"};
-    char recvbuf[20] = {'\0'};
-    for (int i = 0; i < 100000; i++) {
-      write(fd, buffer, sizeof(buffer));
-      int readnum = 0;
-      if ((readnum = read(fd, recvbuf, sizeof(recvbuf))) <= 0) {
-        printf("read num :%d\n", readnum);
+    if (fd > 0) {
+      char buffer[20] = {"hello, world"};
+      char recvbuf[20] = {'\0'};
+      int recvNum = 0;
+      for (int i = 0; i < 100000; i++) {
+        write(fd, buffer, sizeof(buffer));
+        int readnum = 0;
+        if ((readnum = read(fd, recvbuf, sizeof(recvbuf))) <= 0) {
+          printf("on recvNum:%d read num :%d\n", recvNum, readnum);
+        } else {
+          // printf("recv:%s", recvbuf);
+        }
+        recvNum++;
       }
     }
+}
+int main(int argc, char* argv[]) {
+  int clients = 1;
+  if (argc >= 2) {
+    clients = atoi(argv[1]);
   }
+
+  std::vector<std::thread> vec_thread;
+  for (int i = 0; i < clients; i++) {
+    vec_thread.push_back(std::thread(test));
+  }
+  for (size_t i = 0 ; i < vec_thread.size(); i++) {
+    vec_thread[i].join();
+  }
+
+
   return 0;
 }
 
