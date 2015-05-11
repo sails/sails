@@ -182,7 +182,7 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_poll) {
     }
     EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_CLEAR, 0, ev->edata, NULL);
     if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
-      perror("epoll_ctl");
+      perror("kevent");
       return false;
     }
 #endif

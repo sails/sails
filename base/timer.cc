@@ -65,7 +65,7 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
 #endif
   ev.data.ptr = this;
   ev.next = NULL;
-  
+
   if (ev_loop == NULL) {
     ev_loop = new EventLoop(this);
     ev_loop->init();

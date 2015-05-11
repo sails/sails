@@ -208,8 +208,7 @@ template<typename T, typename D>
 bool ThreadQueue<T, D>::swap(queue_type &q, int millisecond) {  // NOLINT'
   std::unique_lock<std::mutex> locker(queue_mutex);
 
-  if (_queue.empty())
-  {
+  if (_queue.empty()) {
     if (millisecond == 0) {
       return false;
     }

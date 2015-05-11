@@ -398,10 +398,11 @@ template<typename T>
 bool EpollServer<T>::StartHandleThread() {
   int i = 0;
   for (HandleThread<T> *handle : handleThreads) {
-    printf("start handle thread i:%d\n", i);
+    // printf("start handle thread i:%d\n", i);
     handle->run();
     i++;
   }
+  printf("start %d handle threads\n", handleThreads.size());
   dispacher_thread = new DispatcherThread<T>(this);
   dispacher_thread->run();
   return true;
