@@ -33,20 +33,33 @@ typedef struct {
   uint8_t opcode;
 } __attribute__((packed)) PacketBase;
 
+/*
 typedef struct {
   PacketBase type;
   unsigned int len;  // packet len
 } __attribute__((packed)) PacketCommon;
 
-typedef struct
-{
+
+typedef struct {
   PacketCommon common;
   char service_name[50];
   char method_name[50];
   int method_index;
   char data[1];
 } __attribute__((packed)) PacketRPC;
+*/
 
+typedef struct {
+  PacketBase type;
+  uint16_t len;  // packet len
+} __attribute__((packed)) PacketCommon;
+
+typedef struct {
+  PacketCommon common;
+  char service_name[20];
+  int method_index;
+  char data[1];
+} __attribute__((packed)) PacketRPC;
 
 
 
