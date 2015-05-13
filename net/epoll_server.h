@@ -326,7 +326,7 @@ bool EpollServer<T>::StartNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
     netThreads[i]->run();
   }
-  printf("start net thread i:%zu\n", netThreadNum);
+  printf("start %u net threads\n", netThreadNum);
   return true;
 }
 
