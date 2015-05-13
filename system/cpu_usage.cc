@@ -18,7 +18,7 @@
 namespace sails {
 namespace system {
 
-#ifdef __LINUX__
+#ifdef __linux__
 
 #define LINUX_VERSION(x, y, z)   (0x10000*(x) + 0x100*(y) + z)
 #define PATH_MAX 1024
