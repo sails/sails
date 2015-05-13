@@ -20,4 +20,6 @@ client: client.o
 	rm -f $@.$$$$
 
 clean:
-	rm *.o *.d
+	-rm -f *.o *.d *.d.*
+	-rm server
+	-rm client

@@ -17,4 +17,6 @@ server:$(OBJECTS)
 	rm -f $@.$$$$
 
 clean:
-	rm *.o *.d
+	-rm *.o *.d
+	-rm *.d.*
+	-rm server
