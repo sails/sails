@@ -324,9 +324,9 @@ int EpollServer<T>::Bind(int port) {
 template<typename T>
 bool EpollServer<T>::StartNetThread() {
   for (size_t i = 0; i < netThreadNum; i++) {
-    printf("start net thread i:%zu\n", i);
     netThreads[i]->run();
   }
+  printf("start net thread i:%zu\n", netThreadNum);
   return true;
 }
 
@@ -402,7 +402,7 @@ bool EpollServer<T>::StartHandleThread() {
     handle->run();
     i++;
   }
-  printf("start %d handle threads\n", handleThreads.size());
+  printf("start %lu handle threads\n", handleThreads.size());
   dispacher_thread = new DispatcherThread<T>(this);
   dispacher_thread->run();
   return true;
