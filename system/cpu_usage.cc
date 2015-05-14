@@ -30,7 +30,8 @@ namespace system {
 #define NOTE_NOT_FOUND  42
 #endif
 
-extern char **environ;
+// small hack to access environ variable conforming to the GNU way
+#define environ __environ
 
 // namespace common {
 
@@ -40,7 +41,7 @@ static inline int GetLinuxVersion() {
 
   if (uname(&uts) == -1)
     return -1;
-  if (sscanf(uts.release, "%d.%d.%d", &x, &y, &z) == 3) {
+  if (sscanf(uts.release, "%3d.%3d.%3d", &x, &y, &z) == 3) {
     return LINUX_VERSION(x, y, z);
   }
   return 0;
@@ -84,25 +85,16 @@ static void SkipBracket(char* buffer, char** skiped_start_point) {
   *skiped_start_point = d + 2;  // skip ") "
 }
 
-// For ELF executables, notes are pushed before environment and args
-static unsigned long FindElfNote(unsigned long name) {
+static unsigned long find_elf_note(unsigned long findme) {
   unsigned long *ep = (unsigned long *)environ;
-  while (*ep) ep++;
-  ep++;
+  while (*ep++) {}
   while (*ep) {
-    if (ep[0] == name) return ep[1];
-    ep += 2;
+    if (ep[0] == findme) return ep[1];
+    ep+=2;
   }
   return NOTE_NOT_FOUND;
 }
 
-static unsigned long GetHertz() {
-  // Check the linux kernel version support
-  if (GetLinuxVersion() <= LINUX_VERSION(2, 4, 0))
-    return 0;
-  uint64_t hertz = FindElfNote(AT_CLKTCK);
-  return hertz != NOTE_NOT_FOUND ? hertz : 0;
-}
 
 static bool uptime(double *uptime_secs, double *idle_secs) {
   int fd = open("/proc/uptime", O_RDONLY);
@@ -119,7 +111,7 @@ static bool uptime(double *uptime_secs, double *idle_secs) {
   double up = 0, idle = 0;
   char* savelocale = setlocale(LC_NUMERIC, NULL);
   setlocale(LC_NUMERIC, "C");
-  if (sscanf(buffer, "%lf %lf", &up, &idle) < 2) {
+  if (sscanf(buffer, "%10lf %10lf", &up, &idle) < 2) {
     setlocale(LC_NUMERIC, savelocale);
     return false;
   }
@@ -130,7 +122,7 @@ static bool uptime(double *uptime_secs, double *idle_secs) {
 }
 
 static bool StringToUINT64(const std::string& str, uint64_t* value ) {
-  int64_t temp = strtol(str.c_str(), (char**)NULL, 10);
+  int64_t temp = strtol(str.c_str(), reinterpret_cast<char**>(NULL), 10);
   if (temp >= 0) {
     *value = temp;
   } else {
@@ -145,6 +137,8 @@ static unsigned int GetLogicalCpuNumber() {
     return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
+
+uint64_t Hertz;
 
 bool GetCpuUsageSinceLastCall(int32_t pid, double* cpu) {
   char path[PATH_MAX];
@@ -185,16 +179,17 @@ bool GetCpuUsageSinceLastCall(int32_t pid, double* cpu) {
 
   uint64_t seconds_since_boot = static_cast<uint64_t>(uptime_secs);
   // frequency of times()
-  uint64_t hertz = GetHertz();
-  if (hertz == 0) hertz = 100;
+  if (Hertz == 0) {
+    Hertz = find_elf_note(AT_CLKTCK);
+  }
   // seconds of process life
-  uint64_t seconds = seconds_since_boot - start_time / hertz;
+  uint64_t seconds = seconds_since_boot - start_time / Hertz;
   uint64_t total_time = utime + stime + cutime + cstime;
 
   // scaled %cpu, 999 means 99.9%
   *cpu = 0;
   if (seconds)
-    *cpu = (total_time * 1000ULL / hertz) / seconds;
+    *cpu = (total_time * 1000ULL / Hertz) / seconds;
   *cpu = *cpu / 10;
 
   return true;
