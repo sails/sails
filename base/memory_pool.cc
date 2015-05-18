@@ -11,17 +11,14 @@
 
 #include "sails/base/memory_pool.h"
 
-
 namespace sails {
 namespace base {
-          
-         
-MemoryPoll::_Obj*  MemoryPoll::_S_free_list[_S_free_list_size] = {NULL};
-MemoryPoll::ChunkData* MemoryPoll::start_chunk;
-MemoryPoll::ChunkData* MemoryPoll::end_chunk;
 
 MemoryPoll::MemoryPoll() {
+}
 
+MemoryPoll::~MemoryPoll() {
+  release_memory();
 }
 
 void MemoryPoll::release_memory() {
@@ -38,7 +35,7 @@ void MemoryPoll::release_memory() {
 
 char* MemoryPoll::allocate(size_t __bytes) {
   if (__bytes > _S_max_bytes) {
-    return (char*)::operator new(__bytes);
+    return reinterpret_cast<char*>(::operator new(__bytes));
   }
   size_t new_bytes = _M_round_up(__bytes);
   return _M_allocate_chunk(new_bytes);
@@ -53,24 +50,27 @@ void MemoryPoll::deallocate(char* pointer, size_t bytes) {
     return;
   }
 
+  std::unique_lock<std::mutex> locker(mutex);
   _Obj* free_list = _M_get_free_list(bytes);
-  _Obj* obj = (_Obj*)pointer;
+  _Obj* obj = reinterpret_cast<_Obj*>(pointer);
   obj->_M_free_list_link = free_list;
   free_list = obj;
   _S_free_list[_M_round_up(bytes)/_S_align-1] = free_list;
 }
 
 char* MemoryPoll::_M_allocate_chunk(size_t __bytes) {
+  std::unique_lock<std::mutex> locker(mutex);
   _Obj* free_list = _M_get_free_list(__bytes);
-  if (free_list == NULL ) {
-    _Obj* obj = (_Obj*)_M_refill(__bytes, 20);
+  if (free_list == NULL) {
+    _Obj* obj = reinterpret_cast<_Obj*>(_M_refill(__bytes, 20));
      if (obj != NULL) {
        free_list = obj;
      }
   }
   if (free_list != NULL) {
     char *data = free_list->_M_client_data;
-    _S_free_list[_M_round_up(__bytes)/_S_align-1] = free_list->_M_free_list_link;
+    _S_free_list[_M_round_up(__bytes)/_S_align-1] =
+        free_list->_M_free_list_link;
     return data;
   }
   return NULL;
@@ -81,7 +81,6 @@ void* MemoryPoll::_M_refill(size_t __bytes, size_t n) {
     int total_size = __bytes * n;
     void *p = ::operator new(total_size, std::nothrow);
     if (p != NULL) {
-
       ChunkData *chunk = new ChunkData();
       chunk->data = p;
       chunk->next_chunk = NULL;
@@ -93,13 +92,13 @@ void* MemoryPoll::_M_refill(size_t __bytes, size_t n) {
         end_chunk->next_chunk = chunk;
         end_chunk = end_chunk->next_chunk;
       }
-    
-      _Obj* obj_pre = (_Obj*)p;
+      _Obj* obj_pre = reinterpret_cast<_Obj*>(p);
       _Obj* obj_next = obj_pre;
-      
+
       obj_pre->_M_free_list_link = NULL;
       for (size_t i = 1; i < n; i++) {
-        obj_next = (_Obj*)((char*)p + __bytes * i);
+        obj_next = reinterpret_cast<_Obj*>(reinterpret_cast<char*>(p)
+                                           + __bytes * i);
         obj_next->_M_free_list_link = NULL;
         obj_pre->_M_free_list_link = obj_next;
         obj_pre = obj_next;
@@ -111,41 +110,48 @@ void* MemoryPoll::_M_refill(size_t __bytes, size_t n) {
 }
 
 
-}  // namespace base          
+}  // namespace base
 }  // namespace sails
 
+
+
 /*
+在下面的实际测试中发现内存池并不能提高分配的效率，但是它在复杂的应用
+中可以避免内存的碎片
+#include <vector>
+#include <thread>
+
 class Test {
  public:
   int x;
-  int y;
+  int y[5];
   Test() {
     x = 1;
-    y = 2;
+    y[0] = 2;
   }
 };
 
+sails::base::MemoryPoll pool;
 
-int main(int argc, char *argv[])
-{
-  sails::base::MemoryPoll pool;
-  for (int i = 0; i < 20; i++) {
-      Test *t = (Test*)pool.allocate(sizeof(Test));
-      if (t != NULL) {
-        new(t) Test();
-        printf("x:%d y:%d\n", t->x, t->y);
-        pool.deallocate((char*)t, sizeof(Test));
-      }
-      
+void test() {
+  for (int i = 0; i < 1000000; i++) {
+    Test *t = (Test*)pool.allocate(sizeof(Test));
+    if (t != NULL) {
+      new(t) Test();
+      // printf("x:%d y:%d\n", t->x, t->y);
+      pool.deallocate((char*)t, sizeof(Test));
+    }
   }
-  
-  Test *t2 = (Test*)pool.allocate(sizeof(Test));
-  if (t2 != NULL) {
-    new(t2) Test();
-    printf("x:%d y:%d\n", t2->x, t2->y);
-    pool.deallocate((char*)t2, sizeof(Test));
+}
+
+int main(int argc, char *argv[]) {
+  std::vector<std::thread> test_list;
+  for (int i = 0; i < 1; i++) {
+    test_list.push_back(std::thread(test));
   }
-  sails::base::MemoryPoll::release_memory();
+  for (int i = 0; i < 1; i++) {
+    test_list[i].join();
+  }
   return 0;
 }
 */

@@ -10,11 +10,11 @@
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-12-08 09:23:26
 
-#ifndef MEMORY_POOL_H
-#define MEMORY_POOL_H
+#ifndef BASE_MEMORY_POOL_H_
+#define BASE_MEMORY_POOL_H_
 
 #include <stdint.h>
-#include <mutex>
+#include <mutex>  // NOLINT
 
 
 namespace sails {
@@ -23,10 +23,11 @@ namespace base {
 class MemoryPoll {
  public:
   MemoryPoll();
+  ~MemoryPoll();
   char* allocate(size_t __bytes);
   void deallocate(char* pointer, size_t bytes);
 
-  static void release_memory();
+  void release_memory();
 
  private:
   enum { _S_align = 8 };
@@ -38,7 +39,7 @@ class MemoryPoll {
     char        _M_client_data[1];    // The client sees this.
   };
 
-  static _Obj*        _S_free_list[_S_free_list_size];
+  _Obj*        _S_free_list[_S_free_list_size];
 
   size_t
   _M_round_up(size_t __bytes)
@@ -62,8 +63,8 @@ class MemoryPoll {
     struct chunk_data* next_chunk;
     void* data;
   } ChunkData;
-  static ChunkData* start_chunk;
-  static ChunkData* end_chunk;
+  ChunkData* start_chunk;
+  ChunkData* end_chunk;
 };
 
 }  // namespace base
@@ -72,4 +73,4 @@ class MemoryPoll {
 
 
 
-#endif  // MEMORY_POOL_H
+#endif  // BASE_MEMORY_POOL_H_
