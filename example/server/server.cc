@@ -85,7 +85,7 @@ int main(int, char *[]) {
   }
 
   TestServer server;
-  server.Init(8000, 2, 10, 1, false);
+  server.Init(8000, 2, 10, 1, true);
 
   while (isRun) {
     sleep(2);

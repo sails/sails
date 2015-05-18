@@ -253,9 +253,6 @@ EpollServer<T>::~EpollServer() {
           delete netThreads[i];
     }
   }
-  if (useMemoryPool) {
-    sails::base::MemoryPoll::release_memory();
-  }
 }
 
 

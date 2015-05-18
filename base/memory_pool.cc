@@ -117,7 +117,7 @@ void* MemoryPoll::_M_refill(size_t __bytes, size_t n) {
 
 /*
 在下面的实际测试中发现内存池并不能提高分配的效率，但是它在复杂的应用
-中可以避免内存的碎片
+中可以避免内存的碎片，内存池的优势才能体现出来
 #include <vector>
 #include <thread>
 
