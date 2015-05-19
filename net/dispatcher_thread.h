@@ -66,7 +66,10 @@ void DispatcherThread<T>::run() {
 template <typename T>
 void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
   while (dispacher->continueRun) {
-    dispacher->server->DipacherWait();
+    int recvDataNums = dispacher->server->GetRecvDataNum();
+    if (recvDataNums == 0) {  // 有数据就不去wait了
+      dispacher->server->DipacherWait();
+    }
 
     int recvQueueNum = dispacher->server->GetRecvQueueNum();
     for (int i = 0; i < recvQueueNum; i++) {
