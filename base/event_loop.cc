@@ -24,6 +24,9 @@ namespace base {
 
 // const int EventLoop::INIT_EVENTS = 1000;
 
+// 在event_ctl会在其它线程中访问，它会去修改anfds的数据
+std::recursive_mutex eventMutex;
+
 void emptyEvent(struct event* ev) {
   if (ev == NULL) {
     return;
@@ -115,7 +118,7 @@ void EventLoop::init() {
 
 // 把事件加到已有事件列表的最后
 bool EventLoop::add_event(const struct event*ev, bool ctl_poll) {
-  if (ev->fd >= max_events) {
+  if (ev->fd >= max_events) {    
     // malloc new events and anfds
     if (!array_needsize(ev->fd+1)) {
       return false;
@@ -135,6 +138,7 @@ bool EventLoop::add_event(const struct event*ev, bool ctl_poll) {
 
   // 把事件加到事件列表之后
   int need_add_to_epoll = false;
+  
   if (anfds[fd].isused == 1) {
     if ((anfds[fd].events | e->events) != anfds[fd].events) {
       need_add_to_epoll = true;
@@ -288,6 +292,59 @@ bool EventLoop::delete_event(const struct event* ev, bool ctl_poll) {
   return true;
 }
 
+bool EventLoop::mod_ev_only(const struct event* ev) {
+  int fd = ev->fd;
+  if (fd < 0 || fd > max_events) {
+    return false;
+  }
+
+#ifdef __linux__
+  if (anfds[fd].isused == 1) {
+    // 修改epoll
+    struct epoll_event epoll_ev;
+    memset(&epoll_ev, 0, sizeof(epoll_ev));
+    epoll_ev.events = 0;
+    unsigned int events = 0;
+    epoll_ev.data.fd = ev->fd;
+    if (ev->events & Event_READ) {
+      events = events | EPOLLIN | EPOLLET;
+    }
+    if (ev->events & Event_WRITE) {
+      events = events | EPOLLOUT | EPOLLET;
+    }
+    epoll_ev.events = events;
+    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &epoll_ev) == -1) {
+      perror("in mod_event call epoll_ctl with EPOLL_CTL_MOD");
+    } else {
+      return true;
+    }
+  }
+#elif __APPLE__
+  if (true) {  // kqueue可以直接mod
+    // 增加,对于相同的fd会覆盖
+    struct kevent changes[1];
+    int16_t filter = 0;
+    if (ev->events & Event_READ) {
+      filter = filter | EVFILT_READ;
+    }
+    if (ev->events & Event_WRITE) {
+      filter = filter | EVFILT_WRITE;
+    }
+    if (ev->events & Event_TIMER) {
+      filter = filter | EVFILT_TIMER;
+    }
+    EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_ENABLE | EV_CLEAR,
+           0, ev->edata, NULL);
+    if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
+      perror("epoll_ctl");
+      return false;
+    }
+  }
+#endif
+
+  return false;
+}
+
 
 bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
   // 删除fd上绑定的所有struct event事件,然后再绑定新的事件,修改epoll event
@@ -321,45 +378,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
     // 增加新事件
     if (add_event(ev, false)) {
       if (ctl_poll) {
-#ifdef __linux__
-        // 修改epoll
-        struct epoll_event epoll_ev;
-        memset(&epoll_ev, 0, sizeof(epoll_ev));
-        epoll_ev.events = 0;
-        unsigned int events = 0;
-        epoll_ev.data.fd = ev->fd;
-        if (ev->events & Event_READ) {
-          events = events | EPOLLIN | EPOLLET;
-        }
-        if (ev->events & Event_WRITE) {
-          events = events | EPOLLOUT | EPOLLET;
-        }
-        epoll_ev.events = events;
-        if (epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &epoll_ev) == -1) {
-          perror("in mod_event call epoll_ctl with EPOLL_CTL_MOD");
-        } else {
-          return true;
-        }
-#elif __APPLE__
-        // 增加,对于相同的fd会覆盖
-        struct kevent changes[1];
-        int16_t filter = 0;
-        if (ev->events & Event_READ) {
-          filter = filter | EVFILT_READ;
-        }
-        if (ev->events & Event_WRITE) {
-          filter = filter | EVFILT_WRITE;
-        }
-        if (ev->events & Event_TIMER) {
-          filter = filter | EVFILT_TIMER;
-        }
-        EV_SET(&changes[0], ev->fd, filter, EV_ADD | EV_ENABLE | EV_CLEAR,
-               0, ev->edata, NULL);
-        if (kevent(kqfd, changes, 1, NULL, 0, NULL) == -1) {
-          perror("epoll_ctl");
-          return false;
-        }
-#endif
+        return mod_ev_only(ev);
       }
     } else {
       perror("in mod event call add event");
@@ -409,8 +428,6 @@ bool EventLoop::event_stop(int fd) {
 
   return true;
 }
-
-std::recursive_mutex eventMutex;
 
 bool EventLoop::event_ctl(OperatorType op, const struct event* ev) {
   std::unique_lock<std::recursive_mutex> locker(eventMutex);
@@ -511,10 +528,11 @@ void EventLoop::stop_loop() {
 }
 
 void EventLoop::process_event(int fd, int events) {
-  std::unique_lock<std::recursive_mutex> locker(eventMutex);
   if (fd < 0 || fd > max_events) {
     return;
   }
+
+  std::unique_lock<std::recursive_mutex> locker(eventMutex);
   if (anfds[fd].isused != 1) {
     return;
   }

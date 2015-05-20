@@ -279,15 +279,19 @@ void NetThread<T>::create_event_loop() {
   ev_loop->init();
 
   // 创建 notify 事件
-#ifdef __linux__
   sails::base::event notify_ev;
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
-  notify_ev.events = sails::base::EventLoop::Event_READ;
+  // 如果只是linux，那这儿可以注册成READ，然后当要通知时再mod成write就可以了
+  // 但是当是kqueue时，为了也能通过mod_ev_only达到效果(kqueue是add，它通过覆盖
+  // 来触发，如果是注册成read，mod_ev_only是ADD后没有事件处理函数)，所以这里就
+  // 统一成write事件，由于它是边缘触发，所以它马上就用调用一次，所以read_pipe_cb
+  // 要处理没有数据的情况
+  // notify_ev.events = sails::base::EventLoop::Event_READ;
+  notify_ev.events = sails::base::EventLoop::Event_WRITE;
   notify_ev.cb = NetThread<T>::read_pipe_cb;
   assert(ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD,
                             &notify_ev));
-#endif
 }
 
 template <typename T>
@@ -673,8 +677,7 @@ void NetThread<T>::send(const std::string &ip,
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_WRITE;
-  notify_ev.cb = NetThread<T>::read_pipe_cb;
-  ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
+  ev_loop->mod_ev_only(&notify_ev);
 }
 
 template <typename T>
@@ -706,17 +709,17 @@ void NetThread<T>::close_connector(const std::string &ip,
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_WRITE;
-  notify_ev.cb = NetThread<T>::read_pipe_cb;
-  ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
+  ev_loop->mod_ev_only(&notify_ev);
 }
 
 template <typename T>
-void  NetThread<T>::SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid, int fd, ExtData data) {
+void  NetThread<T>::SetConnectorData(
+    const std::string &ip, uint16_t port, uint32_t uid, int fd, ExtData data) {
   if (ip.length() == 0 || port <= 0 || uid <= 0 || fd <= 0) {
     return;
   }
   log::LoggerFactory::getLog("server")->debug("call close connector\n");
-  
+
   TagSendData* sdata = new TagSendData();
   sdata->cmd = 'm';
   sdata->uid = uid;
@@ -733,8 +736,7 @@ void  NetThread<T>::SetConnectorData(const std::string &ip, uint16_t port, uint3
   emptyEvent(&notify_ev);
   notify_ev.fd = notify;
   notify_ev.events = sails::base::EventLoop::Event_WRITE;
-  notify_ev.cb = NetThread<T>::read_pipe_cb;
-  ev_loop->event_ctl(sails::base::EventLoop::EVENT_CTL_MOD, &notify_ev);
+  ev_loop->mod_ev_only(&notify_ev);
 }
 
 

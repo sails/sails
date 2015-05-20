@@ -82,6 +82,9 @@ class EventLoop : private Uncopyable{
   void stop_loop();
   void delete_all_event();
 
+  // 为了提升性能，只修改linux的epoll和kevent，而不修改anfds
+  // 这样也可以不用加锁
+  bool mod_ev_only(const struct event*);
  private:
   void *owner;
   bool add_event(const struct event*, bool ctl_poll = true);
