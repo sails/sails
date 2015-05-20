@@ -459,7 +459,7 @@ int EpollServer<T>::GetRecvQueueNum() {
 template<typename T>
 size_t EpollServer<T>::GetRecvDataNum() {
   size_t num = 0;
-  for (int i = 0; i < netThreads.size(); i++) {
+  for (size_t i = 0; i < netThreads.size(); i++) {
     num = num + netThreads[i]->get_recvqueue_size();
   }
   return num;
