@@ -29,44 +29,27 @@ enum PacketDefine {
 
 #define PACKET_MAX_LEN  1024
 
-typedef struct {
+#pragma pack(push, 1)
+
+struct PacketBase {
   uint8_t opcode;
-} __attribute__((packed)) PacketBase;
+  PacketBase() {
+    opcode = 0;
+  }
+};
 
-/*
-typedef struct {
-  PacketBase type;
-  unsigned int len;  // packet len
-} __attribute__((packed)) PacketCommon;
-
-
-typedef struct {
-  PacketCommon common;
-  char service_name[50];
-  char method_name[50];
-  int method_index;
-  char data[1];
-} __attribute__((packed)) PacketRPC;
-*/
-
-typedef struct {
+struct PacketCommon {
   PacketBase type;
   uint16_t len;  // packet len
-} __attribute__((packed)) PacketCommon;
-
-typedef struct {
-  PacketCommon common;
-  char service_name[20];
-  int method_index;
-  char data[1];
-} __attribute__((packed)) PacketRPC;
+  uint32_t sn;  // 包的序列号
+  PacketCommon() {
+    len = sizeof(PacketCommon);
+    sn = 0;
+  }
+};
 
 
-
-typedef struct {
-  int len;
-  char *data;
-} ResponseContent;
+#pragma pack(pop)
 
 }  // namespace net
 }  // namespace sails

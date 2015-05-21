@@ -243,6 +243,8 @@ ConnectorTimeout::ConnectorTimeout(int timeout) {
   for (int i = 0; i < timeout; i++) {
     time_wheel->at(i) = new ConnectorTimeout::Bucket();
   }
+  ev_loop = NULL;
+  timer = NULL;
 }
 
 bool ConnectorTimeout::init(base::EventLoop *ev_loop) {

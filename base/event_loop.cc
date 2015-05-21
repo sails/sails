@@ -391,6 +391,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
 
 
 bool EventLoop::event_stop(int fd) {
+  std::unique_lock<std::recursive_mutex> locker(eventMutex);
   if (anfds[fd].isused == 1) {
     anfds[fd].isused = 0;
     // detele event list
