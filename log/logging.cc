@@ -112,7 +112,7 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
 
   char filename[MAX_FILENAME_LEN];
   memset(filename, '\0', MAX_FILENAME_LEN);
-  if (this->filename != NULL && strlen(this->filename) > 0) {
+  if (strlen(this->filename) > 0) {
     set_filename_by_savemode(filename);
 #ifdef __linux__
     int write_fd = -1;
@@ -134,7 +134,7 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
     } else {
       char err_msg[MAX_FILENAME_LEN+30];
       sprintf(err_msg, "can't open file %s to write\n", filename);  // NOLINT'
-      fprintf(stderr, err_msg);
+      fprintf(stderr, "%s", err_msg);
     }
 #endif
 
@@ -148,7 +148,7 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
 }
 
 void Logger::set_filename_by_savemode(char *filename) {
-  if (this->filename != NULL && strlen(this->filename) > 0
+  if (strlen(this->filename) > 0
      && filename != NULL) {
     size_t index = base::last_index_of(this->filename, '.');
     strncpy(filename, this->filename, index);
