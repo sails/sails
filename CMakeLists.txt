@@ -1,0 +1,8 @@
+PROJECT(sails)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+SUBDIRS(base log crypto net system)
+include_directories( "../" )
+
+SET(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} ${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -Wall -g -ggdb -m64")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -Wall -m64")
