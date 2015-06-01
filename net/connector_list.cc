@@ -33,8 +33,11 @@ ConnectorList::~ConnectorList() {
 }
 
 void ConnectorList::init(uint32_t size, uint32_t index) {
-  total = size;
+  if (index > 10) {
+    perror("too much connector_list");
+  }
 
+  total = size;
   free_size  = 0;
 
   //初始化链接链表
@@ -45,9 +48,11 @@ void ConnectorList::init(uint32_t size, uint32_t index) {
 
   magic_num = time(NULL);
 
-  // magit_num是int的前16位,后16位用于放index,最大可以3w
-  magic_num = ((((uint32_t)magic_num) << 24) & (0xFFFFFFFF << 24))
-              | ((index << 16) & (0xFFFFFFFF << 16));
+  // magit_num是int的前4位;
+  // 中间4位用于存放index;主要是防止同一时刻多个netthread新建时造成magic_num相同
+  // 后面24位用于存放connectorId(最大100w)
+  magic_num = ((((uint32_t)magic_num) << 28) & (0xFFFFFFFF << 28))
+              | ((index << 24) & (0xFFFFFFFF << 24));
   // free从1开始分配, 这个值为uid, 0保留为管道用
   for (uint32_t i = 1; i <= total; i++) {
     vConn[i] = NULL;
@@ -70,8 +75,8 @@ uint32_t ConnectorList::getUniqId() {
 }
 
 std::shared_ptr<Connector> ConnectorList::get(uint32_t uid) {
-  uint32_t magi = uid & (0xFFFFFFFF << 16);
-  uid           = uid & (0xFFFFFFFF >> 16);
+  uint32_t magi = uid & (0xFFFFFFFF << 24);
+  uid           = uid & (0xFFFFFFFF >> 24);
 
   if (magi != magic_num) return NULL;
 
@@ -82,8 +87,8 @@ void ConnectorList::add(std::shared_ptr<Connector> connector) {
   std::unique_lock<std::mutex> locker(list_mutex);
 
   uint32_t muid = connector->getId();
-  uint32_t magi = muid & (0xFFFFFFFF << 16);
-  uint32_t uid  = muid & (0xFFFFFFFF >> 16);
+  uint32_t magi = muid & (0xFFFFFFFF << 24);
+  uint32_t uid  = muid & (0xFFFFFFFF >> 24);
 
   assert(magi ==  magic_num && uid > 0
          && uid <= total && vConn[uid] == NULL);
@@ -94,8 +99,8 @@ void ConnectorList::add(std::shared_ptr<Connector> connector) {
 void ConnectorList::del(uint32_t uid) {
   std::unique_lock<std::mutex> locker(list_mutex);
 
-  uint32_t magi = uid & (0xFFFFFFFF << 16);
-  uid           = uid & (0xFFFFFFFF >> 16);
+  uint32_t magi = uid & (0xFFFFFFFF << 24);
+  uid           = uid & (0xFFFFFFFF >> 24);
 
   assert(magi == magic_num && uid > 0 && uid <= total && vConn[uid] != NULL);
 
