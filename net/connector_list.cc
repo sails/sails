@@ -76,7 +76,7 @@ uint32_t ConnectorList::getUniqId() {
 
 std::shared_ptr<Connector> ConnectorList::get(uint32_t uid) {
   uint32_t magi = uid & (0xFFFFFFFF << 24);
-  uid           = uid & (0xFFFFFFFF >> 24);
+  uid           = uid & (0xFFFFFFFF >> 8);
 
   if (magi != magic_num) return NULL;
 
@@ -88,7 +88,7 @@ void ConnectorList::add(std::shared_ptr<Connector> connector) {
 
   uint32_t muid = connector->getId();
   uint32_t magi = muid & (0xFFFFFFFF << 24);
-  uint32_t uid  = muid & (0xFFFFFFFF >> 24);
+  uint32_t uid  = muid & (0xFFFFFFFF >> 8);
 
   assert(magi ==  magic_num && uid > 0
          && uid <= total && vConn[uid] == NULL);
@@ -100,7 +100,7 @@ void ConnectorList::del(uint32_t uid) {
   std::unique_lock<std::mutex> locker(list_mutex);
 
   uint32_t magi = uid & (0xFFFFFFFF << 24);
-  uid           = uid & (0xFFFFFFFF >> 24);
+  uid           = uid & (0xFFFFFFFF >> 8);
 
   assert(magi == magic_num && uid > 0 && uid <= total && vConn[uid] != NULL);
 
