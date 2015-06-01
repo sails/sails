@@ -204,7 +204,7 @@ NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
   listen_port = 0;
   accept_times = 0;
   ev_loop = NULL;
-  connector_list.init(10000, index);
+  connector_list.init(1000000, index);
   connect_timer = NULL;
 #ifdef __linux__
   notify = socket(AF_INET, SOCK_STREAM, 0);
