@@ -58,7 +58,6 @@ void delete_http_message(struct http_message *msg) {
 }
 
 int message_to_string(struct http_message *msg, char* data, int len) {
-
   if (msg != NULL) {
     if (msg->raw != NULL) {
       free(msg->raw);

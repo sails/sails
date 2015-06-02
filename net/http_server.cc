@@ -135,16 +135,20 @@ HttpProcessor HttpServer::FindProcessor(std::string path) {
 }
 
 
-
 void HttpServer::handle(
     const sails::net::TagRecvData<sails::net::HttpRequest> &recvData) {
 
-  char data[10*1024] = {'\0'};
+  /*
+  static char data[10*1024] = {'\0'};
   recvData.data->ToString(data, 10*1024);
   log::LoggerFactory::getLogD("access")->info(
       "uid:%u, ip:%s, port:%d, msg:\n%s",
       recvData.uid, recvData.ip.c_str(), recvData.port, data);
-
+  */
+  log::LoggerFactory::getLogD("access")->info(
+      "uid:%u, ip:%s, port:%d, msg:\n%s",
+      recvData.uid, recvData.ip.c_str(), recvData.port,
+      recvData.data->GetRequestPath().c_str());
   sails::net::HttpResponse *response = new sails::net::HttpResponse();
   sails::net::HttpRequest *request = recvData.data;
   process(request, response);
