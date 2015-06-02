@@ -50,7 +50,7 @@ EventLoop::EventLoop(void* owner) {
 #endif
   anfds = (struct ANFD*)malloc(sizeof(struct ANFD)
                                *INIT_EVENTS);
-  memset(anfds, 0, 1000*sizeof(struct ANFD));
+  memset(anfds, 0, INIT_EVENTS*sizeof(struct ANFD));
   max_events = INIT_EVENTS;
   stop = false;
 #ifdef __linux__

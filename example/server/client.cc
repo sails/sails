@@ -5,7 +5,7 @@
 // https://github.com/sails/sails and http://www.sailsxu.com/.
 //
 // Filename: client.cc
-// Description: 性能测试
+// Description: 性能测试(最大tps)
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2015-04-25 19:17:29
