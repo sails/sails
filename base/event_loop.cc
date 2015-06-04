@@ -475,7 +475,7 @@ void EventLoop::start_loop() {
       // 因为fd未连接,所以会发生一个epollhup事件
       // 因为fd是et模式,所以只会触发一次,由于没有设置stop flag,所以没有影响
       if (shutdownfd == fd) {
-        printf("shutdwon event\n");
+        // printf("shutdown event\n");
         continue;
       }
       if (anfds[fd].isused == 1) {
