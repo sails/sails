@@ -94,17 +94,28 @@ class EventLoop : private Uncopyable{
   bool array_needsize(int need_cnt);
   void init_events(int start, int count);
 
+
+  // 最大同时就绪的事件
+  int max_events_ready;
 #ifdef __linux__
   int epollfd;
-  // 因为epoll中使用的是ET模式，它只通知一次，所以要在这里保证足够的events.
-  // 虽然中会在epoll_wait中使用，但是由于要动态增长，
-  // 所以不能是start_loop的局部变量
+  // 因为epoll中使用的是ET模式，它只通知一次，但是如果wait中没有
+  // 足够的events长度用于存放它，那么下次wait中它也会被返回，也
+  // 就是说通知一次是指它被wait返回之后才不再有效
+  // 不过为了效率，最好还是能一次返回所有的就绪事件，所以event在
+  // 这里也要动态增长
+  // 注意，它不能和anfds一样修改，因为如果和anfds的增长可能是另
+  // 一个net线程向这个线程增加fd导致的。 那时它可能会阻塞在当
+  // 前线程的epoll_wait中,所以它的在epoll中的events的地址还是上次的
+  // 如果realloc在返回的地址不相同，那就出问题，所以它的增加要放到
+  // wait之后。
   struct epoll_event* events;
 #elif __APPLE__
   int kqfd;
   struct kevent* events;
 #endif
   struct ANFD *anfds;
+  // 保存fd的列表的长度
   int max_events;
 
   bool stop;

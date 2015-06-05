@@ -52,6 +52,7 @@ EventLoop::EventLoop(void* owner) {
                                *INIT_EVENTS);
   memset(anfds, 0, INIT_EVENTS*sizeof(struct ANFD));
   max_events = INIT_EVENTS;
+  max_events_ready = INIT_EVENTS;
   stop = false;
 #ifdef __linux__
   shutdownfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -449,9 +450,9 @@ bool EventLoop::event_ctl(OperatorType op, const struct event* ev) {
 void EventLoop::start_loop() {
   while (!stop) {
 #ifdef __linux__
-    int nfds = epoll_wait(epollfd, events, max_events, -1);
+    int nfds = epoll_wait(epollfd, events, max_events_ready, -1);
     #elif __APPLE__
-    int nfds = kevent(kqfd, NULL, 0, events, max_events, NULL);
+    int nfds = kevent(kqfd, NULL, 0, events, max_events_ready, NULL);
     #endif
     if (nfds == -1) {
 #ifdef __linux__
@@ -499,6 +500,21 @@ void EventLoop::start_loop() {
         }
 #endif
         process_event(fd, ev);
+      }
+    }
+    // 如果同时就绪的事件太多,增加长度
+    if (nfds == max_events_ready) {
+      int newcnt = max_events_ready + (max_events_ready >> 1);
+#ifdef __linux__
+      struct epoll_event* tempevents =
+          (struct epoll_event*)realloc(events, sizeof(struct epoll_event)*newcnt);
+#elif __APPLE__
+      struct kevent* tempevents = 
+          (struct kevent*)realloc(events, sizeof(struct kevent)*newcnt);
+#endif
+      if (tempevents != NULL) {
+        events = tempevents;
+        max_events_ready = newcnt;
       }
     }
   }
@@ -567,23 +583,7 @@ bool EventLoop::array_needsize(int need_cnt) {
       return false;
     }
     anfds = tempadfds;
-#ifdef __linux__
-    struct epoll_event* tempevents =
-        (struct epoll_event*)realloc(events, sizeof(struct epoll_event)*newcnt);
-#elif __APPLE__
-    struct kevent* tempevents =
-        (struct kevent*)realloc(events, sizeof(struct kevent)*newcnt);
-#endif
-    if (tempevents == NULL) {
-      return false;
-    }
 
-    events = tempevents;
-
-    /*
-    fprintf(stdin, "relloc %ld for epoll_event array\n",
-            sizeof(struct epoll_event)*newcnt);
-    */
     init_events(cur, newcnt-cur);
     max_events = newcnt;
   }
