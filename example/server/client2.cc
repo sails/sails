@@ -51,7 +51,7 @@ class TestClient : public sails::net::EpollServer<EchoStruct> {
   }
 
   void connect() {
-    for (int i = 0; i < 50000; i++) {
+    for (int i = 0; i < 60000; i++) {
       std::shared_ptr<sails::net::Connector> connector(
           new sails::net::Connector());
       if (connector->connect("192.168.1.116", 8000, true)) {
