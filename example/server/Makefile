@@ -3,7 +3,10 @@ CFLAGS			= -std=c++11 -fno-omit-frame-pointer -W -Wall -O0 -g -L../../ -I./ -I..
 OBJECTS = server.o
 
 server:$(OBJECTS)
-	g++  $(CFLAGS) -Wl,-rpath,../../ -o server $(OBJECTS) -lsails -pthread -ldl -ljsoncpp  -lsails
+	g++  $(CFLAGS) -Wl,-rpath,../../ -o server $(OBJECTS) -lsails -pthread
+
+client2:client2.o
+	g++  $(CFLAGS) -Wl,-rpath,../../ -o client2 client2.o -lsails -pthread
 
 client: client.o
 	g++ -std=c++11 client.cc -o client -pthread
