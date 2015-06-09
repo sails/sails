@@ -71,7 +71,7 @@ class TestClient : public sails::net::EpollServer<EchoStruct> {
       if (connector != NULL) {
         connector->write(reinterpret_cast<char*>(&data), sizeof(data));
         connector->send();
-	sleep(10000);
+        sleep(1000);
       }
     }
   }
