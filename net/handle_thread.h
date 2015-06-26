@@ -220,7 +220,12 @@ void HandleThread<T>::handleImp() {
   // 从接收队列中得到数据,然后调用handle()处理
   while (continueHanle) {
     TagRecvData<T>* data = NULL;
-    handlelist.pop_front(data, 100);
+    if (!server->use_dispatch_thread) {
+      data = server->GetRecvPacket();
+    } else {
+      handlelist.pop_front(data, 100);
+    }
+
     // 为了实现所有主逻辑的单线程化，在每次循环中，给业务处理自有消息的机会
     this->server->handleCustomMessage(this);
     if (data != NULL) {

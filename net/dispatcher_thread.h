@@ -66,29 +66,23 @@ void DispatcherThread<T>::run() {
 template <typename T>
 void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
   while (dispacher->continueRun) {
-    int recvDataNums = dispacher->server->GetRecvDataNum();
-    if (recvDataNums == 0) {  // 有数据就不去wait了
-      dispacher->server->DipacherWait();
-    }
-
-    int recvQueueNum = dispacher->server->GetRecvQueueNum();
-    for (int i = 0; i < recvQueueNum; i++) {
-      TagRecvData<T>* data = NULL;
-      do {
-        data = dispacher->server->GetRecvPacket(i);
-        if (data != NULL) {
-          // 开始分发消息，这里考虑到有些消息要按照严格的先后顺序来处理
-          // 为了达到这个效果，让他在一个处理线程中最好，不然的话，可能
-          // 有多个线程同步处理，然后后来的消息反而先完成
-          // 如果没有这个要求，就可以不用分发线程了，而是handle直接从
-          // 网络线程那里拿数据处理，也不用再为handle接收一个接收队列
-          // 这样少经过一个线程队列，速度也会提高不少
-          int fd = data->fd;
-          int handleNum = dispacher->server->GetHandleNum();
-          int selectedHandle = fd % handleNum;
-          dispacher->server->AddHandleData(data, selectedHandle);
-        }
-      } while (data != NULL);
+    TagRecvData<T>* data = NULL;
+    if (dispacher->server->use_dispatch_thread) {
+      data = dispacher->server->GetRecvPacket();
+      if (data != NULL) {
+        // 开始分发消息，这里考虑到有些消息要按照严格的先后顺序来处理
+        // 为了达到这个效果，让他在一个处理线程中最好，不然的话，可能
+        // 有多个线程同步处理，然后后来的消息反而先完成
+        // 如果没有这个要求，就可以不用分发线程了，而是handle直接从
+        // 网络线程那里拿数据处理，也不用再为handle接收一个接收队列
+        // 这样少经过一个线程队列，速度也会提高不少
+        int fd = data->fd;
+        int handleNum = dispacher->server->GetHandleNum();
+        int selectedHandle = fd % handleNum;
+        dispacher->server->AddHandleData(data, selectedHandle);
+      }
+    } else {
+      sleep(2);
     }
   }
 }
@@ -96,7 +90,6 @@ void DispatcherThread<T>::dispatch(DispatcherThread<T>* dispacher) {
 template <typename T>
 void DispatcherThread<T>::terminate() {
   continueRun = false;
-  server->NotifyDispacher();
 }
 
 template <typename T>

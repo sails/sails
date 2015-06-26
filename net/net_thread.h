@@ -78,11 +78,9 @@ class NetThread {
   // 状态
   struct NetThreadStatus {
     RunStatus status;
-    int listen_port;	// only for recv accept
+    int listen_port;  // only for recv accept
     size_t connector_num;
     uint64_t accept_times;
-    uint32_t recv_queue_capacity;
-    uint32_t recv_queue_size;
     uint32_t send_queue_capacity;
     uint32_t send_queue_size;
   };
@@ -135,9 +133,6 @@ class NetThread {
   // 用于io线程自身解析完之后
   void addRecvList(TagRecvData<T> *data);
 
-  // 用于dispacher线程
-  void getRecvData(TagRecvData<T>* &data, int millisecond);  // NOLINT'
-
   // 发送数据,把data放入一个send list中,然后再触发epoll的可写事件
   void send(const std::string &ip,
             uint16_t port, uint32_t uid,
@@ -169,8 +164,6 @@ class NetThread {
 
  private:
   EpollServer<T> *server;
-  // 接收的数据队列
-  recv_queue<T> recvlist;
 
   // 发送的数据队列
   send_queue sendlist;
@@ -246,30 +239,6 @@ NetThread<T>::~NetThread() {
       delete data;
     }
   }while(hasData);
-
-  // 删除recvlist中的数据
-  bool hasRecvData = false;
-  do {
-    hasRecvData = false;
-    TagRecvData<T>* data = NULL;
-    getRecvData(data, 0);
-    if (data != NULL) {
-      hasRecvData = true;
-      T* t = data->data;
-      if (t != NULL) {
-        server->Tdeleter(t);
-        t = NULL;
-      }
-      if (server->useMemoryPool) {
-        data->~TagRecvData<T>();
-        this->server->memory_pool.deallocate(
-            reinterpret_cast<char*>(data), sizeof(TagRecvData<T>));
-      } else {
-        delete data;
-      }
-      data = NULL;
-    }
-  }while(hasRecvData);
 }
 
 
@@ -420,12 +389,6 @@ void NetThread<T>::read_data_cb(base::event* e, int revents, void* owner) {
     net_thread->read_data(e, revents);
   }
 }
-
-template <typename T>
-size_t NetThread<T>::get_recvqueue_size() {
-  return this->recvlist.size();
-}
-
 
 template <typename T>
 size_t NetThread<T>::get_sendqueue_size() {
@@ -612,8 +575,6 @@ typename NetThread<T>::NetThreadStatus NetThread<T>::GetStatus() {
   stat.listen_port = this->listen_port;
   stat.connector_num = this->get_connector_count();
   stat.accept_times = this->accept_times;
-  stat.recv_queue_capacity = recvlist.MaxSize();
-  stat.recv_queue_size = recvlist.size();
   stat.send_queue_capacity = sendlist.MaxSize();
   stat.send_queue_size = sendlist.size();
   return stat;
@@ -642,7 +603,7 @@ void NetThread<T>::terminate() {
 
 template <typename T>
 void NetThread<T>::addRecvList(TagRecvData<T> *data) {
-  if (!recvlist.push_back(data)) {
+  if (!server->InsertRecvData(data)) {
     // 删除它
     T* t = data->data;
     if (t != NULL) {
@@ -651,13 +612,6 @@ void NetThread<T>::addRecvList(TagRecvData<T> *data) {
     }
     delete data;
   }
-  server->NotifyDispacher();
-}
-
-template <typename T>
-void NetThread<T>::getRecvData(TagRecvData<T>* &data,  // NOLINT'
-                               int millisecond) {
-  recvlist.pop_front(data, millisecond);
 }
 
 template <typename T>

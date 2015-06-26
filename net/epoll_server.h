@@ -64,6 +64,9 @@ class EpollServer {
   // 终止网络线程
   bool StopNetThread();
 
+  // 开启分发线程
+  void TurnOnDispatcher(bool on = true);
+
  public:
   // T 的删除器,用于用户处理接收到的消息后,框架层删除它
   // 默认是用户free,如果T是通过new建立,一定重载它
@@ -111,21 +114,14 @@ class EpollServer {
     return netThreads[fd % netThreads.size()];
   }
 
-  // 分发线程等待数据
-  void DipacherWait();
-
-  // 通知分发线程有数据
-  void NotifyDispacher();
-
-  // 得到接收队列个数,用于dispacher线程循环的从队列中得到数据
-  int GetRecvQueueNum();
+  // 插入网络线程接收到的数据
+  bool InsertRecvData(TagRecvData<T>* data);
 
   // 得到接收到的数据数
   size_t GetRecvDataNum();
 
   // 从io线程队列中得到数据包,用于dispacher线程
-  // index指io线程的标志
-  TagRecvData<T>* GetRecvPacket(uint32_t index);
+  TagRecvData<T>* GetRecvPacket();
 
   // 处理线程数
   int GetHandleNum() {
@@ -193,6 +189,11 @@ class EpollServer {
   bool useMemoryPool;
   sails::base::MemoryPoll memory_pool;
 
+  // 是否使用dispatcher线程来分派任务
+  // 如果业务是需要严格按照发包的顺序处理，并且存在同时发多个包的
+  // 情况，那么就要使用dispatcher_thread来
+  bool use_dispatch_thread;
+
  protected:
   int listenPort;
   // 网络线程
@@ -220,6 +221,9 @@ class EpollServer {
   // 空链超时时间
   int connectorTimeout;
 
+  // 接收的数据队列，处理线程直接从这里拿数据处理
+  recv_queue<T> recvlist;
+
   // 防止当连接断开时的瞬间,服务器还在向它写数据时的SIGPIPE错误
   // 没有日志,也没有core文件,很难发现
   struct sigaction sigpipe_action;
@@ -242,6 +246,7 @@ EpollServer<T>::EpollServer() {
   sigemptyset(&sigpipe_action.sa_mask);
   sigpipe_action.sa_flags = 0;
   sigaction(SIGPIPE, &sigpipe_action, NULL);
+  use_dispatch_thread = false;
 }
 
 
@@ -342,6 +347,11 @@ bool EpollServer<T>::StopNetThread() {
   return true;
 }
 
+template<typename T>
+void EpollServer<T>::TurnOnDispatcher(bool on) {
+  use_dispatch_thread = on;
+}
+
 
 template<typename T>
 void EpollServer<T>::Tdeleter(T *data) {
@@ -436,43 +446,21 @@ void EpollServer<T>::AddHandleData(TagRecvData<T>*data, int handleIndex) {
   handleThreads[handleIndex]->addForHandle(data);
 }
 
-
+// 插入网络线程接收到的数据
 template<typename T>
-void EpollServer<T>::DipacherWait() {
-  std::unique_lock<std::mutex> locker(dispacher_mutex);
-  dispacher_notify.wait(locker);
+bool EpollServer<T>::InsertRecvData(TagRecvData<T>* data) {
+  return recvlist.push_back(data);
 }
-
-
-template<typename T>
-void EpollServer<T>::NotifyDispacher() {
-  std::unique_lock<std::mutex> locker(dispacher_mutex);
-  dispacher_notify.notify_one();
-}
-
-template<typename T>
-int EpollServer<T>::GetRecvQueueNum() {
-  return netThreads.size();
-}
-
 
 template<typename T>
 size_t EpollServer<T>::GetRecvDataNum() {
-  size_t num = 0;
-  for (size_t i = 0; i < netThreads.size(); i++) {
-    num = num + netThreads[i]->get_recvqueue_size();
-  }
-  return num;
+  return recvlist.size();
 }
 
 template<typename T>
-TagRecvData<T>* EpollServer<T>::GetRecvPacket(uint32_t index) {
+TagRecvData<T>* EpollServer<T>::GetRecvPacket() {
   TagRecvData<T> *data = NULL;
-  if (netThreads.size() >= index) {
-    if (netThreads[index] != NULL) {
-      netThreads[index]->getRecvData(data, 0);  //不阻塞
-    }
-  }
+  recvlist.pop_front(data, 100);  // 100ms
   return data;
 }
 

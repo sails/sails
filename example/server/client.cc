@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-#include <thread>
+#include <thread>  // NOLINT
 #include <vector>
 
 int connectserver(const char* ip, int port) {
