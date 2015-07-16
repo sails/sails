@@ -74,7 +74,7 @@ bool Connector::connect(const char *ip, uint16_t port, bool keepalive) {
     // new thread to send ping
     // std::thread();
   }
-
+  is_closed = false;
   return true;
 }
 

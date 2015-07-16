@@ -143,7 +143,6 @@ class Buffer : public Uncopyable {
     }
     return readLen;
   }
-  
 
  private:
   std::vector<char> data;
