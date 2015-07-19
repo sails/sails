@@ -238,7 +238,7 @@ class EpollServer {
 template<typename T>
 EpollServer<T>::EpollServer() {
   listenPort = 0;
-  bTerminate = true;
+  bTerminate = false;
   connectorTimeout = 0;
   useMemoryPool = false;
 
@@ -420,6 +420,7 @@ template<typename T>
 void EpollServer<T>::Stop() {
   this->StopHandleThread();
   this->StopNetThread();
+  bTerminate = true;
 }
 
 
