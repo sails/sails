@@ -15,6 +15,8 @@ namespace sails {
 namespace base {
 
 MemoryPoll::MemoryPoll() {
+  start_chunk = NULL;
+  end_chunk = NULL;
 }
 
 MemoryPoll::~MemoryPoll() {

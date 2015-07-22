@@ -128,7 +128,8 @@ class EpollServer {
     return handleThreads.size();
   }
 
-  // 向处理线程中加入消息
+  // 向处理线程中加入消息，注意，这里只有当use_dispatch_thread为true时可用
+  // 否则，直接使用InsertRecvData
   void AddHandleData(TagRecvData<T>*data, int handleIndex);
 
   // 发送数据
