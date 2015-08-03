@@ -11,6 +11,8 @@
 
 #ifndef SAILS_BASE_TIMER_H_
 #define SAILS_BASE_TIMER_H_
+
+#include <thread>  // NOLINT
 #include "sails/base/event_loop.h"
 
 namespace sails {
@@ -40,6 +42,7 @@ class Timer {
   ExpiryAction action;
   void *data;
   char temp_data[50];
+  std::thread* iothread;  // 当没有event_loop时需要
 };
 
 

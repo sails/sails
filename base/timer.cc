@@ -30,12 +30,15 @@ Timer::Timer(EventLoop *ev_loop, int tick) {
   this->ev_loop = ev_loop;
   this->data = NULL;
   self_evloop = 0;
+  iothread = NULL;
 }
 
 Timer::Timer(int tick) {
   this->tick = tick;
   this->data = NULL;
   self_evloop = 0;
+  ev_loop = NULL;
+  iothread = NULL;
 }
 
 bool Timer::init(ExpiryAction action, void *data, int when = 1) {
@@ -70,6 +73,8 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
     ev_loop = new EventLoop(this);
     ev_loop->init();
     self_evloop = 1;
+    // 新建一个线程去运行 ev_loop->start_loop();
+    iothread = new std::thread(std::bind(&EventLoop::start_loop, ev_loop));
   }
 
   if (!ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD, &ev)) {
@@ -115,7 +120,10 @@ Timer::~Timer() {
     disarms();
   }
   if (self_evloop > 0) {
-    ev_loop->stop_loop();
+    ev_loop->stop_loop();  // iothread会停止
+    iothread->join();
+    delete iothread;
+    iothread = NULL;
     delete ev_loop;
   }
   ev_loop = NULL;
