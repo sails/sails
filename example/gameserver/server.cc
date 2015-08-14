@@ -11,11 +11,11 @@
 #include "server.h"
 #include <signal.h>
 #include <stdlib.h>
-#include <utility>
 #include <curl/curl.h>
+#include <utility>
+#include "product.h"
 #include "sails/base/string.h"
 #include "sails/log/logging.h"
-#include "product.h"
 
 
 namespace sails {
@@ -53,24 +53,22 @@ GameWorld* Server::CreateGameWorld(const std::string& gameCode) {
 
 void Server::InvalidMsgHandle(
     std::shared_ptr<sails::net::Connector> connector) {
-  log::LoggerFactory::getLogD("psp")->warn("invalid msg handle:%u",
-                                           connector->data.u32);
+  WARN_DLOG("psp", "invalid msg handle:%u", connector->data.u32);
   KillOffPlayer(connector->data.u32);
 }
 
 void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
-
-  log::LoggerFactory::getLogD("psp")->info("closed_connect_cb");
+  INFO_DLOG("psp", "closed_connect_cb");
   uint32_t playerId = connector->data.u32;
   if (playerId <= 0) {
     return;
   }
 
-  log::LoggerFactory::getLogD("psp")->debug("sendDisConnectDataToHandle playerId:%u", playerId);
+  DEBUG_DLOG("psp", "sendDisConnectDataToHandle playerId:%u", playerId);
   // 向handle线程发送消息
   SceNetAdhocctlDisconnectPacketS2C* disdata
-      = (SceNetAdhocctlDisconnectPacketS2C*)malloc(
-          sizeof(SceNetAdhocctlDisconnectPacketS2C));
+      = reinterpret_cast<SceNetAdhocctlDisconnectPacketS2C*>(malloc(
+          sizeof(SceNetAdhocctlDisconnectPacketS2C)));
   disdata->base.opcode = OPCODE_LOGOUT;
   disdata->ip = Server::getIp(connector->getIp());
   disdata->mac = Server::getMacStruct("EE:EE:EE:EE:EE");
@@ -80,13 +78,13 @@ void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
   data->uid = playerId;
   data->data = (sails::SceNetAdhocctlPacketBase*)disdata;
   data->ip = connector->getIp();
-  data->port= connector->getPort();
+  data->port = connector->getPort();
   data->fd = connector->get_connector_fd();
   data->extdata = connector->data;
-  
+
   int handleNum = GetHandleNum();
   int selectedHandle = connector->get_connector_fd() % handleNum;
-  log::LoggerFactory::getLogD("psp")->debug("sendDisConnectDataToHandle playerId:%u end", playerId);
+  DEBUG_DLOG("psp", "sendDisConnectDataToHandle playerId:%u end", playerId);
   AddHandleData(data, selectedHandle);
 }
 
@@ -148,8 +146,8 @@ SceNetAdhocctlPacketBase* Server::Parse(
     return NULL;
   }
   uint32_t read_able = connector->readable();
-  SceNetAdhocctlPacketBase *packet
-      = (SceNetAdhocctlPacketBase *)connector->peek();
+  const SceNetAdhocctlPacketBase *packet
+      = reinterpret_cast<const SceNetAdhocctlPacketBase*>(connector->peek());
   if (packet->opcode > PACKET_MAX) {
     connector->retrieve(connector->readable());
     InvalidMsgHandle(connector);
@@ -162,10 +160,9 @@ SceNetAdhocctlPacketBase* Server::Parse(
   // Ping Packet
   if (packet->opcode == OPCODE_PING) {
     packet_len = 1;
-    packet_new = (SceNetAdhocctlPacketBase*)malloc(
-        sizeof(SceNetAdhocctlPacketBase));
-    memset(packet_new, 0, packet_len);
-    memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+    packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(malloc(
+        sizeof(SceNetAdhocctlPacketBase)));
+    memcpy(packet_new, connector->peek(), packet_len);
   } else if (packet->opcode == OPCODE_LOGIN) {
     // login
     uint32_t playerId = connector->data.u32;
@@ -173,53 +170,54 @@ SceNetAdhocctlPacketBase* Server::Parse(
       // Enough Data available
       if (read_able >= sizeof(SceNetAdhocctlLoginPacketC2S)) {
         packet_len = sizeof(SceNetAdhocctlLoginPacketC2S);
-        packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-        memset(packet_new, 0, packet_len);
-        memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+        packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(
+            malloc(packet_len));
+        memcpy(packet_new, connector->peek(), packet_len);
       }
     }
   } else if (packet->opcode == OPCODE_CONNECT) {
     // Group Connect Packet
 
     // Enough Data available
-    log::LoggerFactory::getLogD("psp")->info("user state logged in");
+    INFO_DLOG("psp", "user state logged in");
     if (read_able >= sizeof(SceNetAdhocctlConnectPacketC2S)) {
       // Cast Packet
       packet_len = sizeof(SceNetAdhocctlConnectPacketC2S);
-      packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-      memset(packet_new, 0, packet_len);
-      memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+      packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(
+          malloc(packet_len));
+      memcpy(packet_new, connector->peek(), packet_len);
     }
   } else if (packet->opcode == OPCODE_DISCONNECT) {
     // Group Disconnect Packet
 
     packet_len = 1;
-    packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-    memset(packet_new, 0, packet_len);
-    memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+    packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(
+        malloc(packet_len));
+    memcpy(packet_new, connector->peek(), packet_len);
   } else if (packet->opcode == OPCODE_SCAN) {
     // Network Scan Packet
     packet_len = 1;
-    packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-    memset(packet_new, 0, packet_len);
-    memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+    packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(
+        malloc(packet_len));
+    memcpy(packet_new, connector->peek(), packet_len);
   } else if (packet->opcode == OPCODE_CHAT) {
     // Chat Text Packet
 
     // Enough Data available
     if (read_able >= sizeof(SceNetAdhocctlChatPacketC2S)) {
       packet_len = sizeof(SceNetAdhocctlChatPacketC2S);
-      packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-      memset(packet_new, 0, packet_len);
-      memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+      packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(
+          malloc(packet_len));
+      memcpy(packet_new, connector->peek(), packet_len);
     }
   } else if (packet->opcode == OPCODE_GAME_DATA) {
     // game data transfer
 
     if (read_able >= sizeof(SceNetAdhocctlGameDataPacketC2C)) {
       // cast Packet
-      SceNetAdhocctlGameDataPacketC2C *packet_raw
-          = (SceNetAdhocctlGameDataPacketC2C*)connector->peek();
+      const SceNetAdhocctlGameDataPacketC2C *packet_raw
+          = reinterpret_cast<const SceNetAdhocctlGameDataPacketC2C*>(
+              connector->peek());
       if (packet_raw->len >0 && packet_raw->len < 4000) {
         if (read_able >= (sizeof(
                 SceNetAdhocctlGameDataPacketC2C)+packet_raw->len-1)) {
@@ -228,20 +226,20 @@ SceNetAdhocctlPacketBase* Server::Parse(
 
 
           // first search user by ip and mac
-          packet_new = (SceNetAdhocctlPacketBase*)malloc(packet_len);
-          memset(packet_new, 0, packet_len);
-          memcpy((void *)packet_new, (void *)connector->peek(), packet_len);
+          packet_new = reinterpret_cast<SceNetAdhocctlPacketBase*>(
+              malloc(packet_len));
+          memcpy(packet_new, connector->peek(), packet_len);
         }
       } else {  // len > 4000, erro msg
         packet_len = read_able;
-        log::LoggerFactory::getLogD("psp")->error("game transfer data content len:%d", packet_raw->len);
+        ERROR_DLOG("psp", "game transfer data content len:%d", packet_raw->len);
       }
     }
   } else {
     // Invalid Opcode
 
     // Notify User
-    log::LoggerFactory::getLogD("psp")->error("recv invalid opcode data:%d", packet->opcode);
+    ERROR_DLOG("psp", "recv invalid opcode data:%d", packet->opcode);
     connector->retrieve(connector->readable());
     InvalidMsgHandle(connector);
   }
@@ -320,12 +318,12 @@ void Server::handle(
       break;
     }
     case OPCODE_LOGIN: {
-      log::LoggerFactory::getLogD("psp")->info("get login data");
+      INFO_DLOG("psp", "get login data");
       login_user_data(recvData);
       break;
     }
     case OPCODE_CONNECT: {
-      log::LoggerFactory::getLogD("psp")->info("get connect data");
+      INFO_DLOG("psp", "get connect data");
       if (GetPlayerState(playerId)
           == USER_STATE_LOGGED_IN) {
         connect_user(recvData);
@@ -333,25 +331,27 @@ void Server::handle(
       break;
     }
     case OPCODE_DISCONNECT: {
-      log::LoggerFactory::getLogD("psp")->info("disconnect");
+      INFO_DLOG("psp", "disconnect");
       if (GetPlayerState(playerId)
           == USER_STATE_CONNECTED_ROOM) {
         // Leave Game
         DisconnectState disconnectState = disconnect_user(recvData);
         if (disconnectState != STATE_SUCCESS) {
-          log::LoggerFactory::getLogD("psp")->error("disconnect from game room error:%d", disconnectState);
+          ERROR_DLOG("psp", "disconnect from game room error:%d",
+                     disconnectState);
         }
       }
       break;
     }
     case OPCODE_LOGOUT: {
-      log::LoggerFactory::getLogD("psp")->info("logout");
+      INFO_DLOG("psp", "logout");
       if (GetPlayerState(playerId)
           == USER_STATE_CONNECTED_ROOM) {
         // Leave Game
         DisconnectState disconnectState = disconnect_user(recvData);
         if (disconnectState != STATE_SUCCESS) {
-          log::LoggerFactory::getLogD("psp")->error("disconnect from game room error:%d", disconnectState);
+          ERROR_DLOG("psp", "disconnect from game room error:%d",
+                     disconnectState);
         }
       }
       Player* player = GetPlayer(playerId);
@@ -399,7 +399,7 @@ void Server::login_user_data(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
 
   SceNetAdhocctlLoginPacketC2S * data
-      = (SceNetAdhocctlLoginPacketC2S*)recvData.data;
+      = reinterpret_cast<SceNetAdhocctlLoginPacketC2S*>(recvData.data);
   uint32_t playerId = recvData.extdata.u32;
   // 找到对应的游戏
 
@@ -442,22 +442,19 @@ void Server::login_user_data(
           player->gameCode = gameCode;
           player->session = session;
 
-          log::LoggerFactory::getLogD("psp")->info("player game code :%s", gameCode.c_str());
+          INFO_DLOG("psp", "player game code :%s", gameCode.c_str());
           return;
         }
       } else {
-        log::LoggerFactory::getLogD("psp")->error("playerId:%u, ip:%s, port:%d session invalid:%s",
-                                                  playerId, ip.c_str(), recvData.port, session.c_str());
+        ERROR_DLOG("psp", "playerId:%u, ip:%s, port:%d session invalid:%s",
+                   playerId, ip.c_str(), recvData.port, session.c_str());
       }
-    }
-    else {
-        log::LoggerFactory::getLogD("psp")->error("playerId:%u, ip:%s, port:%d, but session invalid session[0] equal 0 or session[32] not 0 ",
-                                                  playerId, ip.c_str(), recvData.port);
+    } else {
+      ERROR_DLOG("psp", "playerId:%u, ip:%s, port:%d, but session invalid session[0] equal 0 or session[32] not 0 ", playerId, ip.c_str(), recvData.port);
     }
   } else {
-    log::LoggerFactory::getLogD("psp")->debug("gamecode or mac invalid");
+    DEBUG_LOG("psp", "gamecode or mac invalid");
   }
-  
   // 不合法
   KillOffPlayer(playerId);
 }
@@ -467,9 +464,9 @@ void Server::connect_user(
     const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData) {
   uint32_t playerId = recvData.extdata.u32;
   SceNetAdhocctlConnectPacketC2S * packet
-      = (SceNetAdhocctlConnectPacketC2S *)recvData.data;
+      = reinterpret_cast<SceNetAdhocctlConnectPacketC2S*>(recvData.data);
   SceNetAdhocctlGroupName* group
-      = (SceNetAdhocctlGroupName*)&packet->group;
+      = reinterpret_cast<SceNetAdhocctlGroupName*>(&packet->group);
 
   // room 名称合法性检查
   int valid_group_name = 1;
@@ -478,7 +475,7 @@ void Server::connect_user(
     int i = 0;
     for (; i < ADHOCCTL_GROUPNAME_LEN && valid_group_name == 1; ++i) {
       // End of Name
-      if(group->data[i] == 0) break;
+      if (group->data[i] == 0) break;
       // A - Z
       if (group->data[i] >= 'A' && group->data[i] <= 'Z') continue;
       // a - z
@@ -497,7 +494,8 @@ void Server::connect_user(
       GameWorld* gameWorld
           = GetGameWorld(player->gameCode);
       if (gameWorld != NULL) {
-        std::string roomCode((char*)group->data, ADHOCCTL_GROUPNAME_LEN);
+        std::string roomCode(reinterpret_cast<char*>(group->data),
+                             ADHOCCTL_GROUPNAME_LEN);
         if (gameWorld->connectPlayer(playerId, roomCode)) {
           player->userState = USER_STATE_CONNECTED_ROOM;
         }
@@ -506,9 +504,10 @@ void Server::connect_user(
     }
   } else {
     Player* player = GetPlayer(playerId);
-    log::LoggerFactory::getLogD("psp")->error("playerId %u invalid_group_name %s, ip:%s, port:%d, mac:%s",
-                                              playerId, group->data, player->ip.c_str(),
-                                              player->port, player->mac.c_str());
+    ERROR_DLOG("psp",
+               "playerId %u invalid_group_name %s, ip:%s, port:%d, mac:%s",
+               playerId, group->data, player->ip.c_str(),
+               player->port, player->mac.c_str());
   }
 
   // 不合法
@@ -531,23 +530,23 @@ DisconnectState Server::disconnect_user(
     if (gameWorld != NULL) {
       return gameWorld->disConnectPlayer(playerId, player->roomCode);
     } else {
-      log::LoggerFactory::getLogD("psp")->error(
-          "call disconnect_user but playerId:%u not find gamewold",
-          playerId);
+      ERROR_DLOG("psp",
+                 "call disconnect_user but playerId:%u not find gamewold",
+                 playerId);
       return STATE_NO_GAMEWOLD;
     }
   } else {
-    log::LoggerFactory::getLogD("psp")->error("call disconnect_user but playerId:%u not exists", playerId);
+    ERROR_DLOG("psp", "call disconnect_user but playerId:%u not exists",
+               playerId);
     return STATE_PLAYER_INVALID;
   }
 }
 
 
 void Server::logout_user(uint32_t playerId) {
-  log::LoggerFactory::getLogD("psp")->debug("call logout use playerId:%u", playerId);
+  DEBUG_DLOG("psp", "call logout use playerId:%u", playerId);
   Player* player = GetPlayer(playerId);
   if (player != NULL) {
-
     playerList.del(playerId);
     if (player->gameCode.length() > 0
         && player->roomCode.length() > 0 && player->playerId > 0) {
@@ -556,9 +555,8 @@ void Server::logout_user(uint32_t playerId) {
         gameWorld->disConnectPlayer(playerId, player->roomCode);
       }
     }
-    log::LoggerFactory::getLogD("psp")->info("delete player");
+    INFO_DLOG("psp", "delete player");
     delete player;
-
   }
 }
 
@@ -610,7 +608,7 @@ void Server::spread_message(
   Player* player = GetPlayer(playerId);
 
   SceNetAdhocctlChatPacketC2S * packet
-      = (SceNetAdhocctlChatPacketC2S *)recvData.data;
+      = reinterpret_cast<SceNetAdhocctlChatPacketC2S*>(recvData.data);
   std::string message(packet->message, 64);
 
   if (player!= NULL && player->gameCode.length() > 0) {
@@ -634,7 +632,7 @@ void Server::transfer_message(
   // player->ip.c_str(), player->port);
 
   SceNetAdhocctlGameDataPacketC2C *packet
-      = (SceNetAdhocctlGameDataPacketC2C*)recvData.data;
+      = reinterpret_cast<SceNetAdhocctlGameDataPacketC2C*>(recvData.data);
 
   std::string peerIp = Server::getIpstr(packet->ip);
   std::string peerMac = Server::getMacStr(packet->dmac);
@@ -643,7 +641,7 @@ void Server::transfer_message(
 
   int totallen = sizeof(SceNetAdhocctlGameDataPacketC2C)+packet->len-1;
 
-  std::string message((char*)packet, totallen);
+  std::string message(reinterpret_cast<char*>(packet), totallen);
 
   if (player->gameCode.length() > 0) {
     GameWorld* gameWorld
@@ -658,22 +656,18 @@ void Server::transfer_message(
 
 void Server::player_session_check(
     uint32_t playerId, std::string session) {
-  /*
   if ( !check_session(session) ) {
-    log::LoggerFactory::getLogD("psp")->warn(
-        "player:%u session:%s check error",
-        playerId, session.c_str());
-    
+    WARN_DLOG("psp", "player:%u session:%s check error",
+              playerId, session.c_str());
     KillOffPlayer(playerId);
   }
-  */
 }
 
 
 
 std::string Server::getMacStr(const SceNetEtherAddr& macAddr) {
   char mac[20] = {'\0'};
-  sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",
+  snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
           macAddr.data[0], macAddr.data[1],
           macAddr.data[2], macAddr.data[3],
           macAddr.data[4], macAddr.data[5]);
@@ -698,15 +692,15 @@ SceNetEtherAddr Server::getMacStruct(std::string macstr) {
 
 std::string Server::getIpstr(uint32_t ip) {
   char ipstr[16] = {'\0'};
-  uint8_t * ipitem = (uint8_t *)&ip;
-  sprintf(ipstr, "%u.%u.%u.%u",
+  uint8_t * ipitem = reinterpret_cast<uint8_t *>(&ip);
+  snprintf(ipstr, sizeof(ipstr), "%u.%u.%u.%u",
           ipitem[0], ipitem[1], ipitem[2], ipitem[3]);
   return std::string(ipstr);
 }
 
 uint32_t Server::getIp(std::string ipstr) {
   uint32_t ip = 0;
-  uint8_t *ipitem = (uint8_t *)&ip;
+  uint8_t *ipitem = reinterpret_cast<uint8_t *>(&ip);
   uint32_t ips[4];
   sscanf(ipstr.c_str(), "%3u.%3u.%3u.%3u",
          &ips[0], &ips[1], &ips[2], &ips[3]);
@@ -753,7 +747,7 @@ std::string Server::game_product_override(
     crosslink = crosslinks_iter->second;
 
     // Log Crosslink
-    log::LoggerFactory::getLogD("psp")->info("Crosslinked %s to %s.", productid,  crosslink.c_str());
+    INFO_DLOG("psp", "Crosslinked %s to %s.", productid,  crosslink.c_str());
 
     // Set Crosslinked Flag
     crosslinked = 1;
@@ -768,7 +762,7 @@ std::string Server::game_product_override(
       // Game doesn't exist
       // products_map.insert(std::pair<std::string,
       // std::string>(std::string(productid), std::string(productid)));
-      log::LoggerFactory::getLogD("psp")->warn("game %s doesn't exist", productid);
+      WARN_DLOG("psp", "game %s doesn't exist", productid);
     }
   }
   if (crosslink.length() > 0) {
@@ -796,7 +790,7 @@ size_t read_callback(
     void *buffer, size_t size, size_t nmemb, void *userp) {
   struct ptr_string *data = (struct ptr_string*)userp;
   size_t new_len = data->len + size*nmemb;
-  char *ptr = (char *)malloc(new_len+1);
+  char *ptr = reinterpret_cast<char *>(malloc(new_len+1));
   memset(ptr, 0, new_len+1);
   memcpy(ptr, data->ptr, data->len);
   memcpy(ptr+data->len, buffer, size*nmemb);
@@ -807,8 +801,7 @@ size_t read_callback(
   return size*nmemb;
 }
 
-bool post_message(
-    const char* url, const char* data, std::string &result) {
+bool post_message(const char* url, const char* data, std::string &result) {
   bool ret = false;
   curl_global_init(CURL_GLOBAL_ALL);
   CURL *curl = curl_easy_init();
@@ -830,7 +823,7 @@ bool post_message(
       result += std::string(login_result.ptr, login_result.len);
       ret = true;
     } else {
-      log::LoggerFactory::getLogD("psp")->info("post url:%s", url);
+      INFO_DLOG("psp", "post url:%s", url);
     }
 
     if (login_result.len > 0 && login_result.ptr != NULL) {
@@ -847,22 +840,22 @@ bool post_message(
 
 
 bool check_session(std::string session) {
-  return true;
-  std::string url = config.get_store_api_url()+"/session";
+  return true;  // 测试
+  std::string url = config.get_store_api_url() + "/session";
   int port = config.get_listen_port();
   std::string ip = config.get_local_ip();
   char param[100] = {'\0'};
   if (ip.compare("127.0.0.1") == 0) {
-    log::LoggerFactory::getLogD("psp")->error("server ip config error");
+    ERROR_DLOG("psp", "server ip config error");
     return false;
   }
   std::string result;
-  sprintf(param, "method=CHECK&ip=%s&port=%d&session=%s",
+  snprintf(param, sizeof(param), "method=CHECK&ip=%s&port=%d&session=%s",
           ip.c_str(), port, session.c_str());
 
-  log::LoggerFactory::getLogD("psp")->debug("post param:%s", param);
+  DEBUG_DLOG("psp", "post param:%s", param);
   if ( post_message(url.c_str(), param, result) ) {
-    log::LoggerFactory::getLogD("psp")->debug("get check infor:%s", result.c_str());
+    DEBUG_DLOG("psp", "get check infor:%s", result.c_str());
     Json::Reader reader;
     Json::Value root;
     if (reader.parse(result, root)) {
@@ -892,19 +885,19 @@ bool update_session_timeout(const std::string& session) {
   std::string url = config.get_store_api_url()+"/session";
   char param[100] = {'\0'};
   std::string result;
-  sprintf(param, "method=REFRESH&session=%s",
+  snprintf(param, sizeof(param), "method=REFRESH&session=%s",
           session.c_str());
 
-  log::LoggerFactory::getLogD("psp")->debug("post param:%s", param);
+  DEBUG_DLOG("psp", "post param:%s", param);
   if ( post_message(url.c_str(), param, result) ) {
-    log::LoggerFactory::getLogD("psp")->debug("get update session infor:%s", result.c_str());
+    DEBUG_DLOG("psp", "get update session infor:%s", result.c_str());
     Json::Reader reader;
     Json::Value root;
     if (reader.parse(result, root)) {
       int status = root["status"].asInt();
       if (status == 0) {  // call right
       } else {
-        log::LoggerFactory::getLogD("psp")->error("update session timeout and return error");
+        ERROR_DLOG("psp", "update session timeout and return error");
       }
     }
   }
@@ -967,7 +960,7 @@ int main(int argc, char *argv[]) {
     if (now - lastUpdteSession >= 30) {  // 30s
       lastUpdteSession = now;
       std::list<std::string> sessions = server.GetPlayerSession();
-      sails::log::LoggerFactory::getLogD("psp")->info("playerNum:%d", sessions.size());
+      INFO_DLOG("psp", "playerNum:%d", sessions.size());
       std::thread t(sails::update_sessions, sessions);
       t.detach();
     }
@@ -980,9 +973,9 @@ int main(int argc, char *argv[]) {
         std::map<std::string, std::list<std::string>> roomsMap
             = server.GetPlayerNameMap(gameCode);
         for (auto roominfo : roomsMap) {
-          sails::log::LoggerFactory::getLogD("psp")->info("game %s, room name %s, playerNum:%d",
-                             gameCode.c_str(), roominfo.first.c_str(),
-                             roominfo.second.size());
+          INFO_DLOG("psp", "game %s, room name %s, playerNum:%d",
+                    gameCode.c_str(), roominfo.first.c_str(),
+                    roominfo.second.size());
         }
       }
     }

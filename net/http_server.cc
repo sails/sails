@@ -138,17 +138,9 @@ HttpProcessor HttpServer::FindProcessor(std::string path) {
 void HttpServer::handle(
     const sails::net::TagRecvData<sails::net::HttpRequest> &recvData) {
 
-  /*
-  static char data[10*1024] = {'\0'};
-  recvData.data->ToString(data, 10*1024);
-  log::LoggerFactory::getLogD("access")->info(
-      "uid:%u, ip:%s, port:%d, msg:\n%s",
-      recvData.uid, recvData.ip.c_str(), recvData.port, data);
-  */
-  log::LoggerFactory::getLogD("access")->info(
-      "uid:%u, ip:%s, port:%d, msg:\n%s",
-      recvData.uid, recvData.ip.c_str(), recvData.port,
-      recvData.data->GetRequestPath().c_str());
+  INFO_LOG("access", "uid:%u, ip:%s, port:%d, msg:\n%s",
+           recvData.uid, recvData.ip.c_str(), recvData.port,
+           recvData.data->GetRequestPath().c_str());
   sails::net::HttpResponse *response = new sails::net::HttpResponse();
   sails::net::HttpRequest *request = recvData.data;
   process(request, response);
@@ -199,8 +191,7 @@ void HttpServer::process(sails::net::HttpRequest* request,
                            + filename;
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd < 0) {
-      log::LoggerFactory::getLog("server")->debug(
-          "error open %s", filepath.c_str());
+      DEBUG_LOG("access", "error open %s", filepath.c_str());
       response->SetResponseStatus(HttpResponse::Status_NotFound);
       response->SetBody("404", 3);
       return;

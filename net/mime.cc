@@ -32,7 +32,7 @@ void MimeTypeManager::init() {
 
   std::ifstream file("/etc/mime.types");
   if (!file) {
-    log::LoggerFactory::getLog("server")->warn("error open mime.types!");
+    WARN_LOG("server", "error open mime.types!");
     return;
   }
   std::string line;

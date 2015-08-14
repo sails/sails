@@ -50,8 +50,7 @@ static inline int GetLinuxVersion() {
 static inline bool IsPathValid(char* path) {
   struct stat statbuf;
   if (stat(path, &statbuf)) {
-    log::LoggerFactory::getLog("server")->error(
-        "stat error, permission problem, path=%s, error=%s",
+    ERROR_LOG("server", "stat error, permission problem, path=%s, error=%s",
         path, strerror(errno));
     return false;
   }
@@ -63,16 +62,14 @@ static bool OpenAndReadFile(
     char* filename, char* buffer, int buff_len, int* bytes) {
   int fd = open(filename, O_RDONLY, 0);
   if (fd == -1) {
-    log::LoggerFactory::getLog("server")->error(
-        "open file error, filename=%s", filename);
+    ERROR_LOG("server", "open file error, filename=%s", filename);
     return false;
   }
 
   *bytes = read(fd, buffer, buff_len - 1);
   close(fd);
   if (*bytes <= 0) {
-    log::LoggerFactory::getLog("server")->error(
-        "read file error, bytes:%d", *bytes);
+    ERROR_LOG("server", "read file error, bytes:%d", *bytes);
     return false;
   }
 
@@ -126,8 +123,7 @@ static bool StringToUINT64(const std::string& str, uint64_t* value ) {
   if (temp >= 0) {
     *value = temp;
   } else {
-    log::LoggerFactory::getLog("server")->error(
-        "StringToUINT64 str:%s value:%ld", str.c_str(), temp);
+    ERROR_LOG("server", "StringToUINT64 str:%s value:%ld", str.c_str(), temp);
     return false;
   }
   return true;
@@ -241,8 +237,7 @@ bool GetTotalCpuTime(uint64_t* total_cpu_time) {
   ret = ret && StringToUINT64(fields[8], &stealstolen);
   ret = ret && StringToUINT64(fields[9], &guest);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "get param error, fields size=%d", fields.size());
+    ERROR_LOG("server", "get param error, fields size=%d", fields.size());
     return false;
   }
 
@@ -289,8 +284,7 @@ bool GetProcessCpuTime(int32_t pid, uint64_t* process_cpu_time) {
   ret = ret && StringToUINT64(fields[14], &cstime);
   ret = ret && StringToUINT64(fields[19], &start_time);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "get param error, fields size=%u", fields.size());
+    ERROR_LOG("server", "get param error, fields size=%u", fields.size());
     return false;
   }
 
@@ -334,8 +328,7 @@ bool GetThreadCpuTime(int32_t pid, int tid, uint64_t* thread_cpu_time) {
   bool ret = StringToUINT64(fields[11], &utime);
   ret = ret && StringToUINT64(fields[12], &stime);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "get param error, fields size=%u", fields.size());
+    ERROR_LOG("server", "get param error, fields size=%u", fields.size());
     return false;
   }
 
@@ -353,16 +346,14 @@ bool GetProcessCpuUsage(int32_t pid, uint64_t sample_period, double* cpu) {
   uint64_t total_cpu_time_first = 0;
   bool ret = GetTotalCpuTime(&total_cpu_time_first);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "First GetTotalCpuTime error");
+    ERROR_LOG("server", "First GetTotalCpuTime error");
     return false;
   }
 
   uint64_t process_cpu_time_first = 0;
   ret = GetProcessCpuTime(pid, &process_cpu_time_first);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "First GetProcessCpuTime error");
+    ERROR_LOG("server", "First GetProcessCpuTime error");
     return false;
   }
 
@@ -373,23 +364,20 @@ bool GetProcessCpuUsage(int32_t pid, uint64_t sample_period, double* cpu) {
   uint64_t total_cpu_time_second = 0;
   ret = GetTotalCpuTime(&total_cpu_time_second);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "Second GetTotalCpuTime error");
+    ERROR_LOG("server", "Second GetTotalCpuTime error");
     return false;
   }
 
   uint64_t process_cpu_time_second = 0;
   ret = GetProcessCpuTime(pid, &process_cpu_time_second);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "Second GetProcessCpuTime error");
+    ERROR_LOG("server", "Second GetProcessCpuTime error");
     return false;
   }
 
   *cpu = 0;
   if (total_cpu_time_second == total_cpu_time_first) {
-    log::LoggerFactory::getLog("server")->error(
-        "GetTotalCpuTime same");
+    ERROR_LOG("server", "GetTotalCpuTime same");
     return false;
   }
 
@@ -411,16 +399,14 @@ bool GetThreadCpuUsage(
   uint64_t total_cpu_time_first = 0;
   bool ret = GetTotalCpuTime(&total_cpu_time_first);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "First GetTotalCpuTime error");
+    ERROR_LOG("server", "First GetTotalCpuTime error");
     return false;
   }
 
   uint64_t thread_cpu_time_first = 0;
   ret = GetThreadCpuTime(pid, tid, &thread_cpu_time_first);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "First GetThreadCpuTime error");
+    ERROR_LOG("server", "First GetThreadCpuTime error");
     return false;
   }
 
@@ -431,22 +417,20 @@ bool GetThreadCpuUsage(
   uint64_t total_cpu_time_second = 0;
   ret = GetTotalCpuTime(&total_cpu_time_second);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "Second GetTotalCpuTime error");
+    ERROR_LOG("server", "Second GetTotalCpuTime error");
     return false;
   }
 
   uint64_t thread_cpu_time_second = 0;
   ret = GetThreadCpuTime(pid, tid, &thread_cpu_time_second);
   if (!ret) {
-    log::LoggerFactory::getLog("server")->error(
-        "Second GetThreadCpuTime error");
+    ERROR_LOG("server", "Second GetThreadCpuTime error");
     return false;
   }
 
   *cpu = 0;
   if (total_cpu_time_second == total_cpu_time_first) {
-    log::LoggerFactory::getLog("server")->error("GetTotalCpuTime same");
+    ERROR_LOG("server", "GetTotalCpuTime same");
     return false;
   }
 

@@ -30,25 +30,30 @@ class GameWorld {
 
   std::string getGameCode() { return gameCode;}
 
-  GameRoom* getGameRoom(std::string& roomCode);
-  GameRoom* createGameRoom(std::string& roomCode);
+  GameRoom* getGameRoom(const std::string& roomCode);
+  GameRoom* createGameRoom(const std::string& roomCode);
 
 
-  bool connectPlayer(uint32_t playerId, std::string& roomCode);
-  DisconnectState disConnectPlayer(uint32_t playerId, std::string& roomCode);
-    
+  bool connectPlayer(uint32_t playerId, const std::string& roomCode);
+  DisconnectState disConnectPlayer(uint32_t playerId,
+                                   const std::string& roomCode);
+
   std::list<std::string> getRoomList();
 
-  std::string getRoomHostMac(std::string& roomCode);
+  std::string getRoomHostMac(const std::string& roomCode);
 
-  void spreadMessage(std::string& roomCode, std::string& message);
+  void spreadMessage(const std::string& roomCode, const std::string& message);
 
-  void transferMessage(std::string& roomCode, std::string&ip, std::string& mac, std::string& message);
+  void transferMessage(const std::string& roomCode,
+                       const std::string&ip,
+                       const std::string& mac,
+                       const std::string& message);
 
   std::list<std::string> getSessions();
   std::map<std::string, std::list<std::string>> getPlayerNameMap();
-    
+
   Server* getServer();
+
  private:
   std::string gameCode;
   int roomNum;

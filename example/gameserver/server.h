@@ -43,11 +43,8 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
   // NetThread关闭前，创建一个disconnector的数据包，让handle线程删除数据
   void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
 
-  
 
-  
 
-  
   // 获取游戏
   GameWorld* GetGameWorld(const std::string& gameCode);
 
@@ -61,7 +58,7 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
 
   // 关闭连接，发起删除用户流程，一个对外接口，可以在其它线程中调用
   void KillOffPlayer(uint32_t playerId);
-  
+
   Player* GetPlayer(uint32_t playerId);
 
   // 操作player属性值
@@ -84,7 +81,7 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
   std::mutex gameworldMutex;
   base::ConstantPtrList<Player> playerList;
 
-  ///  //////////////////// handle //////////////////////////////////////////////
+  /////////////////////// handle ///////////////////////////
  public:
   void handle(
       const sails::net::TagRecvData<SceNetAdhocctlPacketBase> &recvData);

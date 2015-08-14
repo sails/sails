@@ -9,6 +9,7 @@
 
 
 #include "game_room.h"
+#include <utility>
 #include "game_world.h"
 #include "server.h"
 #include "game_packets.h"
@@ -18,24 +19,23 @@
 
 namespace sails {
 
-GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld) {
-  this->roomCode = roomCode;
+GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld)
+    : roomCode(roomCode) {
   this->seatNum = seatNum;
   this->gameWorld = gameWorld;
+  usedNum = 0;
 }
 
 bool GameRoom::connectPlayer(uint32_t playerId) {
-
-  log::LoggerFactory::getLogD("psp")->debug("join game:%s, room :%s\n",gameWorld->getGameCode().c_str(), roomCode.c_str());
+  DEBUG_DLOG("psp", "join game:%s, room :%s\n",
+             gameWorld->getGameCode().c_str(), roomCode.c_str());
   // 加入map,再通过其它用户
   std::unique_lock<std::mutex> locker(playerMutex);
-    
+
   Server* server = gameWorld->getServer();
   Player* player = server->GetPlayer(playerId);
 
-  int maxAge = -1;
   if (player != NULL) {
-
     SceNetEtherAddr playerMac = Server::getMacStruct(player->mac);
     uint32_t playerIp = Server::getIp(player->ip);
     // BSSID Packet
@@ -45,46 +45,50 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
     // Set Default BSSID(group host)
     bssid.mac = playerMac;
 
-    log::LoggerFactory::getLogD("psp")->debug("connect room, ip:%s, port:%d, mac:%s\n", player->ip.c_str(), player->port, player->mac.c_str());
-	
+    DEBUG_DLOG("psp", "connect room, ip:%s, port:%d, mac:%s",
+               player->ip.c_str(), player->port, player->mac.c_str());
+
+    int maxAge = -1;
     // 循环通知玩家
-    for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+    for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
       Player* peer = iter->second;
 
       // 发送通过
       SceNetAdhocctlConnectPacketS2C packet;
-	    
       // Clear Memory
       memset(&packet, 0, sizeof(packet));
       // Set Connect Opcode
       packet.base.opcode = OPCODE_CONNECT;
       // Set Player Name
-      strcpy((char *)packet.name.data, player->playerName.c_str());
-	    
+      snprintf(reinterpret_cast<char*>(packet.name.data), ADHOCCTL_NICKNAME_LEN,
+               "%s", player->playerName.c_str());
       // Set Player MAC
       packet.mac = playerMac;
-					
+
       // Set Player IP
       packet.ip = playerIp;
-					
+
       // Send Data
       // 通知对方
-      log::LoggerFactory::getLogD("psp")->debug("notify other side\n");
-      std::string buffer((char*)&packet, sizeof(packet));
-      gameWorld->getServer()->send(buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
-	    
+      DEBUG_DLOG("psp", "notify other side\n");
+      std::string buffer(reinterpret_cast<char*>(&packet), sizeof(packet));
+      gameWorld->getServer()->send(
+          buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
+
       // Set Player Name
-      strcpy((char *)packet.name.data, peer->playerName.c_str());
-	    
+      snprintf(reinterpret_cast<char*>(packet.name.data), ADHOCCTL_NICKNAME_LEN,
+               "%s", peer->playerName.c_str());
+
       // Set Player MAC
       packet.mac = Server::getMacStruct(peer->mac);
-					
+
       // Set Player IP
       packet.ip = Server::getIp(peer->ip);
-					
+
       // 通知自己
-      std::string buffer2((char*)&packet, sizeof(packet));
-      gameWorld->getServer()->send(buffer2, player->ip, player->port, player->connectorUid, player->fd);
+      std::string buffer2(reinterpret_cast<char*>(&packet), sizeof(packet));
+      gameWorld->getServer()->send(
+          buffer2, player->ip, player->port, player->connectorUid, player->fd);
 
 
       // 最先加入的当这个组的host
@@ -93,23 +97,22 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
         maxAge = peer->age;
       }
     }
-	
+
     // Send Network BSSID to User
-    std::string buffer((char*)&bssid, sizeof(bssid));
-    gameWorld->getServer()->send(buffer, player->ip, player->port, player->connectorUid, player->fd);
-	
+    std::string buffer(reinterpret_cast<char*>(&bssid), sizeof(bssid));
+    gameWorld->getServer()->send(
+        buffer, player->ip, player->port, player->connectorUid, player->fd);
 
     playerMap.insert(std::pair<uint32_t, Player*>(playerId, player));
 
-	
-    for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+    for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
       Player* peer = iter->second;
       if (peer != NULL) {
         peer->age++;
       }
     }
     player->roomCode = roomCode;
-    log::LoggerFactory::getLogD("psp")->debug("user connect group\n");
+    DEBUG_DLOG("psp", "user connect group\n");
 
     return true;
   }
@@ -117,20 +120,21 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 }
 
 DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
-    
   std::unique_lock<std::mutex> locker(playerMutex);
 
   std::map<uint32_t, Player*>::iterator playerIter = playerMap.find(playerId);
   if (playerIter == playerMap.end()) {
-    log::LoggerFactory::getLogD("psp")->error("GameRoom::disConnectPlayer playerId:%u not finded", playerId);
+    ERROR_DLOG("psp", "GameRoom::disConnectPlayer playerId:%u not finded",
+               playerId);
     return STATE_PLAYER_NOT_EXISTS;
   }
   Player* player = playerIter->second;
   if (player->roomCode.length() == 0 || player->gameCode.length() == 0) {
-    log::LoggerFactory::getLogD("psp")->error("GameRoom::disConnectPlayer playerId:%u not invalid roomCode or gameCode", playerId);
+    ERROR_DLOG("psp",
+               "GameRoom::disConnectPlayer playerId:%u not invalid roomCode or gameCode", playerId);
     return STATE_PLAYER_INVALID;
   }
-    
+
   player->roomCode = "";
   //  player->gameCode = "";
   player->userState =  USER_STATE_LOGGED_IN;
@@ -140,27 +144,29 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
 
 
   // 向其它玩家发送退出通知
-  for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+  for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
     Player* peer = iter->second;
 
     // 发送通过
     SceNetAdhocctlDisconnectPacketS2C packet;
-	    
+
     // Clear Memory
     memset(&packet, 0, sizeof(packet));
     // Set Connect Opcode
     packet.base.opcode = OPCODE_DISCONNECT;
     // Set Player MAC
     packet.mac = playerMac;
-					
+
     // Set Player IP
     packet.ip = playerIp;
-					
+
     // Send Data
     // 通知对方
-    std::string buffer = std::string((char*)&packet, sizeof(packet));
-    gameWorld->getServer()->send(buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
-	    
+    std::string buffer = std::string(reinterpret_cast<char*>(&packet),
+                                     sizeof(packet));
+    gameWorld->getServer()->send(
+        buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
+
   }
   return STATE_SUCCESS;
 }
@@ -175,7 +181,7 @@ std::string GameRoom::getRoomCode() {
 std::string GameRoom::getRoomHostMac() {
   std::string mac;
   int maxAge = 0;
-  for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+  for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
     Player* peer = iter->second;
     if (peer != NULL) {
       if (maxAge < peer->age) {
@@ -189,11 +195,12 @@ std::string GameRoom::getRoomHostMac() {
 
 void GameRoom::spreadMessage(const std::string& message) {
   std::unique_lock<std::mutex> locker(playerMutex);
-  for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+  for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
     Player* peer = iter->second;
     if (peer != NULL) {
       // 通知对方
-      gameWorld->getServer()->send(message, peer->ip, peer->port, peer->connectorUid, peer->fd);
+      gameWorld->getServer()->send(
+          message, peer->ip, peer->port, peer->connectorUid, peer->fd);
     }
   }
 }
@@ -203,11 +210,12 @@ void GameRoom::transferMessage(const std::string&ip,
                                const std::string& mac,
                                const std::string& message) {
   std::unique_lock<std::mutex> locker(playerMutex);
-  for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+  for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
     Player* peer = iter->second;
     if (peer != NULL) {
       if (peer->ip == ip && peer->mac == mac) {
-        gameWorld->getServer()->send(message, peer->ip, peer->port, peer->connectorUid, peer->fd);
+        gameWorld->getServer()->send(
+            message, peer->ip, peer->port, peer->connectorUid, peer->fd);
       }
     }
   }
@@ -218,7 +226,7 @@ void GameRoom::transferMessage(const std::string&ip,
 std::list<std::string> GameRoom::getRoomSessions() {
   std::unique_lock<std::mutex> locker(playerMutex);
   std::list<std::string> sessions;
-  for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+  for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
     Player* peer = iter->second;
     if (peer != NULL) {
       if (peer->session.length() > 0) {
@@ -233,7 +241,7 @@ std::list<std::string> GameRoom::getRoomSessions() {
 std::list<std::string> GameRoom::getPlayerNames() {
   std::unique_lock<std::mutex> locker(playerMutex);
   std::list<std::string> names;
-  for (std::map<uint32_t, Player*>::iterator iter = playerMap.begin(); iter != playerMap.end(); iter++) {
+  for (auto iter = playerMap.begin(); iter != playerMap.end(); iter++) {
     Player* peer = iter->second;
     if (peer != NULL) {
       names.push_back(peer->playerName);

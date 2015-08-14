@@ -440,7 +440,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
       memset(errormsg, '\0', 100);
       sprintf(errormsg, "read connfd %d, return:%d",  // NOLINT'
               connector->get_connector_fd(), n);
-      log::LoggerFactory::getLog("server")->warn(errormsg);
+      WARN_LOG("server", errormsg);
       perror(errormsg);
       break;
     } else if (n == -1) {
@@ -454,7 +454,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
 
         sprintf(errormsg, "read connfd %d, return:%d, errno:%d",  // NOLINT'
                 connector->get_connector_fd(), n, lasterror);
-        log::LoggerFactory::getLog("server")->warn(errormsg);
+        WARN_LOG("server", errormsg);
         // perror(errormsg);
         break;
       }
@@ -648,7 +648,7 @@ void NetThread<T>::close_connector(const std::string &ip,
   if (ip.length() == 0 || port <= 0 || uid <= 0 || fd <= 0) {
     return;
   }
-  log::LoggerFactory::getLog("server")->debug("call close connector\n");
+  DEBUG_LOG("server", "call close connector");
   TagSendData* data = new TagSendData();
   data->cmd = 'c';
   data->uid = uid;
@@ -672,7 +672,7 @@ void  NetThread<T>::SetConnectorData(
   if (ip.length() == 0 || port <= 0 || uid <= 0 || fd <= 0) {
     return;
   }
-  log::LoggerFactory::getLog("server")->debug("call close connector\n");
+  DEBUG_LOG("server", "call close connector");
 
   TagSendData* sdata = new TagSendData();
   sdata->cmd = 'm';

@@ -306,7 +306,7 @@ void EpollServer<T>::Init(
 
 template<typename T>
 void EpollServer<T>::HandleSigpipe(int sig) {
-  log::LoggerFactory::getLog("server")->warn("sigpipe %d", sig);
+  WARN_LOG("server", "sigpipe %d", sig);
 }
 
 template<typename T>
@@ -398,8 +398,8 @@ void EpollServer<T>::ParseImp(
 template<typename T>
 void EpollServer<T>::CreateConnectorCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLog("server")->debug(
-      "create connector cb %d\n", connector->get_connector_fd());
+  DEBUG_LOG("server", "create connector cb %d\n",
+            connector->get_connector_fd());
 }
 
 template<typename T>
@@ -511,8 +511,8 @@ void EpollServer<T>::SetConnectorData(const std::string &ip,
 template<typename T>
 void EpollServer<T>::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
-  log::LoggerFactory::getLog("server")->debug(
-      "connetor %ld will be closed", connector->get_connector_fd());
+  DEBUG_LOG("server", "connetor %ld will be closed",
+            connector->get_connector_fd());
 }
 
 }  // namespace net

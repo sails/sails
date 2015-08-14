@@ -20,6 +20,7 @@ Player::Player() {
   age = 0;
   port = 0;
   fd = 0;
+  connectorUid = 0;
   userState = USER_STATE_WAITING;
 }
 

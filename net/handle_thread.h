@@ -259,9 +259,9 @@ void HandleThread<T>::handle(const TagRecvData<T> &recvData) {
     this->server->handle(recvData);
   } catch (std::exception &ex) {
     // 增加异常处理机制,防止客户逻辑错误让整个程序崩溃
-    log::LoggerFactory::getLog("server")->error("handle %s", ex.what());
+    ERROR_LOG("server", "handle %s", ex.what());
   } catch (...) {
-    log::LoggerFactory::getLog("server")->error("handle unknown error");
+    ERROR_LOG("server", "handle unknown error");
   }
 }
 
