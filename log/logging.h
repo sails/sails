@@ -20,12 +20,67 @@
 #include <time.h>
 #include <string>
 #include <map>
-#include <mutex>
+#include <mutex>  // NOLINT
+
+
+
+#define DEBUG_LOG(t, ...) { \
+    sails::log::LoggerFactory::getLog(t)->debug(__VA_ARGS__);   \
+  }
+#define INFO_LOG(t, ...) { \
+    sails::log::LoggerFactory::getLog(t)->info(__VA_ARGS__);    \
+}
+#define WARN_LOG(t, ...) { \
+    sails::log::LoggerFactory::getLog(t)->warn(__VA_ARGS__);    \
+}
+#define ERROR_LOG(t, ...) { \
+    sails::log::LoggerFactory::getLog(t)->error(__VA_ARGS__);   \
+}
+#define DEBUG_HLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogH(t)->debug(__VA_ARGS__);   \
+  }
+#define INFO_HLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogH(t)->info(__VA_ARGS__);    \
+}
+#define WARN_HLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogH(t)->warn(__VA_ARGS__);    \
+}
+#define ERROR_HLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogH(t)->error(__VA_ARGS__);   \
+}
+#define DEBUG_DLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogD(t)->debug(__VA_ARGS__);   \
+  }
+#define INFO_DLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogD(t)->info(__VA_ARGS__);    \
+}
+#define WARN_DLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogD(t)->warn(__VA_ARGS__);    \
+}
+#define ERROR_DLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogD(t)->error(__VA_ARGS__);   \
+}
+#define DEBUG_MLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogM(t)->debug(__VA_ARGS__);   \
+  }
+#define INFO_MLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogM(t)->info(__VA_ARGS__);    \
+}
+#define WARN_MLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogM(t)->warn(__VA_ARGS__);    \
+}
+#define ERROR_MLOG(t, ...) { \
+    sails::log::LoggerFactory::getLogM(t)->error(__VA_ARGS__);   \
+}
+
+
+
 
 namespace sails {
 namespace log {
 
 #define MAX_FILENAME_LEN 1000
+
 
 class Logger {
  public:

@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #endif
-#include <regex>
+#include <regex>  // NOLINT
 #include "sails/base/time_t.h"
 #include "sails/base/string.h"
 #include "sails/base/filesys.h"
