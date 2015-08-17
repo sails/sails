@@ -532,7 +532,7 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
           if (connector->getPort() == port && connector->getIp() == ip) {
             ExtData cdata;
             const char *temp = data->buffer.c_str();
-            memcpy((void*)&cdata, (void*)temp, sizeof(cdata));
+            memcpy(&cdata, temp, sizeof(cdata));
             connector->data = cdata;
           }
         }

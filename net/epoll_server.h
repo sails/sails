@@ -64,7 +64,17 @@ class EpollServer {
   // 终止网络线程
   bool StopNetThread();
 
-  // 开启分发线程
+  // 开启分发线程, 默认是不开启的，当不开启时
+  // 它是所有网络线程把数据放到共一个接收队列中，处理线程从这个队列中拿数据处理
+  // 当开启时，每个网络数据有自己的接入队列，分发数据从网络线程的接收队列中得到
+  // 数据，加入每个处理线程的处理队列中
+  // 所以当不开启时，会少经过一个队列。但是由于会有多个网络线程和处理线程同时操
+  // 作同一个队列，所以会造成竞争的机率加大，可能反而会造成整体效率降低，所以
+  // 网络线程和处理线程比较多时，开启它
+  // 因为当不开启时，所以处理线程都能得到同一个socket的数据处理，所以这里如果
+  // 程序要求同一个连接的数据要在同一个处理线程中处理，那就要打开了，比如游戏的
+  // 用户数据包，要保证数据的处理顺序，就不能在多个线程中同时处理.还有一种情况是
+  // 使用者为减锁的使用，想让操作的线程都在同一个处理线程中，这样也要开启它
   void TurnOnDispatcher(bool on = true);
 
  public:
@@ -131,6 +141,10 @@ class EpollServer {
   // 向处理线程中加入消息，注意，这里只有当use_dispatch_thread为true时可用
   // 否则，直接使用InsertRecvData
   void AddHandleData(TagRecvData<T>*data, int handleIndex);
+
+  // 当use_dispatch_thread为true时，直接加入对应的处理线程队列中，
+  // 否则直接加入epoll_server处理队列中
+  void AddHandleData(TagRecvData<T>*data);
 
   // 发送数据
   void send(const std::string &s, const std::string &ip,
@@ -446,6 +460,17 @@ bool EpollServer<T>::StopHandleThread() {
 template<typename T>
 void EpollServer<T>::AddHandleData(TagRecvData<T>*data, int handleIndex) {
   handleThreads[handleIndex]->addForHandle(data);
+}
+
+template<typename T>
+void EpollServer<T>::AddHandleData(TagRecvData<T>*data) {
+  if (use_dispatch_thread) {
+    int handleNum = GetHandleNum();
+    int selectedHandle = data->fd % handleNum;
+    AddHandleData(data, selectedHandle);
+  } else {
+    InsertRecvData(data);
+  }
 }
 
 // 插入网络线程接收到的数据
