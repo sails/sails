@@ -130,9 +130,6 @@ class NetThread {
   // 发送队列大小
   size_t get_sendqueue_size();
 
-  // 用于io线程自身解析完之后
-  void addRecvList(TagRecvData<T> *data);
-
   // 发送数据,把data放入一个send list中,然后再触发epoll的可写事件
   void send(const std::string &ip,
             uint16_t port, uint32_t uid,
@@ -597,20 +594,6 @@ void NetThread<T>::terminate() {
   if (thread != NULL) {
     // 向epoll管理的0号连接发一个终止事件,让epoll wait结束,然后再退出
     ev_loop->stop_loop();
-  }
-}
-
-
-template <typename T>
-void NetThread<T>::addRecvList(TagRecvData<T> *data) {
-  if (!server->InsertRecvData(data)) {
-    // 删除它
-    T* t = data->data;
-    if (t != NULL) {
-      server->Tdeleter(t);
-      data->data = NULL;
-    }
-    delete data;
   }
 }
 

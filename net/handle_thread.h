@@ -58,8 +58,8 @@ class HandleThread {
   // 对象初始化
   virtual void initialize() {}
 
-  // dispatcher线程分发
-  void addForHandle(TagRecvData<T> *data);
+  // 分发
+  bool addForHandle(TagRecvData<T> *data);
 
   /*
   // 发送数据
@@ -195,7 +195,7 @@ void HandleThread<T>::join() {
 
 
 template <typename T>
-void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
+bool HandleThread<T>::addForHandle(TagRecvData<T> *data) {
   if (!handlelist.push_back(data)) {
     // 删除它
     T* t = data->data;
@@ -211,7 +211,9 @@ void HandleThread<T>::addForHandle(TagRecvData<T> *data) {
       delete data;
     }
     data = NULL;
+    return false;
   }
+  return true;
 }
 
 

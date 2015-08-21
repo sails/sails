@@ -72,7 +72,6 @@ class HttpServer : public EpollServer<HttpRequest> {
   void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
 
  private:
-  struct http_parser_settings settings;
   std::map<std::string, HttpProcessor> processorMap;
 
   std::string staticResourcePath;

@@ -46,7 +46,7 @@ int connectserver(const char* ip, int port) {
 }
 
 void test() {
-  int fd = connectserver("127.0.0.1", 8000);
+  int fd = connectserver("127.0.0.1", 9123);
     if (fd > 0) {
       char buffer[20] = {"hello, world"};
       char recvbuf[20] = {'\0'};

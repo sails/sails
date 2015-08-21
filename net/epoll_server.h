@@ -8,8 +8,8 @@
 
 
 
-#ifndef SAILS_NET_EPOLL_SERVER_H_
-#define SAILS_NET_EPOLL_SERVER_H_
+#ifndef NET_EPOLL_SERVER_H_
+#define NET_EPOLL_SERVER_H_
 
 #include <signal.h>
 #include <string>
@@ -20,7 +20,6 @@
 #include "sails/base/thread_queue.h"
 #include "sails/base/memory_pool.h"
 #include "sails/net/handle_thread.h"
-#include "sails/net/dispatcher_thread.h"
 #include "sails/net/net_thread.h"
 
 
@@ -36,8 +35,10 @@ class EpollServer {
   virtual ~EpollServer();
 
   // 初始化
-  void Init(int port, int netThreadNum = 1,
-            int timeout = 10, int handleThreadNum = 1,
+  void Init(int port,
+            int netThreadNum = 1,
+            int timeout = 10,
+            int handleThreadNum = 1,
             bool useMemoryPool = false);
 
   // 停止服务器
@@ -130,21 +131,13 @@ class EpollServer {
   // 得到接收到的数据数
   size_t GetRecvDataNum();
 
-  // 从io线程队列中得到数据包,用于dispacher线程
+  // 从接收队列中得到数据包,用于dispacher线程
   TagRecvData<T>* GetRecvPacket();
 
   // 处理线程数
   int GetHandleNum() {
     return handleThreads.size();
   }
-
-  // 向处理线程中加入消息，注意，这里只有当use_dispatch_thread为true时可用
-  // 否则，直接使用InsertRecvData
-  void AddHandleData(TagRecvData<T>*data, int handleIndex);
-
-  // 当use_dispatch_thread为true时，直接加入对应的处理线程队列中，
-  // 否则直接加入epoll_server处理队列中
-  void AddHandleData(TagRecvData<T>*data);
 
   // 发送数据
   void send(const std::string &s, const std::string &ip,
@@ -215,8 +208,6 @@ class EpollServer {
   std::vector<NetThread<T>*> netThreads;
   // 逻辑处理线程
   std::vector<HandleThread<T>*> handleThreads;
-  // 消息分发线程
-  DispatcherThread<T>* dispacher_thread;
 
   // 网络线程数目
   unsigned int netThreadNum;
@@ -390,13 +381,12 @@ void EpollServer<T>::ParseImp(
     if (useMemoryPool) {
       // Use memory pool
       data = (TagRecvData<T>*)memory_pool.allocate(sizeof(TagRecvData<T>));
+      new(data) TagRecvData<T>();
     } else {
       data = new TagRecvData<T>();
     }
 
 
-
-    new(data) TagRecvData<T>();
     data->uid = connector->getId();
     data->data = packet;
     data->ip = connector->getIp();
@@ -404,8 +394,16 @@ void EpollServer<T>::ParseImp(
     data->fd = connector->get_connector_fd();
     data->extdata = connector->data;
 
-    NetThread<T>* netThread = GetNetThreadOfFd(connector->get_connector_fd());
-    netThread->addRecvList(data);
+    // 插入
+    if (!InsertRecvData(data)) {
+      // 删除它
+      T* t = data->data;
+      if (t != NULL) {
+        Tdeleter(t);
+        data->data = NULL;
+      }
+      delete data;
+    }
   }
 }
 
@@ -425,8 +423,6 @@ bool EpollServer<T>::StartHandleThread() {
     i++;
   }
   printf("start %lu handle threads\n", handleThreads.size());
-  dispacher_thread = new DispatcherThread<T>(this);
-  dispacher_thread->run();
   return true;
 }
 
@@ -441,12 +437,6 @@ void EpollServer<T>::Stop() {
 
 template<typename T>
 bool EpollServer<T>::StopHandleThread() {
-  printf("stop dispacher thread\n");
-  dispacher_thread->terminate();
-  dispacher_thread->join();
-  delete dispacher_thread;
-  dispacher_thread = NULL;
-
   printf("stop handle thread\n");
   for (uint32_t i = 0; i < handleThreads.size(); i++) {
     handleThreads[i]->terminate();
@@ -457,26 +447,16 @@ bool EpollServer<T>::StopHandleThread() {
   return true;
 }
 
-template<typename T>
-void EpollServer<T>::AddHandleData(TagRecvData<T>*data, int handleIndex) {
-  handleThreads[handleIndex]->addForHandle(data);
-}
-
-template<typename T>
-void EpollServer<T>::AddHandleData(TagRecvData<T>*data) {
-  if (use_dispatch_thread) {
-    int handleNum = GetHandleNum();
-    int selectedHandle = data->fd % handleNum;
-    AddHandleData(data, selectedHandle);
-  } else {
-    InsertRecvData(data);
-  }
-}
-
 // 插入网络线程接收到的数据
 template<typename T>
 bool EpollServer<T>::InsertRecvData(TagRecvData<T>* data) {
-  return recvlist.push_back(data);
+  if (!use_dispatch_thread) {
+    return recvlist.push_back(data);
+  } else {
+    int handleNum = GetHandleNum();
+    int selectedHandle = data->fd % handleNum;
+    return handleThreads[selectedHandle]->addForHandle(data);
+  }
 }
 
 template<typename T>
@@ -543,4 +523,4 @@ void EpollServer<T>::ClosedConnectCB(
 }  // namespace net
 }  // namespace sails
 
-#endif  // SAILS_NET_EPOLL_SERVER_H_
+#endif  // NET_EPOLL_SERVER_H_

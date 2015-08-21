@@ -9,6 +9,7 @@
 
 
 #include <signal.h>
+#include <gperftools/profiler.h>
 #include "sails/net/epoll_server.h"
 #include "sails/net/connector.h"
 #include "sails/log/logging.h"
@@ -85,13 +86,14 @@ int main(int, char *[]) {
   }
 
   TestServer server;
+  //  server.use_dispatch_thread = true;
   // 注意，如果在测试最大并发数时，这个值要改大一些
-  server.Init(8000, 2, 10, 1, true);
-
+  server.Init(9123, 1, 10, 1, false);
+  ProfilerStart("server.prof");
   while (isRun) {
     sleep(2);
   }
-
+  ProfilerStop();
   server.Stop();
 
   return 0;
