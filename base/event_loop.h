@@ -9,8 +9,8 @@
 
 
 
-#ifndef SAILS_BASE_EVENT_LOOP_H_
-#define SAILS_BASE_EVENT_LOOP_H_
+#ifndef BASE_EVENT_LOOP_H_
+#define BASE_EVENT_LOOP_H_
 #ifdef __linux__
 #include <sys/epoll.h>
 #elif __APPLE__
@@ -18,6 +18,7 @@
 #include <sys/event.h>
 #include <sys/time.h>
 #endif
+#include <mutex>  // NOLINT
 #include "sails/base/uncopyable.h"
 
 namespace sails {
@@ -121,9 +122,12 @@ class EventLoop : private Uncopyable{
   bool stop;
   // 用于通知结束wait事件循环
   int shutdownfd = 0;
+
+  // 在event_ctl会在其它线程中访问，它会去修改anfds的数据
+  std::mutex eventMutex;
 };
 
 }  // namespace base
 }  // namespace sails
 
-#endif  // SAILS_BASE_EVENT_LOOP_H_
+#endif  // BASE_EVENT_LOOP_H_

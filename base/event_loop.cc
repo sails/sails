@@ -17,15 +17,11 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <mutex>
 
 namespace sails {
 namespace base {
 
 // const int EventLoop::INIT_EVENTS = 1000;
-
-// 在event_ctl会在其它线程中访问，它会去修改anfds的数据
-std::recursive_mutex eventMutex;
 
 void emptyEvent(struct event* ev) {
   if (ev == NULL) {
@@ -392,7 +388,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
 
 
 bool EventLoop::event_stop(int fd) {
-  std::unique_lock<std::recursive_mutex> locker(eventMutex);
+  std::unique_lock<std::mutex> locker(eventMutex);
   if (anfds[fd].isused == 1) {
     anfds[fd].isused = 0;
     // detele event list
@@ -432,7 +428,7 @@ bool EventLoop::event_stop(int fd) {
 }
 
 bool EventLoop::event_ctl(OperatorType op, const struct event* ev) {
-  std::unique_lock<std::recursive_mutex> locker(eventMutex);
+  std::unique_lock<std::mutex> locker(eventMutex);
   if (op == EventLoop::EVENT_CTL_ADD) {
     return this->add_event(ev);
   } else if (op == EventLoop::EVENT_CTL_DEL) {
@@ -549,7 +545,7 @@ void EventLoop::process_event(int fd, int events) {
     return;
   }
 
-  std::unique_lock<std::recursive_mutex> locker(eventMutex);
+  std::unique_lock<std::mutex> locker(eventMutex);
   if (anfds[fd].isused != 1) {
     return;
   }
