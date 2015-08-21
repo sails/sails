@@ -124,7 +124,7 @@ class EventLoop : private Uncopyable{
   int shutdownfd = 0;
 
   // 在event_ctl会在其它线程中访问，它会去修改anfds的数据
-  std::mutex eventMutex;
+  std::recursive_mutex eventMutex;
 };
 
 }  // namespace base

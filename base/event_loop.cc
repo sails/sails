@@ -23,6 +23,7 @@ namespace base {
 
 // const int EventLoop::INIT_EVENTS = 1000;
 
+
 void emptyEvent(struct event* ev) {
   if (ev == NULL) {
     return;
@@ -388,7 +389,7 @@ bool EventLoop::mod_event(const struct event*ev, bool ctl_poll) {
 
 
 bool EventLoop::event_stop(int fd) {
-  std::unique_lock<std::mutex> locker(eventMutex);
+  std::unique_lock<std::recursive_mutex> locker(eventMutex);
   if (anfds[fd].isused == 1) {
     anfds[fd].isused = 0;
     // detele event list
@@ -428,7 +429,7 @@ bool EventLoop::event_stop(int fd) {
 }
 
 bool EventLoop::event_ctl(OperatorType op, const struct event* ev) {
-  std::unique_lock<std::mutex> locker(eventMutex);
+  std::unique_lock<std::recursive_mutex> locker(eventMutex);
   if (op == EventLoop::EVENT_CTL_ADD) {
     return this->add_event(ev);
   } else if (op == EventLoop::EVENT_CTL_DEL) {
@@ -545,7 +546,7 @@ void EventLoop::process_event(int fd, int events) {
     return;
   }
 
-  std::unique_lock<std::mutex> locker(eventMutex);
+  std::unique_lock<std::recursive_mutex> locker(eventMutex);
   if (anfds[fd].isused != 1) {
     return;
   }
