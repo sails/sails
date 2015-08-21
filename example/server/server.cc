@@ -86,9 +86,8 @@ int main(int, char *[]) {
   }
 
   TestServer server;
-  //  server.use_dispatch_thread = true;
   // 注意，如果在测试最大并发数时，这个值要改大一些
-  server.Init(9123, 1, 10, 1, false);
+  server.Init(9123, 1, 10, 1, false, 2);
   ProfilerStart("server.prof");
   while (isRun) {
     sleep(2);

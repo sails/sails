@@ -222,7 +222,7 @@ void HandleThread<T>::handleImp() {
   // 从接收队列中得到数据,然后调用handle()处理
   while (continueHanle) {
     TagRecvData<T>* data = NULL;
-    if (!server->use_dispatch_thread) {
+    if (server->runMode == 1) {
       data = server->GetRecvPacket();
     } else {
       handlelist.pop_front(data, 100);

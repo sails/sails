@@ -2,6 +2,19 @@
 // All rights reserved.
 //
 // Filename: epoll_server.h
+//           server有两种工作模式:
+//           第一种是把所有接收到的包加入epoll_server的队列中;
+//           第二种是把包分发到不同的handle_thread的队列中;
+//           当使用第二种模式时，由于锁冲突会减少，所以性能更高.
+//           性能测试当server中两个网络线程+两个处理线程时，客户端30个同步线程
+//           第一种模式达到14w tps,而第二种可以达到21w tps
+//           由于第二种模式时网络线程中连接和处理线程中请求包的分派都是通过
+//           socketfd取模，所以为了能让两个网络线程不会在入队请求包到同一个处
+//           理线程的队列中而使锁冲突增加，处理线程的数据最好是网络线程的整数倍
+//
+//           还有一种情况是必须使用第二种模式的，当我们我们有多个处理线程
+//           而且要保证一个客户端的处理先后顺序时，如果使用第一种模式，那
+//           可能会造成后来的包先处理
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-11 11:57:33
@@ -39,7 +52,8 @@ class EpollServer {
             int netThreadNum = 1,
             int timeout = 10,
             int handleThreadNum = 1,
-            bool useMemoryPool = false);
+            bool useMemoryPool = false,
+            int runMode = 1);
 
   // 停止服务器
   void Stop();
@@ -64,19 +78,6 @@ class EpollServer {
 
   // 终止网络线程
   bool StopNetThread();
-
-  // 开启分发线程, 默认是不开启的，当不开启时
-  // 它是所有网络线程把数据放到共一个接收队列中，处理线程从这个队列中拿数据处理
-  // 当开启时，每个网络数据有自己的接入队列，分发数据从网络线程的接收队列中得到
-  // 数据，加入每个处理线程的处理队列中
-  // 所以当不开启时，会少经过一个队列。但是由于会有多个网络线程和处理线程同时操
-  // 作同一个队列，所以会造成竞争的机率加大，可能反而会造成整体效率降低，所以
-  // 网络线程和处理线程比较多时，开启它
-  // 因为当不开启时，所以处理线程都能得到同一个socket的数据处理，所以这里如果
-  // 程序要求同一个连接的数据要在同一个处理线程中处理，那就要打开了，比如游戏的
-  // 用户数据包，要保证数据的处理顺序，就不能在多个线程中同时处理.还有一种情况是
-  // 使用者为减锁的使用，想让操作的线程都在同一个处理线程中，这样也要开启它
-  void TurnOnDispatcher(bool on = true);
 
  public:
   // T 的删除器,用于用户处理接收到的消息后,框架层删除它
@@ -197,13 +198,12 @@ class EpollServer {
   bool useMemoryPool;
   sails::base::MemoryPoll memory_pool;
 
-  // 是否使用dispatcher线程来分派任务
-  // 如果业务是需要严格按照发包的顺序处理，并且存在同时发多个包的
-  // 情况，那么就要使用dispatcher_thread来
-  bool use_dispatch_thread;
-
  protected:
   int listenPort;
+
+  // 运行模式，1：所以请求入同一个队列，2：请求分派到处理线程的队列中
+  int runMode;
+
   // 网络线程
   std::vector<NetThread<T>*> netThreads;
   // 逻辑处理线程
@@ -213,10 +213,6 @@ class EpollServer {
   unsigned int netThreadNum;
 
   uint32_t handleThreadNum;
-
-  // io线程将数据入队时通过dispacher线程分发
-  std::mutex dispacher_mutex;
-  std::condition_variable dispacher_notify;
 
   // 服务是否停止
   bool bTerminate;
@@ -252,7 +248,6 @@ EpollServer<T>::EpollServer() {
   sigemptyset(&sigpipe_action.sa_mask);
   sigpipe_action.sa_flags = 0;
   sigaction(SIGPIPE, &sigpipe_action, NULL);
-  use_dispatch_thread = false;
 }
 
 
@@ -268,9 +263,13 @@ EpollServer<T>::~EpollServer() {
 
 
 template<typename T>
-void EpollServer<T>::Init(
-    int port, int netThreadNum,
-    int timeout, int handleThreadNum, bool useMemoryPool) {
+void EpollServer<T>::Init(int port,
+                          int netThreadNum,
+                          int timeout,
+                          int handleThreadNum,
+                          bool useMemoryPool,
+                          int runMode) {
+  this->runMode = runMode;
   this->useMemoryPool = useMemoryPool;
   // 新建网络线程
   this->netThreadNum = netThreadNum;
@@ -352,12 +351,6 @@ bool EpollServer<T>::StopNetThread() {
   }
   return true;
 }
-
-template<typename T>
-void EpollServer<T>::TurnOnDispatcher(bool on) {
-  use_dispatch_thread = on;
-}
-
 
 template<typename T>
 void EpollServer<T>::Tdeleter(T *data) {
@@ -450,7 +443,7 @@ bool EpollServer<T>::StopHandleThread() {
 // 插入网络线程接收到的数据
 template<typename T>
 bool EpollServer<T>::InsertRecvData(TagRecvData<T>* data) {
-  if (!use_dispatch_thread) {
+  if (runMode == 1) {
     return recvlist.push_back(data);
   } else {
     int handleNum = GetHandleNum();
