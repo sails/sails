@@ -20,4 +20,4 @@ DEPSLIBS 	= common_base
 	rm -f $@.$$$$
 
 clean:
-	-rm *.o *.d *.a  *.d.*
+	-rm -f *.o *.d *.a  *.d.*
