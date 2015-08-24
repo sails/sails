@@ -10,8 +10,8 @@
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-15 13:37:11
 
-#ifndef SAILS_NET_HTTP_SERVER_H_
-#define SAILS_NET_HTTP_SERVER_H_
+#ifndef NET_HTTP_SERVER_H_
+#define NET_HTTP_SERVER_H_
 
 #include <string>
 #include <map>
@@ -81,4 +81,4 @@ class HttpServer : public EpollServer<HttpRequest> {
 }  // namespace sails
 
 
-#endif  // SAILS_NET_HTTP_SERVER_H_
+#endif  // NET_HTTP_SERVER_H_

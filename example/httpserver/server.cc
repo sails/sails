@@ -40,7 +40,7 @@ int main(int, char **) {
 
     sails::net::HttpServer server;
     server.Init(8000, 2, 10, 1);
-    server.SetStaticResourcePath("./static/");
+    // server.SetStaticResourcePath("./static/");
 
     // 请求处理器
     sails::net::HttpServer* httpserver = &server;

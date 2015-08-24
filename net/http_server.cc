@@ -20,8 +20,8 @@ namespace sails {
 namespace net {
 
 
-HttpServer::HttpServer() {
-
+HttpServer::HttpServer()
+    : staticResourcePath("./static/") {
 }
 
 HttpServer::~HttpServer() {
