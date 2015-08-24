@@ -28,11 +28,6 @@ typedef struct {
   char msg[20];
 } __attribute__((packed)) EchoStruct;
 
-namespace sails {
-sails::log::Logger serverlog(sails::log::Logger::LOG_LEVEL_DEBUG,
-                             "./log/server.log", sails::log::Logger::SPLIT_DAY);
-}
-
 
 class TestServer : public sails::net::EpollServer<EchoStruct> {
  public:

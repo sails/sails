@@ -82,10 +82,7 @@ void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
   data->fd = connector->get_connector_fd();
   data->extdata = connector->data;
 
-  int handleNum = GetHandleNum();
-  int selectedHandle = connector->get_connector_fd() % handleNum;
-  DEBUG_DLOG("psp", "sendDisConnectDataToHandle playerId:%u end", playerId);
-  AddHandleData(data, selectedHandle);
+  InsertRecvData(data);
 }
 
 void Server::KillOffPlayer(uint32_t playerId) {
