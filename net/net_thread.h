@@ -330,16 +330,16 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
       } while ((connfd < 0) && (errno == EINTR));  // 被中断
 
       if (connfd > 0) {
-        sails::base::setnonblocking(connfd);
-        accept_times++;
-        if (accept_times > INT64_MAX-10) {
-          accept_times = 0;
-        }
         int port = ntohs(local.sin_port);
         char sAddr[20] = {'\0'};
         inet_ntop(AF_INET, &(local.sin_addr), sAddr, 20);
         std::string ip(sAddr);
         if (server->isIpAllow(ip)) {
+          sails::base::setnonblocking(connfd);
+          accept_times++;
+          if (accept_times > INT64_MAX-10) {
+            accept_times = 0;
+          }
           // 新建connector
           std::shared_ptr<net::Connector> connector(new net::Connector(connfd));
           connector->setPort(port);
