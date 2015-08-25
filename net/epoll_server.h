@@ -118,6 +118,9 @@ class EpollServer {
  public:
   int GetEmptyConnTimeout() { return connectorTimeout;}
 
+  // ip过滤
+  bool isIpAllow(const std::string&) { return true; }
+
   // 增加连接
   void AddConnector(std::shared_ptr<net::Connector> connector, int fd);
 

@@ -24,5 +24,5 @@ client: client.o
 
 clean:
 	-rm -f *.o *.d *.d.*
-	-rm server
-	-rm client
+	-rm -f server
+	-rm -f client

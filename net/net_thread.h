@@ -81,6 +81,7 @@ class NetThread {
     int listen_port;  // only for recv accept
     size_t connector_num;
     uint64_t accept_times;
+    uint64_t reject_times;
     uint32_t send_queue_capacity;
     uint32_t send_queue_size;
   };
@@ -170,6 +171,7 @@ class NetThread {
   int listenfd;
   int listen_port;
   uint64_t accept_times;
+  uint64_t reject_times;  // 拒绝对方连接次数
 
   base::EventLoop *ev_loop;  // 事件循环
 
@@ -193,6 +195,7 @@ NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
   listenfd = 0;
   listen_port = 0;
   accept_times = 0;
+  reject_times = 0;
   ev_loop = NULL;
   connector_list.init(1000000, index);
   connect_timer = NULL;
@@ -332,21 +335,24 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
         if (accept_times > INT64_MAX-10) {
           accept_times = 0;
         }
-        // 新建connector
-        std::shared_ptr<net::Connector> connector(new net::Connector(connfd));
         int port = ntohs(local.sin_port);
-        connector->setPort(port);
         char sAddr[20] = {'\0'};
         inet_ntop(AF_INET, &(local.sin_addr), sAddr, 20);
         std::string ip(sAddr);
-        connector->setIp(ip);
-        connector->set_listen_fd(e->fd);
-        connector->setTimeoutCB(NetThread<T>::timeoutCb);
+        if (server->isIpAllow(ip)) {
+          // 新建connector
+          std::shared_ptr<net::Connector> connector(new net::Connector(connfd));
+          connector->setPort(port);
+          connector->setIp(ip);
+          connector->set_listen_fd(e->fd);
+          connector->setTimeoutCB(NetThread<T>::timeoutCb);
 
-        server->AddConnector(connector, connfd);
+          server->AddConnector(connector, connfd);
 
-        server->CreateConnectorCB(connector);
-
+          server->CreateConnectorCB(connector);
+        } else {
+          reject_times++;
+        }
       } else {
         break;
       }
@@ -572,6 +578,7 @@ typename NetThread<T>::NetThreadStatus NetThread<T>::GetStatus() {
   stat.listen_port = this->listen_port;
   stat.connector_num = this->get_connector_count();
   stat.accept_times = this->accept_times;
+  stat.reject_times = this->reject_times;
   stat.send_queue_capacity = sendlist.MaxSize();
   stat.send_queue_size = sendlist.size();
   return stat;
