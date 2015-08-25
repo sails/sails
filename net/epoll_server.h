@@ -174,6 +174,7 @@ class EpollServer {
  public:
   // 统计相关
   int ListenPort() { return listenPort;}
+  int RunMode() { return runMode;}
   unsigned int NetThreadNum() {
     return netThreadNum;
   }
