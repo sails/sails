@@ -54,8 +54,10 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
   sails::base::EventLoop::Events events = sails::base::EventLoop::Event_READ;
 #elif __APPLE__
   // 在这儿的fd可以随便指定，但是不要和其它重复
+  // 不要太小，否则可能会搞死人，以前指定的是1,
+  // 结果导致由于关闭时会close,之后看不到输出，差点被搞崩溃
   //  timerfd = open("/tmp/temp_sails_event_poll.txt", O_CREAT | O_RDWR, 0644);
-  timerfd = 1;
+  timerfd = 65534;
   sails::base::EventLoop::Events events = sails::base::EventLoop::Event_TIMER;
 #endif
   sails::base::event ev;
