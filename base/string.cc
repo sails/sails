@@ -152,7 +152,7 @@ std::vector<std::string> split(const std::string& str, const char* c) {
   snprintf(cstr, str.size()+1, "%s", str.c_str());
   p = strtok(cstr, c);  // NOLINT'
   while (p != NULL) {
-    res.push_back(p);
+    res.push_back(std::string(p));
     p = strtok(NULL, c);  // NOLINT'
   }
   delete[] cstr;
@@ -167,7 +167,7 @@ void SplitString(const std::string& str,
   snprintf(cstr, str.size()+1, "%s", str.c_str());
   p = strtok(cstr, delim);  // NOLINT'
   while (p != NULL) {
-    result->push_back(p);
+    result->push_back(std::string(p));
     p = strtok(NULL, delim);  // NOLINT'
   }
   delete[] cstr;
