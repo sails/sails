@@ -121,6 +121,14 @@ class NetThread {
 
   static void read_pipe_cb(base::event* e, int revents, void* owner);
 
+  // tick callback
+  static void tick_timer_cb(void* data) {
+    NetThread<T>* netThread = reinterpret_cast<NetThread<T>*>(data);
+    if (netThread != NULL) {
+      netThread->server->tick++;
+    }
+  }
+
   // 获取连接数
   size_t get_connector_count() { return connector_list.size();}
 
@@ -161,6 +169,8 @@ class NetThread {
   void read_data(base::event* e, int revents);
 
  private:
+  uint32_t index;
+
   EpollServer<T> *server;
 
   // 发送的数据队列
@@ -176,7 +186,9 @@ class NetThread {
   base::EventLoop *ev_loop;  // 事件循环
 
   ConnectorTimeout* connect_timer;  // 连接超时器
-  std::list<base::Timer*> timerList;  // 定时器
+  // 定时器,一秒一次，因为很多地方都会用于这种tick来判断时间
+  // 比如几秒一次的心跳包
+  base::Timer *tick_timer;
 
   ConnectorList connector_list;
 
@@ -189,6 +201,7 @@ class NetThread {
 
 template <typename T>
 NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
+  this->index = index;
   this->server = ser;
   status = NetThread::STOPING;
   thread = NULL;
@@ -199,6 +212,7 @@ NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
   ev_loop = NULL;
   connector_list.init(1000000, index);
   connect_timer = NULL;
+  tick_timer = NULL;
 #ifdef __linux__
   notify = socket(AF_INET, SOCK_STREAM, 0);
 #elif __APPLE__
@@ -218,6 +232,11 @@ NetThread<T>::~NetThread() {
   if (connect_timer != NULL) {
     delete connect_timer;
     connect_timer = NULL;
+  }
+  if (tick_timer != NULL) {
+    tick_timer->disarms();
+    delete tick_timer;
+    tick_timer = NULL;
   }
 
   if (ev_loop != NULL) {
@@ -261,6 +280,11 @@ void NetThread<T>::create_event_loop() {
   notify_ev.cb = NetThread<T>::read_pipe_cb;
   assert(ev_loop->event_ctl(base::EventLoop::EVENT_CTL_ADD,
                             &notify_ev));
+  // timer
+  if (index == 0) {
+    tick_timer = new base::Timer(ev_loop);
+    tick_timer->init(tick_timer_cb, this, 5);
+  }
 }
 
 template <typename T>

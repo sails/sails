@@ -166,9 +166,14 @@ class EpollServer {
       const std::string &ip, uint16_t port, uint32_t uid, int fd,
                         ExtData data);
 
+  uint32_t GetTick() {
+    return tick;
+  }
+
   // sigpipe信号处理函数
   static void HandleSigpipe(int sig);
 
+  friend class NetThread<T>;
   friend class HandleThread<T>;
 
  public:
@@ -218,6 +223,8 @@ class EpollServer {
 
   uint32_t handleThreadNum;
 
+  uint32_t tick;
+
   // 服务是否停止
   bool bTerminate;
 
@@ -247,6 +254,7 @@ EpollServer<T>::EpollServer() {
   bTerminate = false;
   connectorTimeout = 0;
   useMemoryPool = false;
+  tick = 0;
 
   sigpipe_action.sa_handler = EpollServer<T>::HandleSigpipe;
   sigemptyset(&sigpipe_action.sa_mask);
