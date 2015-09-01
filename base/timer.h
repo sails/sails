@@ -9,8 +9,8 @@
 
 
 
-#ifndef SAILS_BASE_TIMER_H_
-#define SAILS_BASE_TIMER_H_
+#ifndef BASE_TIMER_H_
+#define BASE_TIMER_H_
 
 #include <thread>  // NOLINT
 #include "sails/base/event_loop.h"
@@ -33,9 +33,14 @@ class Timer {
  public:
   static void read_timerfd_data(base::event*, int revents, void* owner);
   void pertick_processing();
+
  private:
   int tick;
   int timerfd;
+  #ifdef __APPLE__
+  // kqueue的timerfd可以随意指定，这里用static是为了防止多个timer时重复
+  static int next_timerfd;
+  #endif
 
   EventLoop *ev_loop;
   int self_evloop;
@@ -50,4 +55,8 @@ class Timer {
 }  // namespace sails
 
 
-#endif  // SAILS_BASE_TIMER_H_
+#endif  // BASE_TIMER_H_
+
+
+
+

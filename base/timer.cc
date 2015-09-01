@@ -25,6 +25,9 @@
 namespace sails {
 namespace base {
 
+
+int Timer::next_timerfd = 65535;
+
 Timer::Timer(EventLoop *ev_loop, int tick) {
   this->tick = tick;
   this->ev_loop = ev_loop;
@@ -57,7 +60,7 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
   // 不要太小，否则可能会搞死人，以前指定的是1,
   // 结果导致由于关闭时会close,之后看不到输出，差点被搞崩溃
   //  timerfd = open("/tmp/temp_sails_event_poll.txt", O_CREAT | O_RDWR, 0644);
-  timerfd = 65534;
+  timerfd = --next_timerfd;
   sails::base::EventLoop::Events events = sails::base::EventLoop::Event_TIMER;
 #endif
   sails::base::event ev;
