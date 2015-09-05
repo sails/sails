@@ -25,8 +25,9 @@
 namespace sails {
 namespace base {
 
-
+#ifdef __APPLE__
 int Timer::next_timerfd = 65535;
+#endif
 
 Timer::Timer(EventLoop *ev_loop, int tick) {
   this->tick = tick;

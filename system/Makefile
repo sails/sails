@@ -3,11 +3,11 @@ TOPDIR:=..
 TARGET := libcommon_sys.a
 
 UNAME := $(shell uname)
-ifeq ($(UNAME), Linux)
-LOCAL_OBJ= cpu_usage.o mem_usage.o
-else ifeq ($(UNAME), Darwin)
-LOCAL_OBJ= mem_usage.o
-endif
+#ifeq ($(UNAME), Linux)
+#LOCAL_OBJ= cpu_usage.o mem_usage.o
+#else ifeq ($(UNAME), Darwin)
+#LOCAL_OBJ= mem_usage.o
+#endif
 
 all : $(TARGET)
 
