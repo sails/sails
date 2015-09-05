@@ -46,7 +46,9 @@ class Timer {
   int self_evloop;
   ExpiryAction action;
   void *data;
+  #ifdef __linux__
   char temp_data[50];
+  #endif
   std::thread* iothread;  // 当没有event_loop时需要
 };
 

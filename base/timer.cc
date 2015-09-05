@@ -103,7 +103,7 @@ bool Timer::disarms()  {
 }
 
 void Timer::read_timerfd_data(base::event* ev, int revents, void* owner) {
-  if (owner == NULL) {
+  if (owner == NULL || (revents & base::EventLoop::Event_TIMER) == 0) {
     return;
   }
   Timer *timer = reinterpret_cast<Timer*>(ev->data.ptr);
