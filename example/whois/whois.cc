@@ -307,7 +307,8 @@ void handle_query(const char* server, const char* query) {
       printf("first char 4\n");
       int sockfd = connect_host(server+1, NULL);
       referral_server = query_crsnic(sockfd, query);
-      printf("get next server:%s\n", server);
+      server = server + 1;
+      printf("get next server:%s\n", referral_server);
       break;
     }
     case 8: {
