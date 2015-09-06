@@ -10,6 +10,9 @@
 
 #include "sails/net/connector.h"
 #include <netinet/tcp.h>
+#include <err.h>
+#include <netdb.h>
+#include "sails/base/string.h"
 
 namespace sails {
 namespace net {
@@ -49,32 +52,83 @@ Connector::~Connector() {
   }
 }
 
-bool Connector::connect(const char *ip, uint16_t port, bool keepalive) {
-  struct sockaddr_in serveraddr;
-  connect_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (connect_fd == -1) {
-    printf("new connect_fd error\n");
-    return false;
-  }
-  serveraddr.sin_family = AF_INET;
-  serveraddr.sin_addr.s_addr = inet_addr(ip);
-  serveraddr.sin_port = htons(port);
+bool Connector::connect(const char *host, uint16_t port, bool keepalive) {
+  char delim[2] = {'.'};
+  std::vector<std::string> hostitem = base::split(host, delim);
+  if (hostitem.size() == 4) {  // 简单判断为ip
+    struct sockaddr_in serveraddr;
+    connect_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect_fd == -1) {
+      printf("new connect_fd error\n");
+      return false;
+    }
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_addr.s_addr = inet_addr(host);
+    serveraddr.sin_port = htons(port);
 
 
-  int ret = ::connect(connect_fd,
-                      (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-  if (ret == -1) {
-    printf("connect failed\n");
-    return false;
+    int ret = ::connect(connect_fd,
+                        (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    if (ret == -1) {
+      printf("connect failed\n");
+      return false;
+    }
+    SetDefaultOpt();
+    this->ip = std::string(host);
+    this->port = port;
+    if (keepalive) {
+      // new thread to send ping
+      // std::thread();
+    }
+    is_closed = false;
+  } else {
+    struct addrinfo hints, *res, *res0;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    char servname[20] = {'\0'};
+    snprintf(servname, sizeof(servname), "%d", port);
+    int error = getaddrinfo(host, servname, &hints, &res0);
+    if (error) {
+      errx(1, "getaddrinfo %s", gai_strerror(error));
+      /*NOTREACHED*/
+    }
+    int s = -1;
+    const char *cause = NULL;
+    for (res = res0; res; res = res->ai_next) {
+      s = socket(res->ai_family, res->ai_socktype,
+                 res->ai_protocol);
+      if (s < 0) {
+        cause = "socket";
+        continue;
+      }
+      if (::connect(s, res->ai_addr, res->ai_addrlen) < 0) {
+        cause = "connect";
+        ::close(s);
+        s = -1;
+        continue;
+      }
+      connect_fd = s;
+      struct sockaddr_in *serveraddr = (struct sockaddr_in *)res->ai_addr;
+      char buf[1000] = {'\0'};
+      const char *addr =
+          inet_ntop(AF_INET, &serveraddr->sin_addr, buf, INET_ADDRSTRLEN);
+      ip = std::string(addr?addr:"unknow");
+      this->port = ntohs(serveraddr->sin_port);
+      break;  /* okay we got one */
+    }
+    if (s < 0) {
+      err(1, "connect_host:%s", cause);
+      return false;
+    }
+    freeaddrinfo(res0);
+    SetDefaultOpt();
+    if (keepalive) {
+      // new thread to send ping
+      // std::thread();
+    }
+    is_closed = false;
   }
-  SetDefaultOpt();
-  this->ip = std::string(ip);
-  this->port = port;
-  if (keepalive) {
-    // new thread to send ping
-    // std::thread();
-  }
-  is_closed = false;
   return true;
 }
 

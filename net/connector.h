@@ -63,7 +63,7 @@ class Connector {
   Connector& operator=(const Connector&);
 
  public:
-  bool connect(const char* ip, uint16_t port, bool keepalive);
+  bool connect(const char* host, uint16_t port, bool keepalive);
   ssize_t read();
   const char* peek();
   void retrieve(int len);

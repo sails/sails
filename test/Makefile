@@ -1,7 +1,7 @@
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer  -W -Wall -O0 -g -L../ -I./ -I../../../
+CFLAGS			= -std=c++11 -fno-omit-frame-pointer  -W -Wall -O0 -g -L../ -I./ -I../../
 
 
-OBJECTS = log_test.o
+OBJECTS = log_test.o connector_test.o
 unit_test : $(OBJECTS)
 	g++ $(CFLAGS) $(OBJECTS) -o unit_test -lsails
 
@@ -21,4 +21,3 @@ unit_test : $(OBJECTS)
 clean:
 	-rm *.o *.d
 	-rm *.d.*
-	-rm server
