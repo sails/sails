@@ -16,7 +16,11 @@
 #include <stdint.h>
 #include <string.h>
 #ifdef __linux__
+#ifdef __ANDROID__
+#include <signal.h>
+#else
 #include <sys/timerfd.h>
+#endif
 #elif __APPLE__
 #include <fcntl.h>
 #endif
@@ -47,15 +51,31 @@ Timer::Timer(int tick) {
 
 bool Timer::init(ExpiryAction action, void *data, int when = 1) {
 #ifdef __linux__
-  timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
-
+  sails::base::EventLoop::Events events = sails::base::EventLoop::Event_READ;
   struct itimerspec new_value;
   new_value.it_interval.tv_sec = tick;
   new_value.it_interval.tv_nsec = 0;
   new_value.it_value.tv_sec = when;
   new_value.it_value.tv_nsec = 0;
+#ifdef __ANDROID__
+  struct sigevent sev;
+  sev.sigev_notify = SIGEV_THREAD;
+  sev.sigev_signo = SIGRTMIN;
+  sev.sigev_notify_function = (ExpiryAction1)action;
+  sev.sigev_notify_attributes = NULL;
+  if (timer_create(CLOCK_REALTIME, &sev, &timerfd) == -1) {
+    perror("timer_create");
+    return false;
+  }
+  if (timer_settime(timerfd, 0, &new_value, NULL) == -1) {
+    perror("timer_settime error");
+    return false;
+  }
+  return true;
+#else
+  timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
   timerfd_settime(timerfd, 0, &new_value, NULL);
-  sails::base::EventLoop::Events events = sails::base::EventLoop::Event_READ;
+#endif
 #elif __APPLE__
   // 在这儿的fd可以随便指定，但是不要和其它重复
   // 不要太小，否则可能会搞死人，以前指定的是1,
@@ -103,7 +123,7 @@ bool Timer::disarms()  {
 }
 
 void Timer::read_timerfd_data(base::event* ev, int revents, void* owner) {
-  if (owner == NULL || (revents & base::EventLoop::Event_TIMER) == 0) {
+  if (owner == NULL) {
     return;
   }
   Timer *timer = reinterpret_cast<Timer*>(ev->data.ptr);

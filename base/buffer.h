@@ -74,11 +74,7 @@ class Buffer : public Uncopyable {
     assert(readable() >= sizeof(int32_t));
     int32_t be32 = 0;
     memcpy(&be32, peek(), sizeof(int32_t));
-#ifdef __linux__
-    return be32toh(be32);
-#elif __APPLE__
     return ntohl(be32);
-#endif
   }
 
   void retrieve(size_t len) {
@@ -127,11 +123,7 @@ class Buffer : public Uncopyable {
     append(static_cast<const char*>(data), len);
   }
   void append_int32(int32_t x) {
-#ifdef __linux__
-    int32_t be32 = htobe32(x);
-#elif __APPLE__
     int32_t be32 = (int32_t)htonl(x);
-#endif
     append(&be32, sizeof(int32_t));
   }
 
