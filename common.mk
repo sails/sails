@@ -1,7 +1,7 @@
 INCLUDE		= -I$(TOPDIR)/../
 
-CC		= gcc
-CXX		= g++
+include $(TOPDIR)/define.mk
+
 CFLAGS 		= -std=c++11 -O0 -g -L$(TOPDIR)/base -W -Wall
 VPATH		= ${TOPDIR}/base
 DEPSLIBS 	= common_base

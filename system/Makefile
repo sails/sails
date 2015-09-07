@@ -14,7 +14,7 @@ all : $(TARGET)
 include ${TOPDIR}/common.mk
 
 $(TARGET):$(LOCAL_OBJ)
-	ar -r $@ $(LOCAL_OBJ)
+	$(AR) -r $@ $(LOCAL_OBJ)
 
 ifeq ($(UNAME), Linux)
 cpu_usage_test:cpu_usage_test.o cpu_usage.o

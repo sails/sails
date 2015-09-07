@@ -1,14 +1,16 @@
 DIRS	= base crypto log net system
 
+include ./define.mk
+
 all:
 	@for dir in $(DIRS); do make -C $$dir; echo; done
 	@for dir in $(DIRS); do cp $$dir/*.a ./; echo "cp "$$dir static library; done 
 	rm -f libsails.a
-	@for commlib in *.a; do ar x $$commlib; done
+	@for commlib in *.a; do $(AR) x $$commlib; done
 	rm -r *.a
-	ar cru libsails.a *.o
+	$(AR) cru libsails.a *.o
 	rm -r *.o
-	ranlib libsails.a
+	$(RANLIB) libsails.a
 
 
 clean:

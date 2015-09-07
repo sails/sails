@@ -9,7 +9,7 @@ all : $(TARGET)
 include ${TOPDIR}/common.mk
 
 $(TARGET):$(LOCAL_OBJ)
-	ar -r $@ $(LOCAL_OBJ)
+	$(AR) -r $@ $(LOCAL_OBJ)
 
 mime_test:mime_test.o mime.o
 	$(CXX) $(CFLAGS) -o mime_test mime_test.o mime.o -pthread -lgtest -L../ -lsails
