@@ -9,6 +9,7 @@ all:
 	@for commlib in *.a; do $(AR) x $$commlib; done
 	rm -r *.a
 	$(AR) cru libsails.a *.o
+	$(CXX) -shared -fPIC -o libsails.so *.o
 	rm -r *.o
 	$(RANLIB) libsails.a
 
