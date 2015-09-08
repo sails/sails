@@ -307,7 +307,9 @@ void handle_query(const char* server, const char* query) {
       printf("first char 4\n");
       int sockfd = connect_host(server+1, NULL);
       referral_server = query_crsnic(sockfd, query);
-      close(sockfd);
+      if (sockfd > 0) {
+        close(sockfd);
+      }
       server = server + 1;
       printf("get next server:%s\n", referral_server);
       break;
@@ -315,7 +317,9 @@ void handle_query(const char* server, const char* query) {
     case 8: {
       int sockfd = connect_host("whois.afilias-grs.info", NULL);
       referral_server = query_afilias(sockfd, query);
-      close(sockfd);
+      if (sockfd > 0) {
+        close(sockfd);
+      }
       break;
     }
     default:
