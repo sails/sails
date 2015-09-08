@@ -31,12 +31,12 @@
 char* whoisinfo = NULL;
 size_t whois_size = 0;
 const char *tld_serv[] = {
-  #include "tld_serv.h"
+#include "tld_serv.h"
   NULL, NULL
 };
 
 const char*new_gtlds[] = {
-  #include "new_gtlds.h"
+#include "new_gtlds.h"
   NULL
 };
 
@@ -144,93 +144,93 @@ char* get_query_server(const char* host) {
 
 
 char *query_crsnic(int sock, const char *query) {
-    char *p, buf[2000];
-    FILE *fi;
-    char *referral_server = NULL;
-    int state = 0;
+  char *p, buf[2000];
+  FILE *fi;
+  char *referral_server = NULL;
+  int state = 0;
 
-    char temp[1000] = {'\0'};
-    temp[0] = '=';
-    snprintf(temp, sizeof(temp), "%s\r\n", query);
+  char temp[1000] = {'\0'};
+  temp[0] = '=';
+  snprintf(temp, sizeof(temp), "%s\r\n", query);
 
-    fi = fdopen(sock, "r");
-    if (write(sock, temp, strlen(temp)) < 0) {
-      perror("query_crsnic write");
+  fi = fdopen(sock, "r");
+  if (write(sock, temp, strlen(temp)) < 0) {
+    perror("query_crsnic write");
+  }
+  memset(buf, '\0', sizeof(buf));
+  while (fgets(buf, sizeof(buf), fi)) {
+    /* If there are multiple matches only the server of the first record
+       is queried */
+    if (state == 0 && strncmp(buf, "   Domain Name:", 15) == 0)
+      state = 1;
+    if (state == 1 && (strncmp(buf, "   Whois Server:", 16) == 0
+                       || strncmp(buf, "   WHOIS Server:", 16) == 0)) {
+      for (p = buf; *p != ':'; p++) {}  /* skip until the colon */
+      for (p++; *p == ' '; p++) {}  /* skip the spaces */
+      referral_server = strdup(p);
+      if ((p = strpbrk(referral_server, "\r\n ")))
+        *p = '\0';
+      state = 2;
+    }
+    snprintf(whoisinfo+strlen(whoisinfo),
+             whois_size-strlen(whoisinfo), "%s", buf);
+    // fputs(buf, stdout);
+    if ((p = strpbrk(buf, "\r\n"))) {
+      *p = '\0';
     }
     memset(buf, '\0', sizeof(buf));
-    while (fgets(buf, sizeof(buf), fi)) {
-	/* If there are multiple matches only the server of the first record
-	   is queried */
-      if (state == 0 && strncmp(buf, "   Domain Name:", 15) == 0)
-          state = 1;
-      if (state == 1 && (strncmp(buf, "   Whois Server:", 16) == 0
-                           || strncmp(buf, "   WHOIS Server:", 16) == 0)) {
-          for (p = buf; *p != ':'; p++) {}  /* skip until the colon */
-          for (p++; *p == ' '; p++) {}  /* skip the spaces */
-          referral_server = strdup(p);
-          if ((p = strpbrk(referral_server, "\r\n ")))
-            *p = '\0';
-          state = 2;
-        }
-        snprintf(whoisinfo+strlen(whoisinfo),
-                 whois_size-strlen(whoisinfo), "%s", buf);
-        // fputs(buf, stdout);
-        if ((p = strpbrk(buf, "\r\n"))) {
-          *p = '\0';
-        }
-        memset(buf, '\0', sizeof(buf));
-    }
+  }
 
-    if (ferror(fi))
-      perror("query_crsnic fgets");
-    fclose(fi);
+  if (ferror(fi))
+    perror("query_crsnic fgets");
+  fclose(fi);
 
-    return referral_server;
+  return referral_server;
 }
 
 // 它和query_crsnic的区别在发送的查询字符串和接收到的格式不同
 char *query_afilias(const int sock, const char *query) {
-    char *p, buf[2000];
-    FILE *fi;
-    char *referral_server = NULL;
-    int state = 0;
-    char temp[1000] = {'\0'};
-    snprintf(temp, sizeof(temp), "%s\r\n", query);
+  char *p, buf[2000];
+  FILE *fi;
+  char *referral_server = NULL;
+  int state = 0;
+  char temp[1000] = {'\0'};
+  snprintf(temp, sizeof(temp), "%s\r\n", query);
 
-    fi = fdopen(sock, "r");
-    if (write(sock, temp, strlen(temp)) < 0) {
-      perror("query_afilias write");
+  fi = fdopen(sock, "r");
+  if (write(sock, temp, strlen(temp)) < 0) {
+    perror("query_afilias write");
+  }
+
+  memset(buf, '\0', sizeof(buf));
+  while (fgets(buf, sizeof(buf), fi)) {
+    /* If multiple attributes are returned then use the first result.
+       This is not supposed to happen. */
+    if (state == 0 && strncmp(buf, "Domain Name:", 12) == 0)
+      state = 1;
+    if (state == 1 && strncmp(buf, "Whois Server:", 13) == 0) {
+      for (p = buf; *p != ':'; p++) {}  /* skip until colon */
+      for (p++; *p == ' '; p++) {}  /* skip colon and spaces */
+      referral_server = strdup(p);
+      if ((p = strpbrk(referral_server, "\r\n ")))
+        *p = '\0';
+      state = 2;
     }
+    snprintf(whoisinfo+strlen(whoisinfo),
+             whois_size-strlen(whoisinfo), "%s", buf);
+    // fputs(buf, stdout);
+    if ((p = strpbrk(buf, "\r\n")))
+      *p = '\0';
 
     memset(buf, '\0', sizeof(buf));
-    while (fgets(buf, sizeof(buf), fi)) {
-	/* If multiple attributes are returned then use the first result.
-	   This is not supposed to happen. */
-      if (state == 0 && strncmp(buf, "Domain Name:", 12) == 0)
-        state = 1;
-      if (state == 1 && strncmp(buf, "Whois Server:", 13) == 0) {
-        for (p = buf; *p != ':'; p++) {}  /* skip until colon */
-        for (p++; *p == ' '; p++) {}  /* skip colon and spaces */
-        referral_server = strdup(p);
-        if ((p = strpbrk(referral_server, "\r\n ")))
-          *p = '\0';
-        state = 2;
-      }
-      snprintf(whoisinfo+strlen(whoisinfo),
-               whois_size-strlen(whoisinfo), "%s", buf);
-      // fputs(buf, stdout);
-      if ((p = strpbrk(buf, "\r\n")))
-        *p = '\0';
+  }
 
-      memset(buf, '\0', sizeof(buf));
-    }
+  if (ferror(fi)) {
+    perror("query_afilias fgets");
+  }
+  fclose(fi);
 
-    if (ferror(fi)) {
-      perror("query_afilias fgets");
-    }
-    fclose(fi);
-
-    return referral_server;
+  return referral_server;
 }
 
 char *do_query(const int sock, const char *query) {
@@ -250,45 +250,45 @@ char *do_query(const int sock, const char *query) {
   while (fgets(buf, sizeof(buf), fi)) {
     /* 6bone-style referral:
      * % referto: whois -h whois.arin.net -p 43 as 1
-       */
-      if (!referral_server && strncmp(buf, "% referto:", 10) == 0) {
-        char nh[256], np[16], nq[1024];
-        if (sscanf(buf, REFERTO_FORMAT, nh, np, nq) == 3) {
-          /* XXX we are ignoring the new query string */
-          int referral_server_size = strlen(nh) + 1 + strlen(np) + 1;
-          referral_server = reinterpret_cast<char*>(
-              malloc(referral_server_size));
-          snprintf(referral_server, referral_server_size, "%s:%s", nh, np);
-        }
+     */
+    if (!referral_server && strncmp(buf, "% referto:", 10) == 0) {
+      char nh[256], np[16], nq[1024];
+      if (sscanf(buf, REFERTO_FORMAT, nh, np, nq) == 3) {
+        /* XXX we are ignoring the new query string */
+        size_t referral_server_size = strlen(nh) + 1 + strlen(np) + 1;
+        referral_server = reinterpret_cast<char*>(
+            malloc(referral_server_size));
+        snprintf(referral_server, referral_server_size, "%s:%s", nh, np);
       }
-
-      /* ARIN referrals:
-       * ReferralServer: rwhois://rwhois.fuse.net:4321/
-       * ReferralServer: whois://whois.ripe.net
-       */
-      if (!referral_server && strncmp(buf, "ReferralServer:", 15) == 0) {
-        if ((p = strstr(buf, "rwhois://")))
-          referral_server = strdup(p + 9);
-        else if ((p = strstr(buf, "whois://")))
-          referral_server = strdup(p + 8);
-        if (referral_server && (p = strpbrk(referral_server, "/\r\n")))
-          *p = '\0';
-      }
-      snprintf(whoisinfo+strlen(whoisinfo),
-               whois_size-strlen(whoisinfo), "%s", buf);
-      // fputs(buf, stdout);
-      if ((p = strpbrk(buf, "\r\n")))
-        *p = '\0';
-
-      memset(buf, '\0', sizeof(buf));
-  }
-
-    if (ferror(fi)) {
-      perror("do_query fgets");
     }
 
-    fclose(fi);
-    return referral_server;
+    /* ARIN referrals:
+     * ReferralServer: rwhois://rwhois.fuse.net:4321/
+     * ReferralServer: whois://whois.ripe.net
+     */
+    if (!referral_server && strncmp(buf, "ReferralServer:", 15) == 0) {
+      if ((p = strstr(buf, "rwhois://")))
+        referral_server = strdup(p + 9);
+      else if ((p = strstr(buf, "whois://")))
+        referral_server = strdup(p + 8);
+      if (referral_server && (p = strpbrk(referral_server, "/\r\n")))
+        *p = '\0';
+    }
+    snprintf(whoisinfo+strlen(whoisinfo),
+             whois_size-strlen(whoisinfo), "%s", buf);
+    // fputs(buf, stdout);
+    if ((p = strpbrk(buf, "\r\n")))
+      *p = '\0';
+
+    memset(buf, '\0', sizeof(buf));
+  }
+
+  if (ferror(fi)) {
+    perror("do_query fgets");
+  }
+
+  fclose(fi);
+  return referral_server;
 }
 
 
@@ -307,6 +307,7 @@ void handle_query(const char* server, const char* query) {
       printf("first char 4\n");
       int sockfd = connect_host(server+1, NULL);
       referral_server = query_crsnic(sockfd, query);
+      close(sockfd);
       server = server + 1;
       printf("get next server:%s\n", referral_server);
       break;
@@ -314,6 +315,7 @@ void handle_query(const char* server, const char* query) {
     case 8: {
       int sockfd = connect_host("whois.afilias-grs.info", NULL);
       referral_server = query_afilias(sockfd, query);
+      close(sockfd);
       break;
     }
     default:
@@ -328,14 +330,19 @@ void handle_query(const char* server, const char* query) {
   } else {
     sockfd = connect_host(server, NULL);
   }
-
-  printf("do query\n");
-  referral_server = do_query(sockfd, query);
-  if (referral_server != NULL && !strchr(query, ' ')) {
-    printf("\n\nFound a referral to %s.\n\n", referral_server);
-    handle_query(referral_server, query);
-    free(referral_server);
-    referral_server = NULL;
+  if (sockfd > 0) {
+    printf("do query\n");
+    referral_server = do_query(sockfd, query);
+    close(sockfd);
+    if (referral_server != NULL && !strchr(query, ' ')) {
+      printf("\n\nFound a referral to %s.\n\n", referral_server);
+      handle_query(referral_server, query);
+      free(referral_server);
+      referral_server = NULL;
+    }
+  } else {
+    snprintf(whoisinfo+strlen(whoisinfo),
+             whois_size-strlen(whoisinfo), "Can't Connect!");
   }
 }
 

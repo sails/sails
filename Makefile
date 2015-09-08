@@ -16,4 +16,4 @@ all:
 
 clean:
 	@for dir in $(DIRS); do make clean -C $$dir; echo; done
-	rm libsails.a
+	-rm libsails.a libsails.so
