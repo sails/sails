@@ -1,6 +1,5 @@
 INCLUDE		= -I$(TOPDIR)/../
 
-include $(TOPDIR)/define.mk
 
 CFLAGS 		= -std=c++11 -O0 -g -L$(TOPDIR)/base -W -Wall
 VPATH		= ${TOPDIR}/base

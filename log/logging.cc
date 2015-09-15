@@ -19,10 +19,12 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #endif
-#include <regex>  // NOLINT
 #include "sails/base/time_t.h"
 #include "sails/base/string.h"
 #include "sails/base/filesys.h"
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 namespace sails {
 namespace log {
@@ -33,19 +35,19 @@ char Logger::log_config_file[100] = "./log.conf";
 Logger::Logger(Logger::LogLevel level) {
   this->level = level;
   this->save_mode = Logger::SPLIT_NONE;
-  memset(filename, '\0', MAX_FILENAME_LEN);
+  memset(name, '\0', MAX_FILENAME_LEN);
   update_loginfo_time = 0;
 }
 
-Logger::Logger(LogLevel level, const char *filename) {
-  assert(filename);
+Logger::Logger(LogLevel level, const char *name) {
+  assert(name);
 
   this->level = level;
   this->save_mode = Logger::SPLIT_NONE;
-  memset(this->filename, '\0', MAX_FILENAME_LEN);
+  memset(this->name, '\0', MAX_FILENAME_LEN);
   update_loginfo_time = 0;
 
-  strncpy(this->filename, filename, strlen(filename));
+  strncpy(this->name, name, strlen(name));
   set_file_path();
   assert(ensure_directory_exist());
 }
@@ -55,10 +57,10 @@ Logger::Logger(LogLevel level, const char *filename, SAVEMODE mode) {
 
   this->level = level;
   this->save_mode = mode;
-  memset(this->filename, '\0', MAX_FILENAME_LEN);
+  memset(this->name, '\0', MAX_FILENAME_LEN);
   update_loginfo_time = 0;
 
-  strncpy(this->filename, filename, strlen(filename));
+  strncpy(this->name, filename, strlen(filename));
   set_file_path();
   assert(ensure_directory_exist());
 }
@@ -112,9 +114,13 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
 
   char filename[MAX_FILENAME_LEN];
   memset(filename, '\0', MAX_FILENAME_LEN);
-  if (strlen(this->filename) > 0) {
-    set_filename_by_savemode(filename);
+  if (strlen(this->name) > 0) {
+    set_filename_by_savemode(filename, MAX_FILENAME_LEN);
 #ifdef __linux__
+#ifdef __ANDROID__
+    // ANDROID_LOG_DEBUG为3
+    __android_log_print(level+2, this->name, msg);
+#else
     int write_fd = -1;
     if ((write_fd=open(filename, O_WRONLY|O_APPEND|O_CREAT,
                        S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) >= 3) {
@@ -125,6 +131,7 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
       sprintf(err_msg, "can't open file %s to write\n", filename);  // NOLINT'
       write(2, err_msg, strlen(err_msg));
     }
+#endif
 #else
     FILE* file = fopen(filename, "a");
     if (file != NULL) {
@@ -147,14 +154,10 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
   }
 }
 
-void Logger::set_filename_by_savemode(char *filename) {
-  if (strlen(this->filename) > 0
+void Logger::set_filename_by_savemode(char *filename, int len) {
+  if (strlen(this->name) > 0
      && filename != NULL) {
-    size_t index = base::last_index_of(this->filename, '.');
-    strncpy(filename, this->filename, index);
-
-    char suffix[10] = {'\0'};
-    strcpy(suffix, this->filename+index+1);  // NOLINT'
+    snprintf(filename, len, "%s", this->name);
 
     char time[30];
     if (base::TimeT::time_with_millisecond(time, 30) <= 0) {
@@ -178,7 +181,7 @@ void Logger::set_filename_by_savemode(char *filename) {
     }
 
     filename[strlen(filename)] = '.';
-    strncpy(filename+strlen(filename), suffix, strlen(suffix));
+    strncpy(filename+strlen(filename), "log", 3);
   }
 }
 
@@ -206,8 +209,6 @@ void Logger::check_loginfo() {
     FILE* file = fopen(log_config_file, "r");
     if (file != NULL) {
       char buf[100];
-      std::regex level("LogLevel=[a-zA-Z]+");
-
       while (fgets(buf, 100, file) != NULL) {
         int size = strlen(buf);
         if (size > 0) {
@@ -218,10 +219,11 @@ void Logger::check_loginfo() {
             buf[size-2] = '\0';
             buf[size-1] = '\0';
           }
-
-          std::cmatch cm;
-          if (regex_match(buf, cm, level)) {  // match level
-            Logger::LogLevel setlevel = get_level_by_name(buf+9);
+          char name[31] = {'\0'};
+          char value[31] = {'\0'};
+          sscanf(buf, "%30[^=]=%30s", name, value);
+          if (strncmp(name, "LogLevel", 8) == 0) {
+            Logger::LogLevel setlevel = get_level_by_name(value);
             if (setlevel != Logger::LOG_LEVEL_NONE) {
               // printf("set level %d\n", setlevel);
               this->level = setlevel;
@@ -241,13 +243,24 @@ Logger::LogLevel Logger::get_level_by_name(const char *name) {
   if (name == NULL || strlen(name) == 0) {
     return Logger::LOG_LEVEL_NONE;
   }
-  if (strcasecmp("debug", name) == 0) {
+  // 去掉前面的空字符，第一个[a-z][A-Z]
+  int len = strlen(name);
+  const char* p = name;
+  for (int i = 0; i < len; i++) {
+    if ((p[i] >= 'a' && p[i] <= 'z')
+        || (p[i] >= 'A' && p[i] <= 'Z')) {
+      break;
+    } else {
+      p++;
+    }
+  }
+  if (strncasecmp("debug", p, 5) == 0) {
     return Logger::LOG_LEVEL_DEBUG;
-  } else if (strcasecmp("info", name) == 0) {
+  } else if (strncasecmp("info", p, 4) == 0) {
     return Logger::LOG_LEVEL_INFO;
-  } else if (strcasecmp("warn", name) == 0) {
+  } else if (strncasecmp("warn", p, 4) == 0) {
     return Logger::LOG_LEVEL_WARN;
-  } else if (strcasecmp("error", name) == 0) {
+  } else if (strncasecmp("error", p, 5) == 0) {
     return Logger::LOG_LEVEL_ERROR;
   }
   return Logger::LOG_LEVEL_NONE;
@@ -255,12 +268,12 @@ Logger::LogLevel Logger::get_level_by_name(const char *name) {
 
 void Logger::set_file_path() {
   memset(this->path, '\0', MAX_FILENAME_LEN);
-  if (strlen(filename) > 0) {
-    int index = base::last_index_of(filename, '/');
+  if (strlen(name) > 0) {
+    int index = base::last_index_of(name, '/');
     if (index > 0) {
-      strncpy(path, filename, index);
+      strncpy(path, name, index);
     } else {
-      strncpy(path, "./", 2);
+      strncpy(path, "./log", 5);
     }
   }
 }
@@ -277,7 +290,6 @@ LoggerFactory* LoggerFactory::_pInstance = 0;
 std::mutex LoggerFactory::logMutex;
 
 LoggerFactory::LoggerFactory() : path("./log") {
-  
 }
 
 LoggerFactory::~LoggerFactory() {
@@ -297,11 +309,16 @@ Logger* LoggerFactory::getLog(std::string log_name,
   if ((it=log_map.find(log_name)) != log_map.end()) {
     return it->second;
   } else {
-    char filename[200] = {'\0'};
-    snprintf(filename, sizeof(filename),
-             "%s/%s.log", path.c_str(), log_name.c_str());
+    char name[200] = {'\0'};
+#ifdef __ANDROID__
+    snprintf(name, sizeof(name),
+             "%s", log_name.c_str());
+#else
+    snprintf(name, sizeof(name),
+             "%s/%s", path.c_str(), log_name.c_str());
+#endif
     Logger* logger = new Logger(Logger::LOG_LEVEL_INFO,
-                                filename, save_mode);
+                                name, save_mode);
     log_map.insert(
         std::pair<std::string, Logger*>(log_name, logger));  // NOLINT'
     return logger;

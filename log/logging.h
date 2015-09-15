@@ -13,8 +13,8 @@
 
 
 
-#ifndef SAILS_LOG_LOGGING_H_
-#define SAILS_LOG_LOGGING_H_
+#ifndef LOG_LOGGING_H_
+#define LOG_LOGGING_H_
 
 #include <stdio.h>
 #include <time.h>
@@ -100,8 +100,8 @@ class Logger {
   };
 
   explicit Logger(LogLevel level);
-  Logger(LogLevel level, const char *filename);
-  Logger(LogLevel level, const char *filename, SAVEMODE mode);
+  Logger(LogLevel level, const char *name);
+  Logger(LogLevel level, const char *name, SAVEMODE mode);
 
   void debug(const char* format, ...);
   void info(const char* format, ...);
@@ -111,14 +111,14 @@ class Logger {
  private:
   void output(Logger::LogLevel level, const char* format, va_list ap);
   void set_msg_prefix(Logger::LogLevel level, char *msg);
-  void set_filename_by_savemode(char* filename);
+  void set_filename_by_savemode(char* filename, int len);
   void check_loginfo();
   Logger::LogLevel get_level_by_name(const char *name);
   void set_file_path();
   bool ensure_directory_exist();
 
   LogLevel level;
-  char filename[MAX_FILENAME_LEN];
+  char name[MAX_FILENAME_LEN];
   char path[MAX_FILENAME_LEN];
   SAVEMODE save_mode;
   static char log_config_file[100];
@@ -149,4 +149,4 @@ class LoggerFactory {
 }  // namespace log
 }  // namespace sails
 
-#endif  // SAILS_LOG_LOGGING_H_
+#endif  // LOG_LOGGING_H_
