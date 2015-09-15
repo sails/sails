@@ -17,6 +17,8 @@
 #include <string.h>
 #ifdef __linux__
 #ifdef __ANDROID__
+#include <fcntl.h>
+#include <sys/syscall.h>
 #include <asm/unistd.h>
 #else
 #include <sys/timerfd.h>
@@ -27,8 +29,9 @@
 
 
 // 在android中，timerfd没有公开
-#if defined(ANDROID)
-#define SFD_NONBLOCK O_NONBLOCK
+#ifdef __ANDROID__
+#define TFD_CLOEXEC O_CLOEXEC
+#define TFD_NONBLOCK O_NONBLOCK
 #define TFD_TIMER_ABSTIME 1
 
 static int timerfd_create(int clockid, int flags) {
