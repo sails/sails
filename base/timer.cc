@@ -17,7 +17,7 @@
 #include <string.h>
 #ifdef __linux__
 #ifdef __ANDROID__
-#include <signal.h>
+#include <asm/unistd.h>
 #else
 #include <sys/timerfd.h>
 #endif
@@ -25,6 +25,23 @@
 #include <fcntl.h>
 #endif
 
+
+// 在android中，timerfd没有公开
+#if defined(ANDROID)
+#define SFD_NONBLOCK O_NONBLOCK
+#define TFD_TIMER_ABSTIME 1
+
+static int timerfd_create(int clockid, int flags) {
+  return syscall (__NR_timerfd_create, clockid, flags);
+}
+
+static int timerfd_settime(int fd, int flags,
+                            const struct itimerspec *new_value,
+                           struct itimerspec *old_value) {
+  return syscall (__NR_timerfd_settime, fd, flags, new_value, old_value);
+}
+
+#endif
 
 namespace sails {
 namespace base {
@@ -57,25 +74,8 @@ bool Timer::init(ExpiryAction action, void *data, int when = 1) {
   new_value.it_interval.tv_nsec = 0;
   new_value.it_value.tv_sec = when;
   new_value.it_value.tv_nsec = 0;
-#ifdef __ANDROID__
-  struct sigevent sev;
-  sev.sigev_notify = SIGEV_THREAD;
-  sev.sigev_signo = SIGRTMIN;
-  sev.sigev_notify_function = (ExpiryAction1)action;
-  sev.sigev_notify_attributes = NULL;
-  if (timer_create(CLOCK_REALTIME, &sev, &timerfd) == -1) {
-    perror("timer_create");
-    return false;
-  }
-  if (timer_settime(timerfd, 0, &new_value, NULL) == -1) {
-    perror("timer_settime error");
-    return false;
-  }
-  return true;
-#else
   timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
   timerfd_settime(timerfd, 0, &new_value, NULL);
-#endif
 #elif __APPLE__
   // 在这儿的fd可以随便指定，但是不要和其它重复
   // 不要太小，否则可能会搞死人，以前指定的是1,

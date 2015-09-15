@@ -3,7 +3,6 @@
 //
 // Filename: timer.h
 // Description: 定时器，在linux和osx中使用基本文件描述符的定时器
-//              在android中由于暂时还没有，所以可以通过POSIX timer实现
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-11 10:43:32
 
@@ -19,7 +18,6 @@ namespace sails {
 namespace base {
 
 
-typedef void (*ExpiryAction1)(union sigval v);
 typedef void (*ExpiryAction)(void *data);
 
 
