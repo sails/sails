@@ -2,7 +2,7 @@
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "example" && $$9 != "test") print $$9}')
 
 
-#为了项目中能用，使用export
+#为了子项目中能用，使用export
 export CXX		= g++
 export AR		= ar
 export RANLIB		= ranlib
