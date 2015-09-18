@@ -44,6 +44,7 @@ install:
 	[ "$(UNAME)" = "Darwin" ] &&  { install_name_tool -id $(INSTALLDIR)/lib/libsails.dylib  libsails.dylib;} ||  echo ""
 	install -C libsails.${ShareLibSuffix} $(INSTALLDIR)/lib/
 	@cd ../; find sails -name '*.h' |xargs tar czf temp.tgz; tar zxvf temp.tgz -C $(INSTALLDIR)/include/; rm temp.tgz; cd sails
+	@if [ "$(UNAME)" = "Linux" ]; then ldconfig ;fi
 
 clean:
 	@for dir in $(SUBDIRS); do echo $(SUBDIRS); make clean -C $$dir; echo; done
