@@ -277,38 +277,3 @@ int NetbiosQuery::handle_ans(const char* buffer,
 
 }  // namespace net
 }  // namespace sails
-
-
-
-
-
-
-int main() {
-  sails::net::NetbiosQuery query;
-
-  printf("query sigle ip:\n");
-  sails::net::NetbiosQueryAns ret;
-  if (query.query("192.168.198.1", 30, &ret) == 0) {
-    printf("ip:%s, name:%s, group:%s, "
-           "mac:%02x:%02x:%02x:%02x:%02x:%02x\n",
-           ret.ip, ret.name, ret.group, ret.unitId[0], ret.unitId[1],
-           ret.unitId[2], ret.unitId[3], ret.unitId[4], ret.unitId[5]);
-  }
-
-  printf("query sub net\n");
-  std::list<sails::net::NetbiosQueryAns> retlist =
-      query.query_subnet("192.168.198.*", 100);
-  for (auto &item : retlist) {
-    printf("ip:%s, name:%s, group:%s, "
-           "mac:%02x:%02x:%02x:%02x:%02x:%02x\n",
-           item.ip, item.name, item.group, item.unitId[0], item.unitId[1],
-           item.unitId[2], item.unitId[3], item.unitId[4], item.unitId[5]);
-  }
-  return 0;
-}
-
-
-
-
-
-
