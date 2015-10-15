@@ -47,7 +47,6 @@ void HttpServer::CreateConnectorCB(
 
 void HttpServer::ClosedConnectCB(
     std::shared_ptr<net::Connector> connector) {
-  printf("closeconnect cb \n");
   if (connector->data.ptr != NULL) {
     http_parser *parser = reinterpret_cast<http_parser*>(connector->data.ptr);
     if (parser == NULL) {
@@ -71,7 +70,6 @@ void HttpServer::ClosedConnectCB(
     if (parserFlag != NULL) {
       delete parserFlag;
     }
-    printf("free connector parser\n");
     free(parser);
 
     connector->data.ptr = NULL;
