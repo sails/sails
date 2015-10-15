@@ -170,6 +170,7 @@ class HttpResponse {
   int SetHeader(const char* key, const char *value);
   // 可能有些body中含有'\0',所以不能直接通过strlen(body)来进行赋值
   int SetBody(const char* body, int len);
+  int SetBody(const std::string& body);
   char *GetBody();
 
   // 得到response的原始内容,传入一个char* data;方法会把原始值复制到data中

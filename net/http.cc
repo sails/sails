@@ -415,6 +415,11 @@ int HttpResponse::SetBody(const char *body, int len) {
   return 0;
 }
 
+int HttpResponse::SetBody(const std::string& body) {
+  return SetBody(body.c_str(), body.length());
+}
+
+
 char *HttpResponse::GetBody() {
   return this->raw_data->body;
 }

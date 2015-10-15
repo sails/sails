@@ -29,6 +29,7 @@ void MimeTypeManager::init() {
   typemap.insert(std::make_pair(".txt", "text/plain"));
   typemap.insert(std::make_pair(".js", "application/x-javascript"));
   typemap.insert(std::make_pair(".ico", "image/x-icon"));
+  typemap.insert(std::make_pair(".json", "application/json"));
 
   std::ifstream file("/etc/mime.types");
   if (!file) {

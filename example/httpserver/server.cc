@@ -1,5 +1,6 @@
 #include "sails/net/http_server.h"
 #include "sails/base/string.h"
+#include "sails/net/mime.h"
 
 class HandleTest {
  public:
@@ -18,6 +19,14 @@ class HandleTest {
              "call test2, query string:%s",
              decode_str);
     response->SetBody(response_body, strlen(response_body));
+  }
+  void test3(sails::net::HttpRequest* request,
+             sails::net::HttpResponse* response) {
+    // 返回json
+    response->SetHeader("Content-Type",
+                        "application/json;charset=UTF-8");
+    std::string data("{\"server\":\"sails\"}");
+    response->SetBody(data);
   }
 };
 
@@ -54,6 +63,7 @@ int main(int, char **) {
     HandleTest test;
     HTTPBIND(httpserver, "/test1", test, HandleTest::test1);
     HTTPBIND(httpserver, "/test2", test, HandleTest::test2);
+    HTTPBIND(httpserver, "/test3", test, HandleTest::test3);
 
     while (isRun) {
       sleep(2);
