@@ -1,6 +1,5 @@
 #include "sails/net/http_server.h"
-
-
+#include "sails/base/string.h"
 
 class HandleTest {
  public:
@@ -10,7 +9,15 @@ class HandleTest {
   }
   void test2(sails::net::HttpRequest* request,
              sails::net::HttpResponse* response) {
-    response->SetBody("call test2", 10);
+    char decode_str[MAX_ELEMENT_SIZE] = {'\0'};
+    sails::base::url_decode(request->raw_data->query_string, decode_str,
+                            MAX_ELEMENT_SIZE);
+    printf("query string:%s\n", decode_str);
+    char response_body[1000] = {'\0'};
+    snprintf(response_body, sizeof(response_body),
+             "call test2, query string:%s",
+             decode_str);
+    response->SetBody(response_body, strlen(response_body));
   }
 };
 

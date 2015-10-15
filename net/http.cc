@@ -158,6 +158,7 @@ int message_to_string(struct http_message *msg, char* data, int len) {
 HttpRequest::HttpRequest(struct http_message *raw_data) {
   this->raw_data = raw_data;
   this->raw_data->type = HTTP_REQUEST;
+  this->isParseParam = false;
 }
 
 HttpRequest::~HttpRequest() {
@@ -174,20 +175,40 @@ std::string HttpRequest::GetRequestPath() {
 }
 
 std::string HttpRequest::GetParam(std::string param_name) {
-  std::map<std::string, std::string>::iterator iter
-      = this->param.find(param_name);
-  if (iter == param.end()) {
-    if (param.empty() && this->raw_data != NULL) {
+  if (!isParseParam) {
+    isParseParam = true;
+    if (this->raw_data != NULL) {
+      // 从request的头中取
       for (int i = 0; i < raw_data->num_headers; i++) {
         std::string key(raw_data->headers[i][0]);
         std::string value(raw_data->headers[i][1]);
         param.insert(
             std::map<std::string, std::string>::value_type(key, value));
       }
-      iter =  this->param.find(param_name);
+      // 从query string中取
+      if (strlen(raw_data->query_string) > 0) {
+        char decode_str[MAX_ELEMENT_SIZE] = {'\0'};
+        sails::base::url_decode(raw_data->query_string, decode_str,
+                                MAX_ELEMENT_SIZE);
+        const char token = '&';
+        auto items = sails::base::split(std::string(decode_str),
+                                        &token);
+        if (items.size() > 0) {
+          const char ftoken = '=';
+          for (auto& item : items) {
+            auto fileds = sails::base::split(item, &ftoken);
+            if (fileds.size() == 2) {
+              std::string key(fileds[0]);
+              std::string value(fileds[1]);
+              param.insert(
+                  std::map<std::string, std::string>::value_type(key, value));
+            }
+          }
+        }
+      }
     }
   }
-
+  auto iter = this->param.find(param_name);
   if (iter == param.end()) {
     return "";
   } else {
@@ -582,8 +603,7 @@ int message_complete_cb(http_parser *p) {
 
   if (m->body_size &&
       http_body_is_final(p) &&
-      !m->body_is_final)
-  {
+      !m->body_is_final) {
     fprintf(stderr, "\n\n *** Error http_body_is_final() should return 1 "
             "on last on_body callback call "
             "but it doesn't! ***\n\n");
@@ -639,6 +659,11 @@ void parser_url(struct http_message* m) {
       strncpy(m->request_path, url+u.field_data[UF_PATH].off,
               u.field_data[UF_PATH].len);
       m->request_path[u.field_data[UF_PATH].len] = 0;
+    }
+    if (u.field_set & (1 << UF_QUERY)) {
+      strncpy(m->query_string, url+u.field_data[UF_QUERY].off,
+              u.field_data[UF_QUERY].len);
+      m->request_path[u.field_data[UF_QUERY].len] = 0;
     }
   } else {
     printf("url parser error:%d\n", url_result);

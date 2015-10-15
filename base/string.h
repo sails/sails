@@ -34,7 +34,8 @@ int first_index_of(const char* src, char c);
 int first_index_of_substr(const char* src, const char* substr);
 int last_index_of(const char* src, char c);
 
-char* url_encode(const char *source_str, char *encode_str);
+char* url_encode(const char *source_str, char *encode_str, int encode_len);
+char* url_decode(const char *encode_str, char *source_str, int source_len);
 
 std::vector<std::string> split(const std::string& str, const char* c);
 

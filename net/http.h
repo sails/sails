@@ -100,6 +100,7 @@ class HttpRequest {
  public:
   struct http_message *raw_data;
  private:
+  bool isParseParam;
   std::map<std::string, std::string> param;
 };
 

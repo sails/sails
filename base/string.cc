@@ -116,21 +116,30 @@ int first_index_of_substr(const char* src, const char* substr) {
 
 
 
-// the principle is put char into hex encoding
-char* url_encode(const char *source_str, char *encode_str) {
+// 除字母、数字、短横线(-)、下划线(_)、点(.)和波浪号(~)字符，其它的都转成16进制
+char* url_encode(const char *source_str, char *encode_str, int encode_len) {
   char hexchars[] = "0123456789ABCDEF";
 
   int source_str_len = strlen(source_str);
+  if (encode_len < source_str_len) {
+    return NULL;
+  }
 
   int encode_index = 0;
   for (int i = 0; i < source_str_len; i++) {
     char c = source_str[i];
+    if (encode_index+2 < encode_len) {
+      return NULL;
+    }
     if (c == ' ') {
       encode_str[encode_index++] = '+';
     } else if ((c < '0' && c != '-' && c != '.') ||
              (c < 'A' && c > '9') ||
              (c > 'Z' && c < 'a' && c != '_') ||
-             (c > 'z')) {
+             (c > 'z' && c != '~')) {
+      if (encode_index+4 < encode_len) {
+        return NULL;
+      }
       encode_str[encode_index++] = '%';
       encode_str[encode_index++] = hexchars[c >> 4];
       encode_str[encode_index++]= hexchars[c & 15];
@@ -143,6 +152,36 @@ char* url_encode(const char *source_str, char *encode_str) {
   return encode_str;
 }
 
+
+int FromHexChar(char hex) {
+  if (hex >= '0' && hex <= '9') {
+    return hex - '0';
+  } else if (hex >= 'A' && hex <= 'Z') {
+    return hex -'A' + 10;
+  }
+  return ' ';
+}
+
+char* url_decode(const char *encode_str, char *source_str, int source_len) {
+  int encode_str_len = strlen(encode_str);
+  int source_index = 0;
+  for (int i = 0; i < encode_str_len && source_len > source_index+1; i++) {
+    char c = encode_str[i];
+    if (c == '+') {
+      source_str[source_index++] = ' ';
+    }
+    if (c == '%') {
+      int value = (FromHexChar(encode_str[i+1]) << 4)
+                  + FromHexChar(encode_str[i+2]);
+      source_str[source_index++] = value;
+      i = i+2;
+    } else {
+      source_str[source_index++] = c;
+    }
+  }
+  source_str[source_index] = '\0';
+  return source_str;
+}
 
 
 std::vector<std::string> split(const std::string& str, const char* c) {
