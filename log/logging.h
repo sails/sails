@@ -123,6 +123,7 @@ class Logger {
   SAVEMODE save_mode;
   static char log_config_file[100];
   time_t update_loginfo_time;
+  std::mutex writeMutex;
 };
 
 

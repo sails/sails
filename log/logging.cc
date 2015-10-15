@@ -116,6 +116,8 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
   memset(filename, '\0', MAX_FILENAME_LEN);
   if (strlen(this->name) > 0) {
     set_filename_by_savemode(filename, MAX_FILENAME_LEN);
+    // 防止多个线程同时写一个文件，fopen会失败
+    std::unique_lock<std::mutex> writelocker(writeMutex);
 #ifdef __linux__
 #ifdef __ANDROID__
     // ANDROID_LOG_DEBUG为3
@@ -128,7 +130,9 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
       close(write_fd);
     } else {
       char err_msg[40] = {'\0'};
-      sprintf(err_msg, "can't open file %s to write\n", filename);  // NOLINT'
+      snprintf(err_msg, sizeof(err_msg),
+              "can't open file %s to write, %s\n",
+              filename, strerror(errno));  // NOLINT'
       write(2, err_msg, strlen(err_msg));
     }
 #endif
@@ -140,7 +144,8 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
       file = NULL;
     } else {
       char err_msg[MAX_FILENAME_LEN+30];
-      sprintf(err_msg, "can't open file %s to write\n", filename);  // NOLINT'
+      snprintf(err_msg, sizeof(err_msg), "can't open file %s to write, %s\n",
+              filename, strerror(errno));  // NOLINT'
       fprintf(stderr, "%s", err_msg);
     }
 #endif
