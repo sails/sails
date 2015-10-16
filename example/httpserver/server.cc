@@ -24,7 +24,7 @@ class HandleTest {
              sails::net::HttpResponse* response) {
     // 返回json
     response->SetHeader("Content-Type",
-                        "application/json;charset=UTF-8");
+                        "application/json");
     std::string data("{\"server\":\"sails\"}");
     response->SetBody(data);
   }

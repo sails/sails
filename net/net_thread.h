@@ -468,7 +468,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
       sprintf(errormsg, "read connfd %d, return:%d",  // NOLINT'
               connector->get_connector_fd(), n);
       WARN_LOG("server", errormsg);
-      perror(errormsg);
+      // perror(errormsg);
       break;
     } else if (n == -1) {
       if (lasterror == EAGAIN || lasterror == EWOULDBLOCK) {  // 没有数据
