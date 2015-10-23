@@ -38,6 +38,9 @@ class TimeT {
   // 在预热之后(离首次调用1s之后)，性能测试大概能达到8000w/s
   static void get_timeofday(timeval* tv);
 
+  // 得到当前毫秒
+  static int64_t getNowMs();
+
   static uint64_t get_tsc();
 
   // 得到当前时间高精度纳秒

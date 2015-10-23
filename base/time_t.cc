@@ -132,13 +132,18 @@ void TimeT::get_timeofday(timeval* tv) {
   }
 }
 
+int64_t TimeT::getNowMs() {
+  timeval tv;
+  get_timeofday(&tv);
+  return tv.tv_sec*1000+tv.tv_usec/1000;
+}
+
 
 uint64_t TimeT::get_tsc() {
   uint32_t low = 0;
   uint32_t high = 0;
   rdtsc(low, high);
   return ((uint64_t)high << 32) | low;
-  
 }
 
 void TimeT::current_utc_time(struct timespec *ts) {
