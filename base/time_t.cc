@@ -14,9 +14,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#ifdef __linux__
 #include <sys/time.h>
+#ifdef __linux__
 #include <sys/timeb.h>
+#endif
+#ifdef __APPLE__
+#include <mach/clock.h>
+#include <mach/mach.h>
 #endif
 namespace sails {
 namespace base {
@@ -46,19 +50,15 @@ size_t TimeT::time_with_millisecond(char* s, size_t max) {
   }
 
   memset(s, '\0', need_len);
-  time_t temp;
-  temp = time(NULL);
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
   struct tm t;
-  localtime_r(&temp, &t);
+  localtime_r(&tv.tv_sec, &t);
   if (strftime(s, max, "%Y-%m-%d %H:%M:%S", &t)) {
-#ifdef __linux__
-    struct timeval t2;
-    gettimeofday(&t2, NULL);
     s[strlen(s)] = ' ';
 
     snprintf(s+strlen(s),
-             4, "%d", static_cast<int>(t2.tv_usec/1000));  // NOTLINT'
-#endif
+             4, "%d", static_cast<int>(tv.tv_usec/1000));  // NOTLINT'
     return strlen(s);
   } else {
     return 0;
@@ -91,6 +91,71 @@ time_t TimeT::coverStrToTime(const char* timestr) {
   time_t t_ = mktime(&tm_);
   return t_;
 }
+
+#define rdtsc(low, high) \
+     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
+
+
+int calltime = 0;
+void TimeT::get_timeofday(timeval* tv) {
+  // 一个指令周期多少微秒(按照现在的3GHzcpu，算出来差不多应该是0.3ns)
+  static float cpu_cycle = 0;
+  static timeval last_tv;
+  if (cpu_cycle == 0) {
+    gettimeofday(tv, NULL);
+    static timeval first_call = *tv;  // 记录第一次调用时间
+    static uint64_t first_tsc = get_tsc();  // NOLINT
+    if (tv->tv_sec - first_call.tv_sec >= 1) {  // 计算这段时间内的cpu指令数
+      uint64_t current_tsc = get_tsc();
+      // 这期间的微秒
+      int sptime = (tv->tv_sec-first_call.tv_sec)*1000*1000+
+                        (tv->tv_usec-first_call.tv_usec);
+      cpu_cycle = (static_cast<float>(sptime) / (current_tsc-first_tsc));
+    }
+    last_tv = *tv;
+    return;
+  }
+  static uint64_t last_tsc = 0;
+  uint64_t current_tsc = get_tsc();
+  int64_t t =  (int64_t)(current_tsc - last_tsc);
+  time_t offset =  (time_t)(t * cpu_cycle);
+
+  // 毫秒级，本来应该是1000，但是为了减少误差，用800
+  if (t < -1000 || offset > 800) {
+    last_tsc = current_tsc;
+    gettimeofday(tv, NULL);
+    calltime++;
+    last_tv = *tv;
+  } else {
+    tv->tv_sec = last_tv.tv_sec;
+    tv->tv_usec = last_tv.tv_usec;
+  }
+}
+
+
+uint64_t TimeT::get_tsc() {
+  uint32_t low = 0;
+  uint32_t high = 0;
+  rdtsc(low, high);
+  return ((uint64_t)high << 32) | low;
+  
+}
+
+void TimeT::current_utc_time(struct timespec *ts) {
+  // OS X does not have clock_gettime, use clock_get_time
+#ifdef __MACH__
+  clock_serv_t cclock;
+  mach_timespec_t mts;
+  host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+  clock_get_time(cclock, &mts);
+  mach_port_deallocate(mach_task_self(), cclock);
+  ts->tv_sec = mts.tv_sec;
+  ts->tv_nsec = mts.tv_nsec;
+#else
+  clock_gettime(CLOCK_REALTIME, ts);
+#endif
+}
+
 
 
 }  // namespace base
