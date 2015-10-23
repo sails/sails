@@ -35,7 +35,7 @@ class TimeT {
   // 它返回的是cpu启动到现在的运行周期数，在2010年之前的多核cpu，可能会存在
   // cpu之前的加载时间不一致，导致每次读到不同的cpu上使结果不准确，不过新的
   // cpu已经可以保证在多个之间同步
-  // 性能测试大概能达到8000w/s
+  // 在预热之后(离首次调用1s之后)，性能测试大概能达到8000w/s
   static void get_timeofday(timeval* tv);
 
   static uint64_t get_tsc();
