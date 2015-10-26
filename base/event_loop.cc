@@ -63,7 +63,9 @@ EventLoop::EventLoop(void* owner) {
 EventLoop::~EventLoop() {
   if (events != NULL) {
     for (int i = 0; i < max_events; i++) {
-      event_stop(i);
+      if (anfds[i].isused == 1) {
+        event_stop(i);
+      }
     }
     free(events);
     events = NULL;
@@ -71,6 +73,22 @@ EventLoop::~EventLoop() {
   if (anfds != NULL) {
     free(anfds);
   }
+  if (shutdownfd > 0) {
+    close(shutdownfd);
+    shutdownfd = 0;
+  }
+#ifdef __linux__
+  if (epollfd > 0) {
+    close(epollfd);
+    epollfd = 0;
+  }
+#elif __APPLE__
+  if (kqfd > 0) {
+    close(kqfd);
+    kqfd = 0;
+  }
+#endif
+  
 }
 
 void EventLoop::init() {
