@@ -62,7 +62,8 @@ struct NetbiosHeader {
 
 NetbiosQuery::NetbiosQuery() {
   uint32_t seed = time(NULL);
-  transationID = rand_r(&seed);
+  srand(seed);
+  transationID = rand();  // android平台上没有rand_r,所以这里分开写
 }
 
 

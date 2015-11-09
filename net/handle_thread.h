@@ -15,6 +15,7 @@
 #define SAILS_NET_HANDLE_THREAD_H_
 
 #include <string>
+#include <cstdint>
 #include <exception>
 #include "sails/net/net_thread.h"
 
@@ -234,7 +235,7 @@ void HandleThread<T>::handleImp() {
       TagRecvData<T>& recvData = *data;
       handle(recvData);
       handle_times++;
-      if (handle_times > INT64_MAX-10) {
+      if (handle_times > std::numeric_limits<std::int64_t>::max()-10) {
         handle_times = 0;
       }
       heartbeat();

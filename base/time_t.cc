@@ -92,12 +92,18 @@ time_t TimeT::coverStrToTime(const char* timestr) {
   return t_;
 }
 
+#ifndef __ANDROID__
+// android的内核不支持这个指令
 #define rdtsc(low, high) \
-     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
-
+  __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
+#endif
 
 int calltime = 0;
 void TimeT::get_timeofday(timeval* tv) {
+#ifndef __ANDROID__
+  gettimeofday(tv, NULL);
+  return;
+#endif
   // 一个指令周期多少微秒(按照现在的3GHzcpu，算出来差不多应该是0.3ns)
   static float cpu_cycle = 0;
   static timeval last_tv;
@@ -142,7 +148,9 @@ int64_t TimeT::getNowMs() {
 uint64_t TimeT::get_tsc() {
   uint32_t low = 0;
   uint32_t high = 0;
+#ifndef __ANDROID__
   rdtsc(low, high);
+#endif
   return ((uint64_t)high << 32) | low;
 }
 

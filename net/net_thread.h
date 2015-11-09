@@ -14,6 +14,8 @@
 #define SAILS_NET_NET_THREAD_H_
 
 #include <fcntl.h>
+#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <deque>
 #include <list>
@@ -361,7 +363,7 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
         if (server->isIpAllow(ip)) {
           sails::base::setnonblocking(connfd);
           accept_times++;
-          if (accept_times > INT64_MAX-10) {
+          if (accept_times > std::numeric_limits<std::int64_t>::max()-10) {
             accept_times = 0;
           }
           // 新建connector
