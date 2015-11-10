@@ -49,4 +49,15 @@ add_library(sails SHARED ${SRCLIST})
 
 # 为了防止OUTPUT_NAME设置新的target时清除已经存在的同名target
 set_target_properties(sails PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-set_target_properties(sails_static PROPERTIES OUTPUT_NAME "sails") 
+set_target_properties(sails_static PROPERTIES OUTPUT_NAME "sails")
+# 设置动态库的版本，api兼容版本
+set_target_properties(sails PROPERTIES VERSION 1.0.0 SOVERSION 1)
+
+#LIBRARY指动态库，ARCHIVE指静态库
+install(TARGETS sails sails_static
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  ARCHIVE DESTINATION lib)
+install(DIRECTORY base log net system
+   DESTINATION include/sails/
+   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
