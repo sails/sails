@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 2.8.8)
 project (sails)
 include_directories(../)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+# osx会设置动态库的install_name为@rpath/libxxx.dylib
+set(CMAKE_MACOSX_RPATH 1)
 
 # 当编译android时，cmake ../ -DCMAKE_TOOLCHAIN_FILE=../android.toolchain.cmake
 
@@ -41,4 +43,10 @@ set(SRCLIST
   net/mime.cc
   net/netbios.cc)
 
-add_library(sails ${SRCLIST})
+#因为target不能重名
+add_library(sails_static STATIC ${SRCLIST})
+add_library(sails SHARED ${SRCLIST})
+
+# 为了防止OUTPUT_NAME设置新的target时清除已经存在的同名target
+set_target_properties(sails PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(sails_static PROPERTIES OUTPUT_NAME "sails") 
