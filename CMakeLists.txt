@@ -34,6 +34,9 @@ set(SRCLIST
   base/timer.cc
   base/util.cc
   log/logging.cc
+  crypto/MD5Checksum.cc
+  crypto/hash.cc
+  crypto/md5.cc
   ${system}
   net/connector.cc
   net/connector_list.cc
@@ -57,7 +60,7 @@ set_target_properties(sails PROPERTIES VERSION 1.0.0 SOVERSION 1)
 install(TARGETS sails sails_static
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
   ARCHIVE DESTINATION lib)
-install(DIRECTORY base log net system
+install(DIRECTORY base log crypto net system
    DESTINATION include/sails/
    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
 )
