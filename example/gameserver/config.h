@@ -3,8 +3,9 @@
 
 #include <map>
 #include <string>
-#include <json/json.h>
+#include "sails/base/json.hpp"
 
+using json = nlohmann::json;
 
 namespace sails {
 
@@ -22,7 +23,7 @@ class Config {
   std::string get_local_ip();  // for check room
   std::string get_game_code();
  private:
-  Json::Value root;
+  json root;
 };
 
 }  // namespace sails
