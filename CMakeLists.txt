@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.8)
 project (sails)
 include_directories(../)
 # 国为不直接编译成动态库，所以要加-fpic，否则cmake不认为会用来编译成动态库
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall -fPIC")
 # osx会设置动态库的install_name为@rpath/libxxx.dylib
 set(CMAKE_MACOSX_RPATH 1)
 
