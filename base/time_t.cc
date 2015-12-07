@@ -21,6 +21,7 @@
 #ifdef __APPLE__
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include "TargetConditionals.h"
 #endif
 namespace sails {
 namespace base {
@@ -149,7 +150,6 @@ int64_t TimeT::getNowMs() {
   get_timeofday(&tv);
   return tv.tv_sec*1000+tv.tv_usec/1000;
 }
-
 
 uint64_t TimeT::get_tsc() {
   uint32_t low = 0;
