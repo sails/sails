@@ -93,14 +93,20 @@ time_t TimeT::coverStrToTime(const char* timestr) {
 }
 
 #ifndef __ANDROID__
+#ifndef TARGET_OS_IPHONE
 // android的内核不支持这个指令
 #define rdtsc(low, high) \
   __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
 #endif
+#endif
 
 int calltime = 0;
 void TimeT::get_timeofday(timeval* tv) {
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+  gettimeofday(tv, NULL);
+  return;
+#endif
+#ifdef TARGET_OS_IPHONE
   gettimeofday(tv, NULL);
   return;
 #endif
@@ -149,7 +155,9 @@ uint64_t TimeT::get_tsc() {
   uint32_t low = 0;
   uint32_t high = 0;
 #ifndef __ANDROID__
+#ifndef TARGET_OS_IPHONE
   rdtsc(low, high);
+#endif
 #endif
   return ((uint64_t)high << 32) | low;
 }

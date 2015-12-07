@@ -54,6 +54,10 @@ add_library(objs OBJECT ${SRCLIST})
 #因为target不能重名
 add_library(sails_static STATIC $<TARGET_OBJECTS:objs>)
 add_library(sails SHARED $<TARGET_OBJECTS:objs>)
+if(ANDROID)
+  target_link_libraries(sails log)
+  target_link_libraries(sails_static log)
+endif()
 
 # 为了防止OUTPUT_NAME设置新的target时清除已经存在的同名target
 set_target_properties(sails PROPERTIES CLEAN_DIRECT_OUTPUT 1)
