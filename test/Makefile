@@ -1,8 +1,9 @@
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer  -W -Wall -O0 -g -L../ -I./ -I../../
+CFLAGS	= -std=c++11 -fno-omit-frame-pointer  \
+	-W -Wall -O0 -g -L../ -I./ -I../../
 
 
 OBJECTS = log_test.o connector_test.o netbios_test.o mem_usage_test.o \
-	cpu_usage_test.o time_test.o
+	cpu_usage_test.o time_test.o json_test.o string_test.o
 unit_test : $(OBJECTS)
 	g++ $(CFLAGS)  -Wl,-rpath,../ $(OBJECTS) -o unit_test -lsails
 

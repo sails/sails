@@ -128,7 +128,7 @@ char* url_encode(const char *source_str, char *encode_str, int encode_len) {
   int encode_index = 0;
   for (int i = 0; i < source_str_len; i++) {
     char c = source_str[i];
-    if (encode_index+2 < encode_len) {
+    if (encode_index+2 > encode_len) {
       return NULL;
     }
     if (c == ' ') {
@@ -137,7 +137,7 @@ char* url_encode(const char *source_str, char *encode_str, int encode_len) {
              (c < 'A' && c > '9') ||
              (c > 'Z' && c < 'a' && c != '_') ||
              (c > 'z' && c != '~')) {
-      if (encode_index+4 < encode_len) {
+      if (encode_index+4 > encode_len) {
         return NULL;
       }
       encode_str[encode_index++] = '%';
