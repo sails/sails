@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 2.8.8)
 
 project (sails)
 include_directories(../)
-# 国为不直接编译成动态库，所以要加-fpic，否则cmake不认为会用来编译成动态库
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall")
 # osx会设置动态库的install_name为@rpath/libxxx.dylib
 set(CMAKE_MACOSX_RPATH 1)
 
@@ -47,13 +46,17 @@ set(SRCLIST
   net/mime.cc
   net/netbios.cc)
 
-#cmake2.8.8开始支持OBJECT类型，这样动态库，静态库就不用编译两次
-# 否则 add_library(sails_static STATIC ${SRCLIST})
-# add_library(sails SHARED ${SRCLIST})会编译两次到不同的目录
-add_library(objs OBJECT ${SRCLIST})
-#因为target不能重名
-add_library(sails_static STATIC $<TARGET_OBJECTS:objs>)
-add_library(sails SHARED $<TARGET_OBJECTS:objs>)
+# cmake2.8.8开始支持OBJECT类型，这样动态库，静态库就不用编译两次
+# 为了能用于动态库，在要编译选项中加-fPIC
+# add_library(objs OBJECT ${SRCLIST})
+# add_library(sails_static STATIC $<TARGET_OBJECTS:objs>)
+# add_library(sails SHARED $<TARGET_OBJECTS:objs>)
+# 但是在xcode中，不能objs.a生成sails.a和sails.dylib，
+# 所以这里还是分开编译
+# 因为target不能重名
+add_library(sails_static STATIC ${SRCLIST})
+add_library(sails SHARED ${SRCLIST})
+
 if(ANDROID)
   target_link_libraries(sails log)
   target_link_libraries(sails_static log)
@@ -65,11 +68,11 @@ set_target_properties(sails_static PROPERTIES OUTPUT_NAME "sails")
 # 设置动态库的版本，api兼容版本
 set_target_properties(sails PROPERTIES VERSION 1.0.0 SOVERSION 1)
 
-#LIBRARY指动态库，ARCHIVE指静态库
+# LIBRARY指动态库，ARCHIVE指静态库
 install(TARGETS sails sails_static
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
   ARCHIVE DESTINATION lib)
 install(DIRECTORY base log crypto net system
-   DESTINATION include/sails/
-   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-)
+  DESTINATION include/sails/
+  FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+  )
