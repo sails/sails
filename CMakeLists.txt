@@ -2,6 +2,32 @@ cmake_minimum_required(VERSION 2.8.8)
 
 project (sails)
 include_directories(../)
+# 总的设置，让它生成到执行cmake的目录中
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# 如果只想针对某个target设置
+# set_target_properties(sails_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# 但是对于有多个配置的generators（vs, xcode），它会放到每个配置的子目录中(
+# 比如vs有debug,release,minsizerel,relwithdebinfo这四种单独配置，
+# 如果像上面指定OUTPUT_DIRECTORY，对于每种配置，它会在目录下创建Debug,Release目录，再放target，
+# 不过我们可以对相对配置进行指定目录)
+#if(XCODE)
+#  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_Debug ${CMAKE_BINARY_DIR} )
+#  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_Release ${CMAKE_BINARY_DIR} )
+#endif()
+
+# 也可以统一指定
+foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+  string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+  set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR} )
+  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR} )
+  set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR} )
+endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
+
+
+  
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall")
 # osx会设置动态库的install_name为@rpath/libxxx.dylib
 set(CMAKE_MACOSX_RPATH 1)
