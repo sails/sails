@@ -162,6 +162,8 @@ uint64_t TimeT::get_tsc() {
   return ((uint64_t)high << 32) | low;
 }
 
+/*
+// unix and not apple need link rt
 void TimeT::current_utc_time(struct timespec *ts) {
   // OS X does not have clock_gettime, use clock_get_time
 #ifdef __MACH__
@@ -176,7 +178,7 @@ void TimeT::current_utc_time(struct timespec *ts) {
   clock_gettime(CLOCK_REALTIME, ts);
 #endif
 }
-
+*/
 
 
 }  // namespace base

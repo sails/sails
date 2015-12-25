@@ -43,8 +43,10 @@ class TimeT {
 
   static uint64_t get_tsc();
 
+  /*
   // 得到当前时间高精度纳秒
   static void current_utc_time(struct timespec *ts);
+  */
 };
 
 

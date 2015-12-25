@@ -9,7 +9,7 @@
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2015-10-23 09:55:41
 
-// 经过测试耗时：clock_gettime > time > gettimeofday > rdtsc
+// 经过测试耗时：clock_gettime > time > gettimeofday > rdtsc > chrono
 
 // 从下面的测试可以发现，gettimeofday一秒也可以调用上千万次，
 // 而rdtsc性能则是它的4-5倍，达到0.1G，也就是说gettimeofday
@@ -17,6 +17,9 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include <ctime>
+#include <ratio>
+#include <chrono>
 #include "catch.hpp"
 #include "../base/time_t.h"
 
@@ -87,6 +90,7 @@ TEST_CASE("TimeTest4", "[rdtsc 10000w]") {
 }
 
 // 大约30s
+/*
 TEST_CASE("TimeTest5", "[clock_gettime 1000w]") {
   char nowstr[30] = {'\0'};
   printf("start test current_utc_time for 1000w\n");
@@ -99,3 +103,19 @@ TEST_CASE("TimeTest5", "[clock_gettime 1000w]") {
   sails::base::TimeT::time_with_millisecond(nowstr, 30);
   printf("end %s\n", nowstr);
 }
+*/
+// 大约200ms
+TEST_CASE("TimeTest6", "[clock_gettime 1000w]") {
+  printf("start test std::chrono::high_resolution_clock::now for 1000w\n");
+  std::chrono::high_resolution_clock::time_point start =
+        std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < 10000000; i++) {
+    std::chrono::high_resolution_clock::now();
+  }
+  std::chrono::high_resolution_clock::time_point end =
+        std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> time_span =
+      std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+  printf("end %f seconds\n", time_span.count());
+}
+
