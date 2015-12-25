@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
-//#include <endian.h>
+// #include <endian.h>
 #include <vector>
 #include <algorithm>
 #include "sails/base/uncopyable.h"

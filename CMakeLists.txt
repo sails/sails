@@ -27,7 +27,7 @@ endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 
   
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall -fPIC")
 # osx会设置动态库的install_name为@rpath/libxxx.dylib
 set(CMAKE_MACOSX_RPATH 1)
 
