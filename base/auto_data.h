@@ -77,12 +77,14 @@ class auto_data {
  public:
   // 从其它类型构造basic_data
   using string_t = std::string;
+  auto_data() {
+    type = data_type::null;
+  }
   auto_data(const string_t& v)  // NOLINT
-      : value(v), type(data_type::string) {}
-  auto_data(std::string v)  // NOLINT
       : value(v), type(data_type::string) {}
   auto_data(const char* v)  // NOLINT
       : value(std::string(v)), type(data_type::string) {}
+
   auto_data(bool v)  // NOLINT
       : value(v), type(data_type::boolean) {}
   auto_data(int64_t v)  // NOLINT
@@ -91,6 +93,46 @@ class auto_data {
       : value((int64_t)v), type(data_type::number_integer) {}
   auto_data(double v)  // NOLINT
       : value(v), type(data_type::number_float) {}
+
+  // map value
+  auto_data& operator [](const std::string& key) {
+    if (map_data == NULL) {
+      map_data = new std::map<std::string, auto_data>();
+    }
+    auto iter = map_data->find(key);
+    if (iter == map_data->end()) {  // find
+      (*map_data)[key] = auto_data();
+    }
+    return map_data->at(key);
+  }
+  auto_data& operator [](const char* key) {
+    if (map_data == NULL) {
+      map_data = new std::map<std::string, auto_data>();
+    }
+    auto iter = map_data->find(key);
+    if (iter == map_data->end()) {  // find
+      (*map_data)[key] = auto_data();
+    }
+    return map_data->at(key);
+  }
+  // assignment operator
+  /*
+  void operator =(auto_data& data) {
+    value = data_value(data.value);
+    type = data.type;
+    }
+  */
+  void operator =(auto_data data) {
+    type = data.type;
+    if (data.type == data_type::string) {
+      value = new std::string(*data.value.str);
+    }
+    value = data_value(data.value);
+    if (data.map_data != NULL) {
+      map_data = new std::map<std::string, auto_data>(*data.map_data);
+    }
+  }
+  
 
   // 重载隐式转换，注意它与T operator()的区分，后者是让它成为一个防函数
   // 通过这个模板，可以直接使用int v = basic_data_object;它会生成一个
@@ -207,6 +249,7 @@ class auto_data {
  private:
   data_value value = data_type::null;
   data_type type;
+  std::map<std::string, auto_data>* map_data = NULL;
 };
 
 

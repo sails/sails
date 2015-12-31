@@ -14,7 +14,7 @@
 #include "catch.hpp"
 #include "../base/auto_data.h"
 
-TEST_CASE("auto_data", "constructor") {
+TEST_CASE("auto_data", "test") {
   // test bool cover
   sails::auto_data cb = true;
   bool b = cb;
@@ -41,4 +41,20 @@ TEST_CASE("auto_data", "constructor") {
   sails::auto_data cs = "test";
   std::string s = cs;
   REQUIRE(s == "test");
+
+  // test map
+  sails::auto_data m;
+  m["age"] = 10;
+  m["name"] = std::string("xu");
+  int av = m["age"];
+  std::string name = m["name"];
+  REQUIRE(av == 10);
+  REQUIRE(name == "xu");
+
+  sails::auto_data mm;
+  mm["1"] = m;
+  std::string mname = mm["1"]["name"];
+  REQUIRE(mname == "xu");
+  int mage = mm["1"]["age"];
+  REQUIRE(mage == 10);
 }
