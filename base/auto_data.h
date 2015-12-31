@@ -23,6 +23,8 @@
 
 namespace sails {
 
+
+
 class auto_data {
  public:
   ///////////////////////////
@@ -33,7 +35,8 @@ class auto_data {
       string,
       boolean,
       number_integer,
-      number_float
+      number_float,
+      map
         };
 
   ///////////////////////////
@@ -95,46 +98,54 @@ class auto_data {
       : value(v), type(data_type::number_float) {}
 
   // map value
-  auto_data& operator [](const std::string& key) {
-    if (map_data == NULL) {
-      map_data = new std::map<std::string, auto_data>();
+  bool has(std::string key) const {
+    if (type == data_type::map) {
+      auto iter = map_data.find(key);
+      if (iter != map_data.end()) {
+        return true;
+      }
     }
-    auto iter = map_data->find(key);
-    if (iter == map_data->end()) {  // find
-      (*map_data)[key] = auto_data();
-    }
-    return map_data->at(key);
+    return false;
   }
-  auto_data& operator [](const char* key) {
-    if (map_data == NULL) {
-      map_data = new std::map<std::string, auto_data>();
+  auto_data& operator[](const std::string& key) {
+    auto iter = map_data.find(key);
+    if (iter == map_data.end()) {  // find
+      map_data[key] = auto_data();
     }
-    auto iter = map_data->find(key);
-    if (iter == map_data->end()) {  // find
-      (*map_data)[key] = auto_data();
-    }
-    return map_data->at(key);
+    type = data_type::map;
+    return map_data[key];
   }
+  auto_data& operator[](const char* key) {
+    auto iter = map_data.find(key);
+    if (iter == map_data.end()) {  // find
+      map_data[key] = auto_data();
+    }
+    type = data_type::map;
+    return map_data[key];
+  }
+  auto_data Get(const std::string& key) const {
+    auto iter = map_data.find(key);
+    if (iter == map_data.end()) {  // find
+      return auto_data();
+    }
+    return map_data.at(key);
+  }
+
   // assignment operator
-  /*
-  void operator =(auto_data& data) {
-    value = data_value(data.value);
-    type = data.type;
-    }
-  */
   void operator =(auto_data data) {
     type = data.type;
     if (data.type == data_type::string) {
       value = new std::string(*data.value.str);
+    } else if (data.type == data_type::map) {
+      map_data = data.map_data;
+    } else {
+      value = data.value;
     }
     value = data_value(data.value);
-    if (data.map_data != NULL) {
-      map_data = new std::map<std::string, auto_data>(*data.map_data);
-    }
   }
-  
 
-  // 重载隐式转换，注意它与T operator()的区分，后者是让它成为一个防函数
+
+    // 重载隐式转换，注意它与T operator()的区分，后者是让它成为一个防函数
   // 通过这个模板，可以直接使用int v = basic_data_object;它会生成一个
   // operator int()的函数（这与我们模板作为参数要显示指定不同），但是对
   // 与cppcheck这样的静态检测工具来说，好像不能正确识别出来，会出现要求
@@ -165,6 +176,7 @@ class auto_data {
     return convertedValue;
   }
   */
+
   operator std::string() const {
     std::string str = "";
     switch (type) {
@@ -246,13 +258,15 @@ class auto_data {
     }
   }
 
+  data_type Type() {
+    return type;
+  }
+
  private:
   data_value value = data_type::null;
   data_type type;
-  std::map<std::string, auto_data>* map_data = NULL;
+  std::map<std::string, auto_data> map_data;
 };
-
-
 
 }  // namespace sails
 
