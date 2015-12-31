@@ -2,6 +2,7 @@
 // All rights reserved.
 //
 // Filename: time_t.cc
+//           由于c++11中std::chrono更方便移植，稍后改成通过它来实现
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-11 09:35:13

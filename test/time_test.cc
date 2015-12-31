@@ -18,7 +18,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <ctime>
-#include <ratio>
 #include <chrono>
 #include "catch.hpp"
 #include "../base/time_t.h"
