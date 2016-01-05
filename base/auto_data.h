@@ -23,8 +23,6 @@
 
 namespace sails {
 
-
-
 class auto_data {
  public:
   ///////////////////////////
@@ -36,7 +34,8 @@ class auto_data {
       boolean,
       number_integer,
       number_float,
-      map
+      map,
+      list
         };
 
   ///////////////////////////
@@ -48,8 +47,10 @@ class auto_data {
     int64_t int_val;
     double f_val;
 
-    data_value(const std::string& v) {
-      str = new std::string(v);
+    data_value() {
+    }
+    data_value(std::string* v) {
+      str = v;
     }
     data_value(bool boolean) : boolean(boolean) {}
     data_value(int64_t v) : int_val(v) {}
@@ -57,7 +58,7 @@ class auto_data {
     data_value(data_type t) {
       switch (t) {
         case data_type::string: {
-          str = new std::string("");
+          str = NULL;
           break;
         }
         case data_type::boolean: {
@@ -84,20 +85,49 @@ class auto_data {
     type = data_type::null;
   }
   auto_data(const string_t& v)  // NOLINT
-      : value(v), type(data_type::string) {}
+      : type(data_type::string) {
+    std::string* str = new std::string(v);
+    value.str = str;
+  }
   auto_data(const char* v)  // NOLINT
-      : value(std::string(v)), type(data_type::string) {}
+      : type(data_type::string) {
+    std::string* str = new std::string(v);
+    value.str = str;
+  }
 
   auto_data(bool v)  // NOLINT
-      : value(v), type(data_type::boolean) {}
+      : type(data_type::boolean), value(v) {}
   auto_data(int64_t v)  // NOLINT
-      : value(v), type(data_type::number_integer) {}
+      : type(data_type::number_integer), value(v) {}
   auto_data(int v)  // NOLINT
-      : value((int64_t)v), type(data_type::number_integer) {}
+      : type(data_type::number_integer), value((int64_t)v) {}
+  auto_data(size_t v)  // NOLINT
+      : type(data_type::number_integer), value((int64_t)v) {}
   auto_data(double v)  // NOLINT
-      : value(v), type(data_type::number_float) {}
+      : type(data_type::number_float), value(v) {}
+  auto_data(const auto_data& data) {
+    type = data.type;
+    if (data.type == data_type::string) {
+      value.str = new std::string(*(data.value.str));
+    } else if (data.type == data_type::map) {
+      for (auto& item : data.map_data) {
+        auto_data d = item.second;
+        map_data[item.first] = d;
+      }
+    } else {
+      value = data.value;
+    }
+  }
 
-  // map value
+
+  ~auto_data() {
+    if (type == data_type::string && value.str != NULL) {
+      delete value.str;
+      value.str = NULL;
+    }
+  }
+
+  // map
   bool has(std::string key) const {
     if (type == data_type::map) {
       auto iter = map_data.find(key);
@@ -107,6 +137,11 @@ class auto_data {
     }
     return false;
   }
+  // because of [] will insert data for key when not found, so
+  // can't defined as auto_data& operator[](const std::stirng& key) const;
+  // when param as "const auto_data&", call 'Get' method instead
+  // besides can't return const auto_data&, bacause of it will be use
+  // data["test"] = "test", this will change the result of reference
   auto_data& operator[](const std::string& key) {
     auto iter = map_data.find(key);
     if (iter == map_data.end()) {  // find
@@ -123,60 +158,67 @@ class auto_data {
     type = data_type::map;
     return map_data[key];
   }
-  auto_data Get(const std::string& key) const {
+
+  // because of want return auto_data&, so when there is not data
+  // for key, can't new one, here throw out_of_range exception
+  const auto_data& Get(const std::string& key) const {
     auto iter = map_data.find(key);
     if (iter == map_data.end()) {  // find
-      return auto_data();
+      throw new std::out_of_range("out of range is Get method");;
     }
     return map_data.at(key);
   }
+  
+
+  // vector
+  int size() const {
+    return list_data.size();
+  }
+  auto_data operator[](int index) const {
+    return list_data[index];
+  }
+  void push_back(const auto_data& data) {
+    type = data_type::list;
+    list_data.push_back(data);
+  }
+
+  bool operator ==(const auto_data& data) {
+    if (this->type != data.type) {
+      return false;
+    }
+    switch (type) {
+      case data_type::string: {
+        return *(this->value.str) == *(data.value.str);
+      }
+      case data_type::boolean: {
+        return value.boolean == data.value.boolean;
+      }
+      case data_type::number_integer: {
+        return value.int_val == data.value.int_val;
+      }
+      case data_type::number_float: {
+        return value.f_val == data.value.f_val;
+      }
+      case data_type::map: {
+        return false;
+      }
+      default:
+        return false;
+    }
+    return false;
+  }
 
   // assignment operator
-  void operator =(auto_data data) {
+  void operator =(const auto_data& data) {
     type = data.type;
     if (data.type == data_type::string) {
-      value = new std::string(*data.value.str);
+      value.str = new std::string(data.value.str->c_str());
     } else if (data.type == data_type::map) {
       map_data = data.map_data;
     } else {
       value = data.value;
     }
-    value = data_value(data.value);
   }
-
-
-    // 重载隐式转换，注意它与T operator()的区分，后者是让它成为一个防函数
-  // 通过这个模板，可以直接使用int v = basic_data_object;它会生成一个
-  // operator int()的函数（这与我们模板作为参数要显示指定不同），但是对
-  // 与cppcheck这样的静态检测工具来说，好像不能正确识别出来，会出现要求
-  // 实现一个operator int()这样的提示
-  // 为了保证cppcheck之类的不出现提示信息，下面进行偏特化
-  /*
-  template<typename T>
-  operator T() const {
-    T convertedValue;
-    switch (type) {
-      case data_type::boolean: {
-        convertedValue = value.boolean;
-        printf("is a boolean\n");
-        break;
-      }
-      case data_type::number_integer: {
-        convertedValue = value.int_val;
-        break;
-      }
-      case data_type::number_float: {
-        convertedValue = value.f_val;
-        break;
-      }
-      default:
-        perror("type errr cover from basic_data");
-        break;
-    }
-    return convertedValue;
-  }
-  */
-
   operator std::string() const {
     std::string str = "";
     switch (type) {
@@ -262,10 +304,36 @@ class auto_data {
     return type;
   }
 
+  bool empty() {
+    return type == data_type::null;
+  }
+
+  bool is_true() {
+    switch (type) {
+      case data_type::null: {
+        return false;
+      }
+      case data_type::boolean: {
+        return value.boolean;
+      }
+      case data_type::number_integer: {
+        return value.int_val != 0;
+      }
+      case data_type::number_float: {
+        return value.f_val != 0;
+      }
+      default:
+        return true;
+        break;
+    }
+    return true;
+  }
+
  private:
-  data_value value = data_type::null;
   data_type type;
+  data_value value = data_type::null;
   std::map<std::string, auto_data> map_data;
+  std::vector<auto_data> list_data;
 };
 
 }  // namespace sails
