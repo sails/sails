@@ -438,12 +438,12 @@ void HttpResponse::SetDefaultHeader() {
   time(&timep);
 
   char headers[MAX_HEADERS][2][MAX_ELEMENT_SIZE]
-      = {{ "Content-Type", "text/html;charset=UTF-8"},
+      = {{ "Server", " sails " },
          { "Date", ""},
+         { "Content-Type", "text/html;charset=UTF-8"},
          { "Expires", "" },
          { "Connection", "keep-alive"},
          { "Cache-Control", "public, max-age=0" },
-         { "Server", "sails server" },
          { "Content-Length", "0" }};
 
   for (int i = 0; i < MAX_HEADERS; i++) {
