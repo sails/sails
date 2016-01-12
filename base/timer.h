@@ -28,7 +28,7 @@ class Timer {
   explicit Timer(int tick);
   ~Timer();
   // set when to zero disarms the timer
-  bool init(ExpiryAction action, void *data, int when);
+  bool init(ExpiryAction action, void *data, int when = 1);
   bool disarms();
 
  public:

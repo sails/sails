@@ -69,7 +69,12 @@ Timer::Timer(int tick) {
   iothread = NULL;
 }
 
-bool Timer::init(ExpiryAction action, void *data, int when = 1) {
+#if __APPLE__
+bool Timer::init(ExpiryAction action, void *data, int)
+#elif
+bool Timer::init(ExpiryAction action, void *data, int when)
+#endif
+{
 #ifdef __linux__
   sails::base::EventLoop::Events events = sails::base::EventLoop::Event_READ;
   struct itimerspec new_value;
@@ -125,7 +130,7 @@ bool Timer::disarms()  {
   return true;
 }
 
-void Timer::read_timerfd_data(base::event* ev, int revents, void* owner) {
+void Timer::read_timerfd_data(base::event* ev, int, void* owner) {
   if (owner == NULL) {
     return;
   }
