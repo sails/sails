@@ -71,7 +71,7 @@ Timer::Timer(int tick) {
 
 #if __APPLE__
 bool Timer::init(ExpiryAction action, void *data, int)
-#elif
+#else
 bool Timer::init(ExpiryAction action, void *data, int when)
 #endif
 {
