@@ -8,19 +8,19 @@
 
 
 
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef EXAMPLE_GAMESERVER_SERVER_H_
+#define EXAMPLE_GAMESERVER_SERVER_H_
 
 #include <string>
 #include <map>
 #include <list>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include "sails/net/epoll_server.h"
 #include "sails/net/connector.h"
 #include "sails/net/packets.h"
-#include "game_world.h"
-#include "game_packets.h"
-#include "config.h"
+#include "sails/example/gameserver/game_world.h"
+#include "sails/example/gameserver/game_packets.h"
+#include "sails/example/gameserver/config.h"
 
 namespace sails {
 
@@ -151,4 +151,4 @@ bool update_session_timeout(const std::string& session);
 }  // namespace sails
 
 
-#endif  // SERVER_H
+#endif  // EXAMPLE_GAMESERVER_SERVER_H_

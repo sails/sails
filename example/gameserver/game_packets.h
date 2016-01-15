@@ -1,7 +1,22 @@
-#ifndef GAME_PACKETS_H
-#define GAME_PACKETS_H
+// Copyright (C) 2016 sails Authors.
+// All rights reserved.
+//
+// Official git repository and contact information can be found at
+// https://github.com/sails/sails and http://www.sailsxu.com/.
+//
+// Filename: game_packets.h
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2016-01-15 15:47:04
+
+
+
+
+#ifndef EXAMPLE_GAMESERVER_GAME_PACKETS_H_
+#define EXAMPLE_GAMESERVER_GAME_PACKETS_H_
 
 #include <stdint.h>
+#include <string.h>
 
 namespace sails {
 
@@ -28,20 +43,33 @@ namespace sails {
 
 // Ethernet Address (MAC)
 #define ETHER_ADDR_LEN 6
+
+
+#pragma pack(push, 1)
+
 typedef struct SceNetEtherAddr {
   uint8_t data[ETHER_ADDR_LEN];
+  SceNetEtherAddr() {
+    memset(data, '\0', sizeof(data));
+  }
 } SceNetEtherAddr;
 
 // Adhoc Virtual Network Name (1234ABCD)
 #define ADHOCCTL_GROUPNAME_LEN 8
 typedef struct SceNetAdhocctlGroupName {
   uint8_t data[ADHOCCTL_GROUPNAME_LEN];
+  SceNetAdhocctlGroupName() {
+    memset(data, '\0', sizeof(data));
+  }
 } SceNetAdhocctlGroupName;
 
 // Player Nickname
 #define ADHOCCTL_NICKNAME_LEN 128
 typedef struct SceNetAdhocctlNickname {
   uint8_t data[ADHOCCTL_NICKNAME_LEN];
+  SceNetAdhocctlNickname() {
+    memset(data, '\0', sizeof(data));
+  }
 } SceNetAdhocctlNickname;
 
 
@@ -63,84 +91,92 @@ typedef struct SceNetAdhocctlNickname {
 
 //////////////// for data transfer /////////////////
 
-typedef struct
-{
+struct SceNetAdhocctlProductCode {
   // Game Product Code (ex. ULUS12345)
   char data[PRODUCT_CODE_LENGTH];
-} __attribute__((packed)) SceNetAdhocctlProductCode;
+  SceNetAdhocctlProductCode() {
+    memset(data, '\0', sizeof(data));
+  }
+};
 
 // Basic Packet
-typedef struct
-{
+struct SceNetAdhocctlPacketBase {
   uint8_t opcode;
-} __attribute__((packed)) SceNetAdhocctlPacketBase;
+  SceNetAdhocctlPacketBase() {
+    opcode = 0;
+  }
+};
 
 // C2S Login Packet
-typedef struct
-{
+struct SceNetAdhocctlLoginPacketC2S {
   SceNetAdhocctlPacketBase base;
   SceNetEtherAddr mac;
   SceNetAdhocctlNickname name;
   SceNetAdhocctlProductCode game;
   char session[100];
-} __attribute__((packed)) SceNetAdhocctlLoginPacketC2S;
+  SceNetAdhocctlLoginPacketC2S() {
+    memset(session, '\0', sizeof(session));
+  }
+};
 
 // C2S Connect Packet
-typedef struct
-{
+struct SceNetAdhocctlConnectPacketC2S {
   SceNetAdhocctlPacketBase base;
   SceNetAdhocctlGroupName group;
-} __attribute__((packed)) SceNetAdhocctlConnectPacketC2S;
+};
 
 // C2S Chat Packet
-typedef struct
-{
+struct SceNetAdhocctlChatPacketC2S {
   SceNetAdhocctlPacketBase base;
   char message[64];
-} __attribute__((packed)) SceNetAdhocctlChatPacketC2S;
+  SceNetAdhocctlChatPacketC2S() {
+    memset(message, '\0', sizeof(message));
+  }
+};
 
 // S2C Connect Packet
-typedef struct
-{
+struct SceNetAdhocctlConnectPacketS2C {
   SceNetAdhocctlPacketBase base;
   SceNetAdhocctlNickname name;
   SceNetEtherAddr mac;
   uint32_t ip;
-} __attribute__((packed)) SceNetAdhocctlConnectPacketS2C;
+  SceNetAdhocctlConnectPacketS2C() {
+    ip = 0;
+  }
+};
 
 // S2C Disconnect Packet
-typedef struct
-{
+struct SceNetAdhocctlDisconnectPacketS2C {
   SceNetAdhocctlPacketBase base;
   uint32_t ip;
   SceNetEtherAddr mac;
-} __attribute__((packed)) SceNetAdhocctlDisconnectPacketS2C;
+  SceNetAdhocctlDisconnectPacketS2C() {
+    ip = 0;
+  }
+};
 
 // S2C Scan Packet
-typedef struct
-{
+struct SceNetAdhocctlScanPacketS2C {
   SceNetAdhocctlPacketBase base;
   SceNetAdhocctlGroupName group;
   SceNetEtherAddr mac;
-} __attribute__((packed)) SceNetAdhocctlScanPacketS2C;
+};
 
 // S2C Connect BSSID Packet
-typedef struct
-{
+struct SceNetAdhocctlConnectBSSIDPacketS2C {
   SceNetAdhocctlPacketBase base;
   SceNetEtherAddr mac;
-} __attribute__((packed)) SceNetAdhocctlConnectBSSIDPacketS2C;
+};
 
 // S2C Chat Packet
-typedef struct
-{
+struct SceNetAdhocctlChatPacketS2C {
   SceNetAdhocctlChatPacketC2S base;
   SceNetAdhocctlNickname name;
-} __attribute__((packed)) SceNetAdhocctlChatPacketS2C;
+};
 
 
 // c2c Packet
-typedef struct {
+struct SceNetAdhocctlGameDataPacketC2C {
   SceNetAdhocctlPacketBase base;
   uint8_t additional_opcode;
   SceNetEtherAddr smac;
@@ -150,12 +186,20 @@ typedef struct {
   uint16_t dport;
   int len;
   char data[1];
-} __attribute__((packed)) SceNetAdhocctlGameDataPacketC2C;
+  SceNetAdhocctlGameDataPacketC2C() {
+    additional_opcode = 0;
+    ip = 0;
+    sport = 0;
+    dport = 0;
+    len = 0;
+    data[0] = '\0';
+  }
+};
+
+#pragma pack(pop)
 
 
+}  // namespace sails
 
 
-} // namespace sails
-
-
-#endif /* GAME_PACKETS_H */
+#endif  // EXAMPLE_GAMESERVER_GAME_PACKETS_H_

@@ -8,15 +8,15 @@
 
 
 
-#ifndef GAME_ROOM_H
-#define GAME_ROOM_H
+#ifndef EXAMPLE_GAMESERVER_GAME_ROOM_H_
+#define EXAMPLE_GAMESERVER_GAME_ROOM_H_
 
 
 #include <string>
 #include <map>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include <list>
-#include "player.h"
+#include "sails/example/gameserver/player.h"
 
 namespace sails {
 
@@ -59,7 +59,7 @@ class GameRoom {
 
 }  // namespace sails
 
-#endif  // GAME_ROOM_H
+#endif  // EXAMPLE_GAMESERVER_GAME_ROOM_H_
 
 
 

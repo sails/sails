@@ -8,9 +8,9 @@
 
 
 
-#include "player.h"
+#include "sails/example/gameserver/player.h"
 #include <stdint.h>
-#include "game_packets.h"
+#include "sails/example/gameserver/game_packets.h"
 
 
 namespace sails {

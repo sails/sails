@@ -8,14 +8,14 @@
 
 
 
-#ifndef GAME_WORLD_H
-#define GAME_WORLD_H
+#ifndef EXAMPLE_GAMESERVER_GAME_WORLD_H_
+#define EXAMPLE_GAMESERVER_GAME_WORLD_H_
 
 #include <string>
 #include <list>
 #include <map>
-#include "game_room.h"
-#include <mutex>
+#include "sails/example/gameserver/game_room.h"
+#include <mutex>  // NOLINT
 #include "sails/base/constant_ptr_list.h"
 
 namespace sails {
@@ -64,8 +64,9 @@ class GameWorld {
 };
 
 
-} // namespace sails
-#endif /* GAME_WORLD_H */
+}  // namespace sails
+
+#endif  // EXAMPLE_GAMESERVER_GAME_WORLD_H_
 
 
 

@@ -8,12 +8,12 @@
 
 
 
-#include "server.h"
+#include "sails/example/gameserver/server.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <utility>
-#include "product.h"
+#include "sails/example/gameserver/product.h"
 #include "sails/base/json.hpp"
 #include "sails/base/string.h"
 #include "sails/log/logging.h"
@@ -448,7 +448,9 @@ void Server::login_user_data(
                    playerId, ip.c_str(), recvData.port, session.c_str());
       }
     } else {
-      ERROR_DLOG("psp", "playerId:%u, ip:%s, port:%d, but session invalid session[0] equal 0 or session[32] not 0 ", playerId, ip.c_str(), recvData.port);
+      ERROR_DLOG("psp", "playerId:%u, ip:%s, port:%d,"
+                 " but session invalid session[0] equal 0 or "
+                 "session[32] not 0 ", playerId, ip.c_str(), recvData.port);
     }
   } else {
     DEBUG_LOG("psp", "gamecode or mac invalid");

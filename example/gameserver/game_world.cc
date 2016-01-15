@@ -1,6 +1,19 @@
-#include "game_world.h"
+// Copyright (C) 2016 sails Authors.
+// All rights reserved.
+//
+// Official git repository and contact information can be found at
+// https://github.com/sails/sails and http://www.sailsxu.com/.
+//
+// Filename: game_world.cc
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2016-01-15 15:59:03
+
+
+
+#include "sails/example/gameserver/game_world.h"
 #include <utility>
-#include "server.h"
+#include "sails/example/gameserver/server.h"
 
 
 namespace sails {
@@ -162,16 +175,4 @@ Server* GameWorld::getServer() {
 }
 
 
-} // namesapce sails
-
-
-
-
-
-
-
-
-
-
-
-
+}  // namespace sails

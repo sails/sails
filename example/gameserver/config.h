@@ -1,5 +1,18 @@
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
+// Copyright (C) 2016 sails Authors.
+// All rights reserved.
+//
+// Official git repository and contact information can be found at
+// https://github.com/sails/sails and http://www.sailsxu.com/.
+//
+// Filename: config.h
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2016-01-15 15:41:47
+
+
+
+#ifndef EXAMPLE_GAMESERVER_CONFIG_H_
+#define EXAMPLE_GAMESERVER_CONFIG_H_
 
 #include <map>
 #include <string>
@@ -28,7 +41,7 @@ class Config {
 
 }  // namespace sails
 
-#endif  // _CONFIG_H_
+#endif  // EXAMPLE_GAMESERVER_CONFIG_H_
 
 
 

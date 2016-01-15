@@ -1,4 +1,15 @@
-#include "config.h"
+// Copyright (C) 2016 sails Authors.
+// All rights reserved.
+//
+// Official git repository and contact information can be found at
+// https://github.com/sails/sails and http://www.sailsxu.com/.
+//
+// Filename: config.cc
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2016-01-15 15:42:19
+
+#include "sails/example/gameserver/config.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fstream>
@@ -16,11 +27,11 @@ Config::Config(std::string file) {
   ifs.seekg(0, ifs.end);
   int length = ifs.tellg();
   ifs.seekg(0, ifs.beg);
- 
+
   std::string str;
-  str.resize(length, ' '); // reserve space
+  str.resize(length, ' ');  // reserve space
   char* begin = &*str.begin();
-  
+
   ifs.read(begin, length);
   ifs.close();
   root = json::parse(str);

@@ -9,8 +9,8 @@
 
 
 
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef EXAMPLE_GAMESERVER_PLAYER_H_
+#define EXAMPLE_GAMESERVER_PLAYER_H_
 
 #include <string>
 
@@ -57,4 +57,4 @@ class Player {
 }  // namespace sails
 
 
-#endif  // PLAYER_H
+#endif  // EXAMPLE_GAMESERVER_PLAYER_H_

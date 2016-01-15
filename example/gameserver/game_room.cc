@@ -8,12 +8,12 @@
 
 
 
-#include "game_room.h"
+#include "sails/example/gameserver/game_room.h"
 #include <utility>
-#include "game_world.h"
-#include "server.h"
-#include "game_packets.h"
-#include <sails/log/logging.h>
+#include "sails/example/gameserver/game_world.h"
+#include "sails/example/gameserver/server.h"
+#include "sails/example/gameserver/game_packets.h"
+#include "sails/log/logging.h"
 
 
 
@@ -131,7 +131,8 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
   Player* player = playerIter->second;
   if (player->roomCode.length() == 0 || player->gameCode.length() == 0) {
     ERROR_DLOG("psp",
-               "GameRoom::disConnectPlayer playerId:%u not invalid roomCode or gameCode", playerId);
+               "GameRoom::disConnectPlayer playerId:%u not "
+               "invalid roomCode or gameCode", playerId);
     return STATE_PLAYER_INVALID;
   }
 
@@ -166,7 +167,6 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
                                      sizeof(packet));
     gameWorld->getServer()->send(
         buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
-
   }
   return STATE_SUCCESS;
 }
@@ -251,7 +251,7 @@ std::list<std::string> GameRoom::getPlayerNames() {
 }
 
 
-} // namespace sails
+}  // namespace sails
 
 
 

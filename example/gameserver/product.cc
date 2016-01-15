@@ -1,4 +1,17 @@
-#include "product.h"
+// Copyright (C) 2016 sails Authors.
+// All rights reserved.
+//
+// Official git repository and contact information can be found at
+// https://github.com/sails/sails and http://www.sailsxu.com/.
+//
+// Filename: product.cc
+//
+// Author: sailsxu <sailsxu@gmail.com>
+// Created: 2016-01-15 16:00:41
+
+
+
+#include "sails/example/gameserver/product.h"
 
 std::map<std::string, std::string> products_map ={
   {"ULUS10511", "Ace Combat X2 - Joint Assault"},
