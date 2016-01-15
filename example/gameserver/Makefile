@@ -3,7 +3,7 @@ CFLAGS			= -std=c++11 -fno-omit-frame-pointer  -W -Wall -O0 -g -gstabs+ -L../../
 OBJECTS = server.o game_world.o game_room.o player.o product.o config.o
 
 server:$(OBJECTS)
-	g++  $(CFLAGS) -Wl,-rpath,../../ -o server $(OBJECTS) -lsails -pthread -lprotobuf -ldl  -lsails  -lcurl
+	g++  $(CFLAGS) -Wl,-rpath,../../ -o server $(OBJECTS) -pthread -ldl  -lsails  -lcurl
 
 %.o: %.cc
 	g++ $(CFLAGS) $(INCLUDE) -c -o $@ $<

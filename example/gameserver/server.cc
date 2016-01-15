@@ -791,7 +791,7 @@ size_t read_callback(
   struct ptr_string *data = (struct ptr_string*)userp;
   size_t new_len = data->len + size*nmemb;
   char *ptr = reinterpret_cast<char *>(malloc(new_len+1));
-  memset(ptr, 0, new_len+1);
+  //  memset(ptr, 0, new_len+1);
   memcpy(ptr, data->ptr, data->len);
   memcpy(ptr+data->len, buffer, size*nmemb);
   free(data->ptr);
