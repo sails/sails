@@ -840,7 +840,9 @@ bool post_message(const char* url, const char* data, std::string &result) {
 
 
 bool check_session(std::string session) {
-  return true;  // 测试
+  if (config.get_store_api_url() == "test") {
+    return true;  // 测试
+  }
   std::string url = config.get_store_api_url() + "/session";
   int port = config.get_listen_port();
   std::string ip = config.get_local_ip();
@@ -878,6 +880,9 @@ bool check_session(std::string session) {
 
 
 bool update_session_timeout(const std::string& session) {
+  if (config.get_store_api_url() == "test") {
+    return true;  // 测试
+  }
   std::string url = config.get_store_api_url()+"/session";
   char param[100] = {'\0'};
   std::string result;
