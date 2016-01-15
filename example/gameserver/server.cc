@@ -14,6 +14,7 @@
 #include <curl/curl.h>
 #include <utility>
 #include "product.h"
+#include "sails/base/json.hpp"
 #include "sails/base/string.h"
 #include "sails/log/logging.h"
 
@@ -853,25 +854,21 @@ bool check_session(std::string session) {
   DEBUG_DLOG("psp", "post param:%s", param);
   if ( post_message(url.c_str(), param, result) ) {
     DEBUG_DLOG("psp", "get check infor:%s", result.c_str());
-    Json::Reader reader;
-    Json::Value root;
-    if (reader.parse(result, root)) {
-      int status = root["status"].asInt();
-      if (status == 0) {  // call right
-        Json::Value message = root["message"];
-        if (!message.empty()) {
-          Json::Value::Members member = message.getMemberNames();
-          for (Json::Value::Members::iterator iter = member.begin();
-               iter != member.end(); ++iter) {
-            if (session.compare(*iter) == 0 && !message[*iter].empty()) {
-              int in_room = message[*iter].asInt();
-              if (in_room == 1) {
-                return true;
-              }
+    try {
+      auto root = nlohmann::json::parse(result);
+      if (!root["status"].empty()) {
+        int status = root["status"];
+        if (status == 0) {  // call right
+          if (!root["message"].empty()) {
+            int in_room = root["message"][session];
+            if (in_room == 1) {
+              return true;
             }
           }
         }
       }
+    } catch (...) {
+      INFO_DLOG("psp", "check session exception");
     }
   }
   return false;;
@@ -888,10 +885,9 @@ bool update_session_timeout(const std::string& session) {
   DEBUG_DLOG("psp", "post param:%s", param);
   if ( post_message(url.c_str(), param, result) ) {
     DEBUG_DLOG("psp", "get update session infor:%s", result.c_str());
-    Json::Reader reader;
-    Json::Value root;
-    if (reader.parse(result, root)) {
-      int status = root["status"].asInt();
+    auto root = nlohmann::json::parse(result);
+    if (!root["status"].empty()) {
+      int status = root["status"];
       if (status == 0) {  // call right
       } else {
         ERROR_DLOG("psp", "update session timeout and return error");
@@ -922,7 +918,7 @@ bool isRun = true;
 
 
 void sails_signal_handle(int signo,
-                         siginfo_t *info, void *ext) {
+                         siginfo_t *, void *) {
   switch (signo) {
     case SIGINT:
       {
