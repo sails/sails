@@ -225,6 +225,8 @@ void ConstantPtrList<T>::clear() {
     if (vList[i] != NULL) {
       T::destroy(vList[i]);
       vList[i] = NULL;
+      free.push_back(i);
+      ++free_size;
     }
   }
 }
