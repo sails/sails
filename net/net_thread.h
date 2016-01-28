@@ -20,6 +20,7 @@
 #include <deque>
 #include <list>
 #include <memory>
+#include <limits>
 #include <thread>  // NOLINT
 #include "sails/base/util.h"
 #include "sails/base/thread_queue.h"
@@ -152,7 +153,8 @@ class NetThread {
 
   // 关闭连接
   void close_connector(const std::string &ip,
-                       uint16_t port, uint32_t uid, int fd);
+                       uint16_t port, uint32_t uid, int fd,
+                       int reason);
 
   // 修改connector数据
   void SetConnectorData(const std::string &ip, uint16_t port, uint32_t uid,
@@ -493,8 +495,11 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
   if (readerror) {
     if (!connector->isClosed()) {
       this->server->CloseConnector(connector->getIp(),
-                    connector->getPort(),
-                    connector->getId(), connector->get_connector_fd());
+                                   connector->getPort(),
+                                   connector->getId(),
+                                   connector->get_connector_fd(),
+                                   EpollServer<T>::CloseConnectorReason::
+                                   CLIENT_CLOSED);
     }
   } else {
     connect_timer->update_connector_time(connector);  // update timeout
@@ -545,7 +550,11 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
         if (connector != NULL) {
           // 从event loop中删除
           if (connector->getPort() == port && connector->getIp() == ip) {
-            net_thread->server->ClosedConnectCB(connector);
+            int reason = 0;
+            sscanf(data->buffer.c_str(), "%10d", &reason);
+            using REASON = typename EpollServer<T>::CloseConnectorReason;
+            REASON r = REASON(reason);
+            net_thread->server->ClosedConnectCB(connector, r);
             net_thread->ev_loop->event_stop(connector->get_connector_fd());
             connector->close();
             connector->data.u64 = 0;
@@ -588,7 +597,9 @@ void NetThread<T>::timeoutCb(net::Connector* connector) {
     netThread->server->CloseConnector(connector->getIp(),
                                       connector->getPort(),
                                       connector->getId(),
-                                      connector->get_connector_fd());
+                                      connector->get_connector_fd(),
+                                      EpollServer<T>::CloseConnectorReason
+                                      ::TIMEOUT);
   }
 }
 
@@ -660,7 +671,8 @@ void NetThread<T>::send(const std::string &ip,
 
 template <typename T>
 void NetThread<T>::close_connector(const std::string &ip,
-                                   uint16_t port, uint32_t uid, int fd) {
+                                   uint16_t port, uint32_t uid, int fd,
+                                   int reason) {
   if (ip.length() == 0 || port <= 0 || uid <= 0 || fd <= 0) {
     return;
   }
@@ -670,6 +682,9 @@ void NetThread<T>::close_connector(const std::string &ip,
   data->uid = uid;
   data->ip = ip;
   data->port = port;
+  char reasonstr[10] = {'\0'};
+  snprintf(reasonstr, sizeof(reasonstr), "%d", reason);
+  data->buffer = std::string(reasonstr);
   while (!sendlist.push_back(data)) {
     // 要保证一定正确加入
     usleep(10000);  // 10ms

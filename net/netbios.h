@@ -10,6 +10,10 @@
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2015-09-29 13:43:44
 
+
+#ifndef NET_NETBIOS_H_
+#define NET_NETBIOS_H_
+
 #include <stdint.h>
 #include <list>
 
@@ -54,6 +58,6 @@ class NetbiosQuery {
 
 
 
-
+#endif  // NET_NETBIOS_H_
 
 

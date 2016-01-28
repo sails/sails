@@ -58,7 +58,8 @@ void Server::InvalidMsgHandle(
   KillOffPlayer(connector->data.u32);
 }
 
-void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector) {
+void Server::ClosedConnectCB(std::shared_ptr<net::Connector> connector,
+                             CloseConnectorReason) {
   INFO_DLOG("psp", "closed_connect_cb");
   uint32_t playerId = connector->data.u32;
   if (playerId <= 0) {
@@ -90,7 +91,8 @@ void Server::KillOffPlayer(uint32_t playerId) {
   Player* player = playerList.get(playerId);
   if (player != NULL) {
     CloseConnector(
-        player->ip, player->port, player->connectorUid, player->fd);
+        player->ip, player->port, player->connectorUid, player->fd,
+        CloseConnectorReason::SERVER_CLOSED);
   }
 }
 

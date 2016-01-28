@@ -113,7 +113,13 @@ class EpollServer {
   // 比如在连接时创建了player，在此时可以进行删除
   // 注意，它是在NetThread中调用，所以要区别资源是在哪里删除，
   // 有些可以直接在NetThread中删除,有些只能通过消息让handle线程删除
-  virtual void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
+  enum CloseConnectorReason {
+    TIMEOUT = 0,
+    CLIENT_CLOSED,
+    SERVER_CLOSED
+  };
+  virtual void ClosedConnectCB(std::shared_ptr<net::Connector> connector,
+                               CloseConnectorReason reason);
 
  public:
   int GetEmptyConnTimeout() { return connectorTimeout;}
@@ -158,7 +164,8 @@ class EpollServer {
   // 在NetThread删除connector时，会调用ClosedConnectCB，
   // 所以千万不要在其它地方去删除，否则可能造成资源泄漏
   void CloseConnector(
-      const std::string &ip, uint16_t port, uint32_t uid, int fd);
+      const std::string &ip, uint16_t port, uint32_t uid, int fd,
+      CloseConnectorReason reason);
 
   // 设置connector数据，它最终会在netThread中设置
   // 如果执行逻辑在NetThread中，可以直接修改而不通过这个接口
@@ -499,10 +506,11 @@ void EpollServer<T>::send(char* message,
 
 template<typename T>
 void EpollServer<T>::CloseConnector(
-    const std::string &ip, uint16_t port, uint32_t uid, int fd) {
+    const std::string &ip, uint16_t port, uint32_t uid, int fd,
+    CloseConnectorReason reason) {
   NetThread<T>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
-    netThread->close_connector(ip, port, uid, fd);
+    netThread->close_connector(ip, port, uid, fd, reason);
   }
 }
 
@@ -519,10 +527,10 @@ void EpollServer<T>::SetConnectorData(const std::string &ip,
 }
 
 template<typename T>
-void EpollServer<T>::ClosedConnectCB(
-    std::shared_ptr<net::Connector> connector) {
-  DEBUG_LOG("server", "connetor %ld will be closed",
-            connector->get_connector_fd());
+void EpollServer<T>::ClosedConnectCB(std::shared_ptr<net::Connector> connector,
+                                     CloseConnectorReason reason) {
+  DEBUG_LOG("server", "connetor %ld will be closed reason:%d",
+            connector->get_connector_fd(), reason);
 }
 
 }  // namespace net

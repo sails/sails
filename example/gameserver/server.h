@@ -41,7 +41,8 @@ class Server : public sails::net::EpollServer<SceNetAdhocctlPacketBase> {
       std::shared_ptr<sails::net::Connector> connector);
 
   // NetThread关闭前，创建一个disconnector的数据包，让handle线程删除数据
-  void ClosedConnectCB(std::shared_ptr<net::Connector> connector);
+  void ClosedConnectCB(std::shared_ptr<net::Connector> connector,
+                       CloseConnectorReason reason);
 
 
 

@@ -46,7 +46,8 @@ void HttpServer::CreateConnectorCB(
 }
 
 void HttpServer::ClosedConnectCB(
-    std::shared_ptr<net::Connector> connector) {
+    std::shared_ptr<net::Connector> connector,
+    CloseConnectorReason ) {
   if (connector->data.ptr != NULL) {
     http_parser *parser = reinterpret_cast<http_parser*>(connector->data.ptr);
     if (parser == NULL) {
@@ -150,7 +151,8 @@ void HttpServer::handle(
 
   this->send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
   // 因为最后都被放到一个队列中处理,所以肯定会send之后,再close
-  this->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd);
+  this->CloseConnector(recvData.ip, recvData.port, recvData.uid, recvData.fd,
+                       CloseConnectorReason::SERVER_CLOSED);
 
   delete response;
 }
