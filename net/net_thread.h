@@ -117,8 +117,13 @@ class NetThread {
 
   // 接收连接请求
   static void accept_socket_cb(base::event* e, int revents, void* owner);
+
+  // 创建一个唯一id
+  uint32_t CreateConnectorUID();
+
   // 增加connector
   void add_connector(std::shared_ptr<net::Connector> connector);
+
   // 接收连接数据
   static void read_data_cb(base::event* e, int revents, void* owner);
 
@@ -374,10 +379,13 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
           connector->setIp(ip);
           connector->set_listen_fd(e->fd);
           connector->setTimeoutCB(NetThread<T>::timeoutCb);
-
-          server->AddConnector(connector, connfd);
-
+          // 注意这里要先调用CreateConnectorCB，再add，不然可能会出现得到了数据
+          // 但是CreateConnectorCB还没有处理完（当前线程和add到的线程不同，并且
+          // CreateConnectorCB的处理时间较长时）,这样会在处理时出现问题,
+          // 但是CreateConnectorCB可能会用到connector的id，所以这里要提前设置id
+          connector->setId(server->CreateConnectorUID(connfd));
           server->CreateConnectorCB(connector);
+          server->AddConnector(connector, connfd);
         } else {
           reject_times++;
         }
@@ -389,14 +397,19 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
 }
 
 
+template <typename T>
+uint32_t NetThread<T>::CreateConnectorUID() {
+  return connector_list.getUniqId();
+}
 
 // 增加connector
 template <typename T>
 void NetThread<T>::add_connector(std::shared_ptr<net::Connector> connector) {
   connector->owner = this;
-  uint32_t uid = connector_list.getUniqId();
-  connector->setId(uid);
-
+  if (connector->getId() == 0) {
+    uint32_t uid = CreateConnectorUID();
+    connector->setId(uid);
+  }
   connector_list.add(connector);
   connect_timer->update_connector_time(connector);
 

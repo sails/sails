@@ -127,6 +127,8 @@ class EpollServer {
   // ip过滤
   virtual bool isIpAllow(const std::string&) { return true; }
 
+  uint32_t CreateConnectorUID(int fd);
+
   // 增加连接
   void AddConnector(std::shared_ptr<net::Connector> connector, int fd);
 
@@ -374,6 +376,13 @@ bool EpollServer<T>::StopNetThread() {
 template<typename T>
 void EpollServer<T>::Tdeleter(T *data) {
   free(data);
+}
+
+
+template<typename T>
+uint32_t EpollServer<T>::CreateConnectorUID(int fd) {
+  NetThread<T>* netThread = GetNetThreadOfFd(fd);
+  return netThread->CreateConnectorUID();
 }
 
 template<typename T>
