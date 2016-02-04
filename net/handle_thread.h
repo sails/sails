@@ -16,6 +16,7 @@
 
 #include <string>
 #include <cstdint>
+#include <limits>
 #include <exception>
 #include "sails/net/net_thread.h"
 

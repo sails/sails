@@ -264,6 +264,7 @@ EpollServer<T>::EpollServer() {
   connectorTimeout = 0;
   useMemoryPool = false;
   tick = 0;
+  runMode = 1;
 
   sigpipe_action.sa_handler = EpollServer<T>::HandleSigpipe;
   sigemptyset(&sigpipe_action.sa_mask);
