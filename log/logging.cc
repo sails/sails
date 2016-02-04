@@ -298,6 +298,7 @@ LoggerFactory::LoggerFactory() : path("./log") {
 }
 
 LoggerFactory::~LoggerFactory() {
+  std::unique_lock<std::mutex> locker(LoggerFactory::logMutex);
   for (auto& item : log_map) {
     if (item.second != NULL) {
       delete item.second;

@@ -132,11 +132,13 @@ class LoggerFactory {
  private:
   LoggerFactory();
   ~LoggerFactory();
+
  public:
   static Logger* getLog(std::string log_name);  // SPLIT_NONE
   static Logger* getLogD(std::string log_name);  // SPLIT_DAY
   static Logger* getLogH(std::string log_name);  // SPLIT_HOUR
   static Logger* getLogM(std::string log_name);  // SPLIT_MONTH
+
  private:
   Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
   static LoggerFactory* instance();
@@ -145,6 +147,15 @@ class LoggerFactory {
   std::string path;
   static std::mutex logMutex;
   std::map<std::string, Logger*> log_map;
+  class CGarbo {  // 它的唯一工作就是在析构函数中删除LoggerFactory的实例
+   public:
+    ~CGarbo() {
+      if (LoggerFactory::_pInstance) {
+        delete LoggerFactory::_pInstance;
+        LoggerFactory::_pInstance = NULL;
+      }
+    }
+  };
 };
 
 }  // namespace log
