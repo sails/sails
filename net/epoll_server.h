@@ -158,6 +158,10 @@ class EpollServer {
   void send(char* message, int len, const std::string &ip,
             uint16_t port, uint32_t uid, int fd);
 
+  void SendToSource(const std::string &s, TagRecvData<T>* source);
+
+  void SendToSource(char* message, int len, TagRecvData<T>* source);
+
   // 提供给处理调用,它通过向io线程发送命令来达到目的,所以是多线程安全的
   // 关闭连接,关闭连接有三种情况,1:客户端主动关闭,2:服务器超时,
   // 3:服务器业务中关闭,不管哪种情况,最后都会通过调用这个函数来
@@ -511,6 +515,24 @@ void EpollServer<T>::send(char* message,
   NetThread<T>* netThread = GetNetThreadOfFd(fd);
   if (netThread != NULL) {
     netThread->send(ip, port, uid, message, len);
+  }
+}
+
+template<typename T>
+void EpollServer<T>::SendToSource(const std::string &s,
+                                  TagRecvData<T>* source) {
+  NetThread<T>* netThread = GetNetThreadOfFd(source->fd);
+  if (netThread != NULL) {
+    netThread->send(source->ip, source->port, source->uid, s);
+  }
+}
+template<typename T>
+void EpollServer<T>::SendToSource(char* message, int len,
+                                  TagRecvData<T>* source) {
+  NetThread<T>* netThread = GetNetThreadOfFd(source->fd);
+  if (netThread != NULL) {
+    netThread->send(source->ip, source->port,
+                    source->uid, message, len);
   }
 }
 
