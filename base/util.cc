@@ -32,6 +32,31 @@ void setnonblocking(int fd) {
   }
 }
 
+bool IsNonBlocking(int fd) {
+  int opts;
+  opts = fcntl(fd, F_GETFL);
+  if (opts < 0) {
+    perror("fcntl(fd,GETFL)");
+    exit(EXIT_FAILURE);
+  }
+  printf("opts:%d, O_NONBLOCK:%d", opts, O_NONBLOCK);
+  return (opts & O_NONBLOCK) > 0;
+}
+
+void setblocking(int fd) {
+  int opts;
+  opts = fcntl(fd, F_GETFL);
+  if (opts < 0) {
+    perror("fcntl(fd,GETFL)");
+    exit(EXIT_FAILURE);
+  }
+  opts = opts & (0xFFFFFFFF ^ O_NONBLOCK);
+  if (fcntl(fd, F_SETFL, opts) < 0) {
+    perror("fcntl(fd,SETFL,opts)");
+    exit(EXIT_FAILURE);
+  }
+}
+
 size_t
 readline(int fd, char *vptr, size_t maxlen) {
   size_t n;

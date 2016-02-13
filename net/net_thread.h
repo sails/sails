@@ -121,7 +121,8 @@ class NetThread {
   // 创建一个唯一id
   uint32_t CreateConnectorUID();
 
-  // 增加connector
+  // 增加connector,由于会使用event_loop回调来循环接收数据，
+  // 而接收数据是针对非阻塞的,所以这里会去设置connector的fd为非阻塞
   void add_connector(std::shared_ptr<net::Connector> connector);
 
   // 接收连接数据
@@ -413,6 +414,8 @@ void NetThread<T>::add_connector(std::shared_ptr<net::Connector> connector) {
   connector_list.add(connector);
   connect_timer->update_connector_time(connector);
 
+  // 设置成非阻塞
+  sails::base::setnonblocking(connector->get_connector_fd());
   // 加入event poll中
   sails::base::event ev;
   emptyEvent(&ev);
@@ -471,7 +474,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
       if (totalNum >= 4096) {  // 大于4k就开始解析,防止数据过多
         this->server->ParseImp(connector);
       }
-      if (n < READBYTES) {  // no data
+      if (n < READBYTES) {  // no more data
         break;
       } else {
         continue;
@@ -722,7 +725,8 @@ void  NetThread<T>::SetConnectorData(
   sdata->cmd = 'm';
   sdata->uid = uid;
   char temp[50] = {'\0'};
-  memcpy((void*)temp, (void*)&data, sizeof(data));
+  memcpy(reinterpret_cast<void*>(temp), reinterpret_cast<void*>(&data),
+         sizeof(data));
   sdata->buffer = std::string(temp, sizeof(data));
   sdata->ip = ip;
   sdata->port = port;

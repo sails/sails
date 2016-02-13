@@ -19,6 +19,10 @@ namespace base {
 
 void setnonblocking(int fd);
 
+bool IsNonBlocking(int fd);
+
+void setblocking(int fd);
+
 size_t readline(int fd, void *vptr, size_t maxlen);
 
 uint64_t GetUID(int node = 0);
