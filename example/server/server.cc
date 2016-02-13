@@ -41,7 +41,6 @@ class TestServer : public sails::net::EpollServer<EchoStruct> {
     if (read_able == 0) {
       return NULL;
     }
-
     EchoStruct *data =
         reinterpret_cast<EchoStruct*>(malloc(sizeof(EchoStruct)));
     memset(data, '\0', sizeof(EchoStruct));
@@ -57,7 +56,7 @@ class TestServer : public sails::net::EpollServer<EchoStruct> {
            recvData.port, recvData.data->msg);
     */
     std::string buffer = std::string(recvData.data->msg);
-    send(buffer, recvData.ip, recvData.port, recvData.uid, recvData.fd);
+    SendToSource(buffer, &recvData);
     // char *data = recvData.data->msg;
     // send(data, 20, recvData.ip, recvData.port, recvData.uid, recvData.fd);
   }
@@ -92,11 +91,11 @@ int main(int, char *[]) {
   TestServer server;
   // 注意，如果在测试最大并发数时，这个值要改大一些
   server.Init(9123, 2, 10, 1, false, 2);
-  ProfilerStart("server.prof");
+  //  ProfilerStart("server.prof");
   while (isRun) {
     sleep(2);
   }
-  ProfilerStop();
+  //  ProfilerStop();
   server.Stop();
 
   return 0;

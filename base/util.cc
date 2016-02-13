@@ -39,7 +39,6 @@ bool IsNonBlocking(int fd) {
     perror("fcntl(fd,GETFL)");
     exit(EXIT_FAILURE);
   }
-  printf("opts:%d, O_NONBLOCK:%d", opts, O_NONBLOCK);
   return (opts & O_NONBLOCK) > 0;
 }
 
