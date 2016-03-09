@@ -49,7 +49,7 @@ void setblocking(int fd) {
     perror("fcntl(fd,GETFL)");
     exit(EXIT_FAILURE);
   }
-  opts = opts & (0xFFFFFFFF ^ O_NONBLOCK);
+  opts = opts & ~O_NONBLOCK;
   if (fcntl(fd, F_SETFL, opts) < 0) {
     perror("fcntl(fd,SETFL,opts)");
     exit(EXIT_FAILURE);
