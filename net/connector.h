@@ -88,6 +88,9 @@ class Connector {
   void set_listen_fd(int listen_fd);
   int get_connector_fd();
 
+  // Lan ip
+  static std::string GetLocalAddress();
+
   void set_timeout();
   bool timeout();
 
@@ -96,6 +99,7 @@ class Connector {
   std::weak_ptr<ConnectorTimerEntry> getTimerEntry();
   bool haveSetTimer();
 
+  // noDelay
   void SetDefaultOpt();
 
   void *owner;  // 为了当回调时能找到对应的拥有者

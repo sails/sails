@@ -21,4 +21,6 @@ TEST_CASE("Connector Test", "[connect]") {
   printf("ip:%s port:%d\n", connector.getIp().c_str(), connector.getPort());
   REQUIRE(connector.connect("baidu.com", 80, true));
   printf("ip:%s port:%d\n", connector.getIp().c_str(), connector.getPort());
+
+  printf("localIp:%s\n", sails::net::Connector::GetLocalAddress().c_str());
 }

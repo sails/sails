@@ -252,6 +252,42 @@ int Connector::send() {
 }
 
 
+// 为了能通过getsockname得到本地地址，这里会连接一个udp的socket
+// TCP中调用connect会引起三次握手,client与server建立连结.
+// UDP中调用connect内核仅仅把对端ip&port记录下来，不会实际发送数据，
+// 所以为了能减小负载，这里用udp
+std::string Connector::GetLocalAddress() {
+  struct sockaddr_in serveraddr;
+  int Socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (Socket == -1) {
+      printf("new connect_fd error\n");
+      return "";
+    }
+    memset(serveraddr.sin_zero, 0, sizeof(serveraddr.sin_zero));
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_addr.s_addr = INADDR_LOOPBACK;
+    serveraddr.sin_port = htons(4567);
+
+    int ret = ::connect(Socket,
+                        (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    if (ret == -1) {
+      printf("connect failed\n");
+      return "";
+    }
+    
+    socklen_t len = sizeof(serveraddr);
+    if (getsockname(Socket, reinterpret_cast<sockaddr*>(&serveraddr), &len) == -1)
+    {
+      ::close(Socket);
+      return "";
+    }
+    ::close(Socket);
+    in_addr InAddr;
+    InAddr.s_addr = serveraddr.sin_addr.s_addr;
+    return inet_ntoa(InAddr);
+}
+
+
 void Connector::SetDefaultOpt() {
   // 禁用Nagle算法(小包组合之后发送,这样会出现不可预知的延迟)，提高发送效率
   int noDelay = 1;
