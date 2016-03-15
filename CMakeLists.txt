@@ -56,6 +56,7 @@ set(SRCLIST
   base/string.cc
   base/thread_pool.cc
   base/time_t.cc
+  base/time_provider.cc
   base/timer.cc
   base/util.cc
   log/logging.cc

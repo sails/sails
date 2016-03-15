@@ -25,6 +25,7 @@
 #include "sails/base/util.h"
 #include "sails/base/thread_queue.h"
 #include "sails/base/event_loop.h"
+#include "sails/base/time_provider.h"
 #include "sails/net/connector_list.h"
 #include "sails/log/logging.h"
 
@@ -100,9 +101,6 @@ class NetThread {
   // 监听端口
   int bind(int port);
 
-  // 创建一个connector超时管理器
-  void setEmptyConnTimeout(int connector_read_timeout = 10);
-
   static void timeoutCb(net::Connector* connector);
 
   static void startEvLoop(NetThread<T>* netThread);
@@ -135,6 +133,8 @@ class NetThread {
     NetThread<T>* netThread = reinterpret_cast<NetThread<T>*>(data);
     if (netThread != NULL) {
       netThread->server->tick++;
+      // 检测连接超时
+      netThread->connector_list.checkTimeout(TNOW);
     }
   }
 
@@ -195,7 +195,6 @@ class NetThread {
 
   base::EventLoop *ev_loop;  // 事件循环
 
-  ConnectorTimeout* connect_timer;  // 连接超时器
   // 定时器,一秒一次，因为很多地方都会用于这种tick来判断时间
   // 比如几秒一次的心跳包
   base::Timer *tick_timer;
@@ -221,7 +220,6 @@ NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
   reject_times = 0;
   ev_loop = NULL;
   connector_list.init(1000000, index);
-  connect_timer = NULL;
   tick_timer = NULL;
 #ifdef __linux__
   notify = socket(AF_INET, SOCK_STREAM, 0);
@@ -239,10 +237,7 @@ NetThread<T>::~NetThread() {
     delete thread;
     thread = NULL;
   }
-  if (connect_timer != NULL) {
-    delete connect_timer;
-    connect_timer = NULL;
-  }
+
   if (tick_timer != NULL) {
     tick_timer->disarms();
     delete tick_timer;
@@ -376,6 +371,7 @@ void NetThread<T>::accept_socket(base::event* e, int revents) {
           }
           // 新建connector
           std::shared_ptr<net::Connector> connector(new net::Connector(connfd));
+          connector->setTimeout(server->GetEmptyConnTimeout());
           connector->setPort(port);
           connector->setIp(ip);
           connector->set_listen_fd(e->fd);
@@ -411,8 +407,7 @@ void NetThread<T>::add_connector(std::shared_ptr<net::Connector> connector) {
     uint32_t uid = CreateConnectorUID();
     connector->setId(uid);
   }
-  connector_list.add(connector);
-  connect_timer->update_connector_time(connector);
+  connector_list.add(connector, connector->getTimeout() + TNOW);
 
   // 设置成非阻塞
   sails::base::setnonblocking(connector->get_connector_fd());
@@ -518,7 +513,7 @@ void NetThread<T>::read_data(base::event* ev, int revents) {
                                    CLIENT_CLOSED);
     }
   } else {
-    connect_timer->update_connector_time(connector);  // update timeout
+    connector_list.refresh(connector->getId(), connector->getTimeout() + TNOW);
     this->server->ParseImp(connector);
   }
 }
@@ -598,14 +593,6 @@ void NetThread<T>::read_pipe_cb(base::event* e, int revents, void* owner) {
   } while (read_more);
 }
 
-
-template <typename T>
-void NetThread<T>::setEmptyConnTimeout(int connector_read_timeout) {
-  int timeout = connector_read_timeout > 0?connector_read_timeout:10;
-  connect_timer = new ConnectorTimeout(timeout);
-  connect_timer->init(ev_loop);
-}
-
 template <typename T>
 void NetThread<T>::timeoutCb(net::Connector* connector) {
   if (connector != NULL && connector->owner != NULL) {
@@ -639,7 +626,6 @@ typename NetThread<T>::NetThreadStatus NetThread<T>::GetStatus() {
 
 template <typename T>
 void NetThread<T>::startEvLoop(NetThread<T>* netThread) {
-  netThread->setEmptyConnTimeout(netThread->server->GetEmptyConnTimeout());
   netThread->ev_loop->start_loop();
 }
 

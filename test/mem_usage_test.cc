@@ -17,11 +17,11 @@
 
 TEST_CASE("MemUsageTest", "Test") {
   pid_t pid = getpid();
-    uint64_t vm_size, mem_size;
-    REQUIRE(sails::system::GetMemoryUsedKiloBytes(pid, &vm_size, &mem_size));
-    printf("vm size: %lld k\n", vm_size);
-    printf("mem size: %lld k\n", mem_size);
-    REQUIRE(sails::system::GetMemoryUsedBytes(pid, &vm_size, &mem_size));
-    printf("vm size: %lld byte\n", vm_size);
-    printf("mem size: %lld byte\n", mem_size);
+  uint64_t vm_size, mem_size;
+  REQUIRE(sails::system::GetMemoryUsedKiloBytes(pid, &vm_size, &mem_size));
+  printf("vm size: %lld k\n", vm_size);
+  printf("mem size: %lld k\n", mem_size);
+  REQUIRE(sails::system::GetMemoryUsedBytes(pid, &vm_size, &mem_size));
+  printf("vm size: %lld byte\n", vm_size);
+  printf("mem size: %lld byte\n", mem_size);
 }

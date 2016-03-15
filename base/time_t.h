@@ -3,6 +3,10 @@
 //
 // Filename: time_t.h
 // Description:时间转换常用函数
+//             这里用了几种方法来得到时间，最后发现其实库函数timeofday速度差
+//             不多所以对于量小的调用，直接用timeofday，要是调用量特别大，用
+//             time_provider因为它在另一个线程中去计算时间，所以每次调用都只
+//             是读一个值而已，（而另一个线程由于调用量很小，消耗不大）
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-11 09:34:28
@@ -38,15 +42,13 @@ class TimeT {
   // 在预热之后(离首次调用1s之后)，性能测试大概能达到8000w/s
   static void get_timeofday(timeval* tv);
 
-  // 得到当前毫秒
   static int64_t getNowMs();
+
+  // 通过调用std::chrono::system_clock来，测试发现它是
+  static time_t getNow();
 
   static uint64_t get_tsc();
 
-  /*
-  // 得到当前时间高精度纳秒
-  static void current_utc_time(struct timespec *ts);
-  */
 };
 
 

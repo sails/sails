@@ -38,11 +38,6 @@ namespace net {
 
 class Connector;
 
-class ConnectorTimerEntry;
-class ConnectorTimeout;
-
-
-
 typedef void (*TimeoutCB)(Connector* connector);
 
 typedef union ExtData {
@@ -51,6 +46,15 @@ typedef union ExtData {
   uint64_t u64;
 } ExtData;
 
+
+// 链接状态
+struct ConnStatus {
+  std::string ip;
+  int32_t uid;
+  uint16_t port;
+  int timeout;
+  int iLastRefreshTime;
+};
 
 class Connector {
  public:
@@ -88,16 +92,31 @@ class Connector {
   void set_listen_fd(int listen_fd);
   int get_connector_fd();
 
+  void setLastRefreshTime(int time) {
+    lastRefreshTime = time;
+  }
+  int LastRefreshTime() {
+    return lastRefreshTime;
+  }
+
   // Lan ip
   static std::string GetLocalAddress();
 
+  // 设置超时，它会调用已经设置的超时回调函数
   void set_timeout();
-  bool timeout();
+  bool IsTimeout();
 
   void setTimeoutCB(TimeoutCB cb);
-  void setTimerEntry(std::weak_ptr<ConnectorTimerEntry> entry);
-  std::weak_ptr<ConnectorTimerEntry> getTimerEntry();
   bool haveSetTimer();
+
+  // 设置超时时间
+  void setTimeout(int timeout) {
+    this->timeout = timeout;
+  }
+
+  int getTimeout() {
+    return timeout;
+  }
 
   // noDelay
   void SetDefaultOpt();
@@ -120,57 +139,10 @@ class Connector {
   int  closeType;
   bool is_closed;  // 是否已经关闭
   bool is_timeout;
+  int lastRefreshTime;
   TimeoutCB timeoutCB;
-  bool has_set_timer;  // 是否设置了超时管理器
-  std::weak_ptr<ConnectorTimerEntry> timer_entry;  // 超时管理项
-};
-
-// 不直接使用connector的share_ptr的原因是其它地方也会用到connector，这样
-// 如果在ConnectorTimeout中保存connector的share_ptr，会永远不能删除
-class ConnectorTimerEntry : public base::Uncopyable {
- public:
-  ConnectorTimerEntry(std::shared_ptr<Connector> connector,
-                      base::EventLoop *ev_loop);
-  ~ConnectorTimerEntry();
-
- private:
-  std::weak_ptr<Connector> connector;
-  base::EventLoop *ev_loop;
-};
-
-
-
-class ConnectorTimeout : public base::Uncopyable {
- public:
-  explicit ConnectorTimeout(
-      int timeout = ConnectorTimeout::default_timeout);  // seconds
-  ~ConnectorTimeout();
-
-  bool init(base::EventLoop *ev_loop);
-  void update_connector_time(std::shared_ptr<Connector> connector);
-
- private:
-  class Bucket {
-   public:
-    std::list<std::shared_ptr<ConnectorTimerEntry>> entry_list;
-  };
-
- public:
-  void process_tick();
-  static void timer_callback(void *data);
-
- private:
-  static const int default_timeout = 10;
   int timeout;
-  int timeindex;
-  std::vector<Bucket*> *time_wheel;
-
-  base::EventLoop *ev_loop;
-  base::Timer *timer;
 };
-
-
-
 
 }  // namespace net
 }  // namespace sails

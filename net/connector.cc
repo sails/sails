@@ -25,7 +25,6 @@ Connector::Connector(int conn_fd) {
   this->port = 0;
   this->ip = "";
   this->listen_fd = 0;
-  has_set_timer = false;
   is_closed = false;
   is_timeout = false;
   timeoutCB = NULL;
@@ -39,7 +38,6 @@ Connector::Connector() {
   this->ip = "";
   listen_fd = 0;
   connect_fd = 0;
-  has_set_timer = false;
   is_closed = false;
   is_timeout = false;
   timeoutCB = NULL;
@@ -139,7 +137,7 @@ void Connector::set_timeout() {
   }
 }
 
-bool Connector::timeout() {
+bool Connector::IsTimeout() {
   return is_timeout;
 }
 
@@ -190,19 +188,6 @@ void Connector::close() {
 }
 bool Connector::isClosed() {
   return is_closed;
-}
-
-void Connector::setTimerEntry(std::weak_ptr<ConnectorTimerEntry> entry) {
-  this->timer_entry = entry;
-  this->has_set_timer = true;
-}
-
-std::weak_ptr<ConnectorTimerEntry> Connector::getTimerEntry() {
-  return this->timer_entry;
-}
-
-bool Connector::haveSetTimer() {
-  return this->has_set_timer;
 }
 
 ssize_t Connector::read() {
@@ -294,112 +279,6 @@ void Connector::SetDefaultOpt() {
   setsockopt(connect_fd, IPPROTO_TCP, TCP_NODELAY,
              reinterpret_cast<char*>(&noDelay), sizeof(int));
 }
-
-
-
-
-ConnectorTimerEntry::ConnectorTimerEntry(std::shared_ptr<Connector> connector,
-                                         base::EventLoop *ev_loop) {
-  this->connector = std::weak_ptr<Connector>(connector);
-  this->ev_loop = ev_loop;
-}
-
-ConnectorTimerEntry::~ConnectorTimerEntry() {
-  if (this->connector.use_count() > 0) {
-    // close fd and delete connector
-    if (this->connector.use_count() > 0) {
-      this->connector.lock()->set_timeout();
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-ConnectorTimeout::ConnectorTimeout(int timeout) {
-  timeindex = 0;
-  assert(timeout > 0);
-  this->timeout = timeout;
-  time_wheel = new std::vector<ConnectorTimeout::Bucket*>(timeout);
-  for (int i = 0; i < timeout; i++) {
-    time_wheel->at(i) = new ConnectorTimeout::Bucket();
-  }
-  ev_loop = NULL;
-  timer = NULL;
-}
-
-bool ConnectorTimeout::init(base::EventLoop *ev_loop) {
-  timer = new base::Timer(ev_loop, 1);
-  timer->init(ConnectorTimeout::timer_callback, this, 5);
-  this->ev_loop = ev_loop;
-  return true;
-}
-
-void ConnectorTimeout::timer_callback(void *data) {
-  ConnectorTimeout *timeout = reinterpret_cast<ConnectorTimeout*>(data);
-  timeout->process_tick();
-}
-
-void ConnectorTimeout::process_tick() {
-  timeindex = (timeindex+1)%timeout;
-  // empty bucket
-  Bucket* bucket = time_wheel->at(timeindex);
-  if (bucket != NULL) {
-    // printf("clear timerindex:%d\n", timeindex);
-    typename std::list<std::shared_ptr<ConnectorTimerEntry>>::iterator iter;
-    bucket->entry_list.clear();
-  }
-}
-
-ConnectorTimeout::~ConnectorTimeout() {
-  if (time_wheel != NULL) {
-    while (!time_wheel->empty()) {
-      Bucket* bucket = time_wheel->back();
-      delete bucket;
-      time_wheel->pop_back();
-    }
-    delete time_wheel;
-    time_wheel = NULL;
-  }
-  this->ev_loop = NULL;
-  if (timer != NULL) {
-    timer->disarms();
-    delete timer;
-    timer = NULL;
-  }
-}
-
-void ConnectorTimeout::update_connector_time(
-    std::shared_ptr<Connector> connector) {
-
-  if (connector.get() != NULL) {
-    int add_index = (timeindex+timeout-1)%timeout;
-    if (!connector->haveSetTimer()) {
-      std::shared_ptr<ConnectorTimerEntry> shared_entry(
-          new ConnectorTimerEntry(connector, ev_loop));
-      std::weak_ptr<ConnectorTimerEntry> weak_temp(shared_entry);
-      connector->setTimerEntry(weak_temp);
-      time_wheel->at(add_index)->entry_list.push_back(shared_entry);
-
-    } else {
-      if (!connector->timeout()) {
-        time_wheel->at(add_index)->entry_list.push_back(
-            connector->getTimerEntry().lock());
-      }
-    }
-  }
-}
-
-
 
 }  // namespace net
 }  // namespace sails

@@ -41,12 +41,12 @@ int connectserver(const char* ip, int port) {
   }
   int noDelay = 1;
   setsockopt(connect_fd, IPPROTO_TCP, TCP_NODELAY,
-             reinterpret_cast<char*>(&noDelay), sizeof(int));
+             reinterpret_cast<char*>(&noDelay), sizeof(noDelay));
   return connect_fd;
 }
 
 void test() {
-  int fd = connectserver("127.0.0.1", 9123);
+  int fd = connectserver("127.0.0.1", 8000);
     if (fd > 0) {
       char buffer[20] = {"hello, world"};
       char recvbuf[20] = {'\0'};

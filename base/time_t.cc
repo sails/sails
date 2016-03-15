@@ -2,7 +2,6 @@
 // All rights reserved.
 //
 // Filename: time_t.cc
-//           由于c++11中std::chrono更方便移植，稍后改成通过它来实现
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2014-10-11 09:35:13
@@ -24,6 +23,8 @@
 #include <mach/mach.h>
 #include "TargetConditionals.h"
 #endif
+#include <chrono>
+
 namespace sails {
 namespace base {
 
@@ -152,6 +153,10 @@ int64_t TimeT::getNowMs() {
   return tv.tv_sec*1000+tv.tv_usec/1000;
 }
 
+time_t TimeT::getNow() {
+  return std::chrono::system_clock::to_time_t (std::chrono::system_clock::now());
+}
+
 uint64_t TimeT::get_tsc() {
   uint32_t low = 0;
   uint32_t high = 0;
@@ -162,24 +167,6 @@ uint64_t TimeT::get_tsc() {
 #endif
   return ((uint64_t)high << 32) | low;
 }
-
-/*
-// unix and not apple need link rt
-void TimeT::current_utc_time(struct timespec *ts) {
-  // OS X does not have clock_gettime, use clock_get_time
-#ifdef __MACH__
-  clock_serv_t cclock;
-  mach_timespec_t mts;
-  host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-  clock_get_time(cclock, &mts);
-  mach_port_deallocate(mach_task_self(), cclock);
-  ts->tv_sec = mts.tv_sec;
-  ts->tv_nsec = mts.tv_nsec;
-#else
-  clock_gettime(CLOCK_REALTIME, ts);
-#endif
-}
-*/
 
 
 }  // namespace base

@@ -90,7 +90,7 @@ int main(int, char *[]) {
 
   TestServer server;
   // 注意，如果在测试最大并发数时，这个值要改大一些
-  server.Init(9123, 2, 10, 1, false, 2);
+  server.Init(8000, 2, 10, 1, false, 2);
   //  ProfilerStart("server.prof");
   while (isRun) {
     sleep(2);
