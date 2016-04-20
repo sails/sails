@@ -1,4 +1,4 @@
-CFLAGS			= -std=c++11 -fno-omit-frame-pointer  -W -Wall -O0 -g -gstabs+ -L../../ -I./ -I../../../
+CFLAGS			= -std=c++11 -fno-omit-frame-pointer  -W -Wall -O0 -g -L../../ -I./ -I../../../
 
 OBJECTS = server.o game_world.o game_room.o player.o product.o config.o
 

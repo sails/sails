@@ -11,6 +11,7 @@
 
 
 
+ #include <unistd.h>
 #include <iostream>
 #include "catch.hpp"
 #include "sails/system/mem_usage.h"

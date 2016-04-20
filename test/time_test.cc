@@ -15,6 +15,7 @@
 // 而rdtsc性能则是它的4-5倍，达到0.1G，也就是说gettimeofday
 // 才一百个时钟期，而rdtsc才二十个时钟周期
 
+#include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
 #include <ctime>
