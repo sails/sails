@@ -32,6 +32,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -W -Wall -fPIC")
 set(CMAKE_MACOSX_RPATH 1)
 
 # 当编译android时，cmake ../ -DCMAKE_TOOLCHAIN_FILE=../android.toolchain.cmake
+# 当编译ios时，cmake ../ -DCMAKE_TOOLCHAIN_FILE=../ios.toolchain.cmake -GXcode(注意这里要去在xcode中去修改它的默认编译器支持c++11)
+# 当编译ios时，也可以直接用cmake ../ GXcode 然后打开去更新它的sdk和architectures
 
 # 检测平台
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
