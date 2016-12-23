@@ -25,52 +25,84 @@
 
 
 #define DEBUG_LOG(t, ...) { \
-    sails::log::LoggerFactory::getLog(t)->debug(__VA_ARGS__);   \
-  }
+    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
+      sails::log::LoggerFactory::getLog(t)->debug(__VA_ARGS__);         \
+    }                                                                   \
+}
 #define INFO_LOG(t, ...) { \
-    sails::log::LoggerFactory::getLog(t)->info(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
+      sails::log::LoggerFactory::getLog(t)->info(__VA_ARGS__);          \
+    }                                                                   \
 }
 #define WARN_LOG(t, ...) { \
-    sails::log::LoggerFactory::getLog(t)->warn(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
+      sails::log::LoggerFactory::getLog(t)->warn(__VA_ARGS__);          \
+    }                                                                   \
 }
 #define ERROR_LOG(t, ...) { \
-    sails::log::LoggerFactory::getLog(t)->error(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
+      sails::log::LoggerFactory::getLog(t)->error(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define DEBUG_HLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogH(t)->debug(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
+      sails::log::LoggerFactory::getLogH(t)->debug(__VA_ARGS__);        \
+    }                                                                   \
   }
 #define INFO_HLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogH(t)->info(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
+      sails::log::LoggerFactory::getLogH(t)->info(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define WARN_HLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogH(t)->warn(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
+      sails::log::LoggerFactory::getLogH(t)->warn(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define ERROR_HLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogH(t)->error(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
+      sails::log::LoggerFactory::getLogH(t)->error(__VA_ARGS__);        \
+    }                                                                   \
 }
 #define DEBUG_DLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogD(t)->debug(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
+      sails::log::LoggerFactory::getLogD(t)->debug(__VA_ARGS__);        \
+    }                                                                   \
   }
 #define INFO_DLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogD(t)->info(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
+      sails::log::LoggerFactory::getLogD(t)->info(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define WARN_DLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogD(t)->warn(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
+      sails::log::LoggerFactory::getLogD(t)->warn(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define ERROR_DLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogD(t)->error(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
+      sails::log::LoggerFactory::getLogD(t)->error(__VA_ARGS__);        \
+    }                                                                   \
 }
 #define DEBUG_MLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogM(t)->debug(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
+      sails::log::LoggerFactory::getLogM(t)->debug(__VA_ARGS__);        \
+    }                                                                   \
   }
 #define INFO_MLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogM(t)->info(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
+      sails::log::LoggerFactory::getLogM(t)->info(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define WARN_MLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogM(t)->warn(__VA_ARGS__);    \
+    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
+      sails::log::LoggerFactory::getLogM(t)->warn(__VA_ARGS__);         \
+    }                                                                   \
 }
 #define ERROR_MLOG(t, ...) { \
-    sails::log::LoggerFactory::getLogM(t)->error(__VA_ARGS__);   \
+    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
+      sails::log::LoggerFactory::getLogM(t)->error(__VA_ARGS__);        \
+    }                                                                   \
 }
 
 
@@ -108,6 +140,10 @@ class Logger {
   void warn(const char* format, ...);
   void error(const char* format, ...);
 
+  LogLevel getLevel() {
+    check_loginfo();
+    return level;
+  }
  private:
   void output(Logger::LogLevel level, const char* format, va_list ap);
   void set_msg_prefix(Logger::LogLevel level, char *msg);

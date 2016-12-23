@@ -168,7 +168,6 @@ void Logger::set_filename_by_savemode(char *filename, int len) {
     if (base::TimeT::time_with_millisecond(time, 30) <= 0) {
       return;
     }
-
     if (this->save_mode != Logger::SPLIT_NONE) {
       switch (this->save_mode) {
         case SPLIT_MONTH:
@@ -184,7 +183,6 @@ void Logger::set_filename_by_savemode(char *filename, int len) {
           break;
       }
     }
-
     filename[strlen(filename)] = '.';
     strncpy(filename+strlen(filename), "log", 3);
   }
