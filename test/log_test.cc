@@ -16,7 +16,7 @@
 #include "catch.hpp"
 
 
-TEST_CASE("Log Test", "[log]") {
+TEST_CASE("LogTest", "[log]") {
   INFO_LOG("test", "test log:%d", 1);
   WARN_LOG("test", "test log:%d", 1);
   ERROR_LOG("test", "test log:%d", 1);
