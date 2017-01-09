@@ -98,7 +98,8 @@ std::map<std::string, std::string> products_map ={
   {"ULJM05933", "Hatsune Miku - Project Diva Extend"},
   {"ULUS10298", "Hot Pixel"},
   {"UCUS98701", "Everybody's Tennis"},
-  {"ULUS10548", "TRON - Evolution"}
+  {"ULUS10548", "TRON - Evolution"},
+  {"NPJH50789", "Toukiden"}
 };
 std::map<std::string, std::string> crosslinks_map = {
   {"ULES01408", "ULUS10511"},
