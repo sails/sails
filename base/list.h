@@ -5,7 +5,7 @@
 // https://github.com/sails and http://www.sailsxu.com/.
 //
 // Filename: list.h
-// Description: 一个另类的list
+// Description: 一个另类的list(更通用)
 //
 // Author: sailsxu <sailsxu@gmail.com>
 // Created: 2017-01-10 11:37:00
