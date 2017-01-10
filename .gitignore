@@ -6,3 +6,7 @@ core
 callgraph.*
 callgrind.out*
 *.a
+*.d.*
+build/
+.idea/
+*#*#
