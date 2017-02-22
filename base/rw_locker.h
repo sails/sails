@@ -12,7 +12,7 @@
 #ifndef BASE_RW_LOCKER_H_
 #define BASE_RW_LOCKER_H_
 
-#include <mutex>
+#include <mutex>  // NOLINT
 
 
 namespace sails {
@@ -25,18 +25,18 @@ class ReadWriteLock {
 
   // 读锁
   void readLock() {
-    read_mtx.lock();  
-    if (++read_cnt == 1)  
-      write_mtx.lock();  
-    
-    read_mtx.unlock();  
+    read_mtx.lock();
+    if (++read_cnt == 1)
+      write_mtx.lock();
+
+    read_mtx.unlock();
   }
   void readUnlock() {
-    read_mtx.lock();  
-    if (--read_cnt == 0)  
-      write_mtx.unlock();  
+    read_mtx.lock();
+    if (--read_cnt == 0)
+      write_mtx.unlock();
 
-    read_mtx.unlock();  
+    read_mtx.unlock();
   }
 
   // 写锁
@@ -44,14 +44,13 @@ class ReadWriteLock {
     write_mtx.lock();
   }
   void writeUnlock() {
-    write_mtx.unlock(); 
+    write_mtx.unlock();
   }
-  
-  
+
  private:
-  std::mutex read_mtx;  
-  std::mutex write_mtx;  
-  int read_cnt; // 已加读锁个数  
+  std::mutex read_mtx;
+  std::mutex write_mtx;
+  int read_cnt;  // 已加读锁个数
 };
 
 class RWLocker {
@@ -60,8 +59,9 @@ class RWLocker {
     READ = 1
     , WRITE = 2
   };
+
  public:
-  RWLocker(ReadWriteLock& lock, LockerType type) {
+  RWLocker(ReadWriteLock& lock, const LockerType type) {
     this->type = type;
     this->lock = &lock;
     if (type == LockerType::READ) {
@@ -77,13 +77,14 @@ class RWLocker {
       lock->writeUnlock();
     }
   }
+
  private:
   LockerType type;
   ReadWriteLock* lock;
 };
 
 
-}  // namespace base          
+}  // namespace base
 }  // namespace sails
 
 #endif  // BASE_RW_LOCKER_H_

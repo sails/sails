@@ -50,7 +50,7 @@ class list {
     head = NULL;
     tail = NULL;
   }
-  
+
   void add(list_item *item) {
     tail->next = item;
     item->pre = tail;
@@ -90,12 +90,12 @@ class list {
 
   void for_earch(for_earch_cb cb) {
     list_item* item = head->next;
-    while(item != NULL) {
+    while (item != NULL) {
       cb(item);
       item = item->next;
     }
   }
-  
+
  private:
   list_item* head;
   list_item* tail;
