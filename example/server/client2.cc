@@ -21,8 +21,6 @@ typedef struct {
 } __attribute__((packed)) EchoStruct;
 
 namespace sails {
-sails::log::Logger serverlog(sails::log::Logger::LOG_LEVEL_DEBUG,
-                             "./log/server.log", sails::log::Logger::SPLIT_DAY);
 }
 
 
@@ -51,10 +49,10 @@ class TestClient : public sails::net::EpollServer<EchoStruct> {
   }
 
   void connect() {
-    for (int i = 0; i < 60000; i++) {
+    for (int i = 0; i < 6000; i++) {
       std::shared_ptr<sails::net::Connector> connector(
           new sails::net::Connector());
-      if (connector->connect("192.168.1.116", 8000, true)) {
+      if (connector->connect("127.0.0.1", 8000, true)) {
         this->AddConnector(connector, connector->get_connector_fd());
         connectorlist.push_back(connector);
         usleep(10000);

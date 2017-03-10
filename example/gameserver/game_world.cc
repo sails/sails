@@ -66,9 +66,9 @@ DisconnectState GameWorld::disConnectPlayer(
     uint32_t playerId, const std::string& roomCode) {
   GameRoom* room = getGameRoom(roomCode);
   if (room == NULL) {
-    ERROR_DLOG("psp",
-               "GameWorld::disConnectPlayer playerId:%u not find room",
-               playerId);
+    ERROR_LOG("psp",
+              "GameWorld::disConnectPlayer playerId:%u not find room",
+              playerId);
     return STATE_NO_ROOM;
   }
   return room->disConnectPlayer(playerId);

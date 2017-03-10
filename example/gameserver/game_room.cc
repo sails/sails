@@ -27,7 +27,7 @@ GameRoom::GameRoom(std::string roomCode, int seatNum, GameWorld *gameWorld)
 }
 
 bool GameRoom::connectPlayer(uint32_t playerId) {
-  DEBUG_DLOG("psp", "join game:%s, room :%s\n",
+  DEBUG_LOG("psp", "join game:%s, room :%s\n",
              gameWorld->getGameCode().c_str(), roomCode.c_str());
   // 加入map,再通过其它用户
   std::unique_lock<std::mutex> locker(playerMutex);
@@ -45,7 +45,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
     // Set Default BSSID(group host)
     bssid.mac = playerMac;
 
-    DEBUG_DLOG("psp", "connect room, ip:%s, port:%d, mac:%s",
+    DEBUG_LOG("psp", "connect room, ip:%s, port:%d, mac:%s",
                player->ip.c_str(), player->port, player->mac.c_str());
 
     int maxAge = -1;
@@ -70,7 +70,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
 
       // Send Data
       // 通知对方
-      DEBUG_DLOG("psp", "notify other side\n");
+      DEBUG_LOG("psp", "notify other side\n");
       std::string buffer(reinterpret_cast<char*>(&packet), sizeof(packet));
       gameWorld->getServer()->send(
           buffer, peer->ip, peer->port, peer->connectorUid, peer->fd);
@@ -112,7 +112,7 @@ bool GameRoom::connectPlayer(uint32_t playerId) {
       }
     }
     player->roomCode = roomCode;
-    DEBUG_DLOG("psp", "user connect group\n");
+    DEBUG_LOG("psp", "user connect group\n");
 
     return true;
   }
@@ -124,13 +124,13 @@ DisconnectState GameRoom::disConnectPlayer(uint32_t playerId) {
 
   std::map<uint32_t, Player*>::iterator playerIter = playerMap.find(playerId);
   if (playerIter == playerMap.end()) {
-    ERROR_DLOG("psp", "GameRoom::disConnectPlayer playerId:%u not finded",
+    ERROR_LOG("psp", "GameRoom::disConnectPlayer playerId:%u not finded",
                playerId);
     return STATE_PLAYER_NOT_EXISTS;
   }
   Player* player = playerIter->second;
   if (player->roomCode.length() == 0 || player->gameCode.length() == 0) {
-    ERROR_DLOG("psp",
+    ERROR_LOG("psp",
                "GameRoom::disConnectPlayer playerId:%u not "
                "invalid roomCode or gameCode", playerId);
     return STATE_PLAYER_INVALID;
