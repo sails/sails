@@ -218,6 +218,8 @@ NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
   listen_port = 0;
   accept_times = 0;
   reject_times = 0;
+  shutdown = 0;
+  notify = 0;
   ev_loop = NULL;
   connector_list.init(1000000, index);
   tick_timer = NULL;

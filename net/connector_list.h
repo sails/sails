@@ -106,7 +106,6 @@ class ConnectorList {
   void _del(uint32_t uid);
 
  protected:
-
   /**
    * 总计连接数
    */
