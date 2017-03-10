@@ -313,7 +313,7 @@ bool check_loginfo(const char* configPath,
   return false;
 }
 
-const char* log_config = "./log.conf";
+char log_config[100] = "./log.conf";  // 可以更改
 const char* log_path = "./log/";
 LoggerFactory* LoggerFactory::_pInstance = 0;
 std::mutex LoggerFactory::logMutex;
