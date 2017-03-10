@@ -4,8 +4,8 @@
 // Filename: logging.h
 // Description: 可以直接通过new来得到一个logger,
 //              但是推荐通过LoggerFactory达到单例目的
-//              factory生成的日志默认是info级别,可以通过
-//              修改log.conf:LogLevel=debug重新定义级别,合法的关键字:
+//              factory生成的日志默认是debug级别,可以通过
+//              修改log.conf:LogLevel=info重新定义级别,合法的关键字:
 //              debug, info ,warn, error,修改后10秒生效
 //
 // Author: sailsxu <sailsxu@gmail.com>
@@ -24,88 +24,30 @@
 
 
 
-#define DEBUG_LOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
-      sails::log::LoggerFactory::getLog(t)->debug(__VA_ARGS__);         \
+#define DEBUG_LOG(t, ...) {                                             \
+    if (sails::log::LoggerFactory::instance()->getLog(t)->getLevel() <= \
+        sails::log::Logger::LOG_LEVEL_DEBUG) {                          \
+      sails::log::LoggerFactory::instance()->getLog(t)->debug(__VA_ARGS__); \
     }                                                                   \
 }
-#define INFO_LOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
-      sails::log::LoggerFactory::getLog(t)->info(__VA_ARGS__);          \
+#define INFO_LOG(t, ...) {                                              \
+    if (sails::log::LoggerFactory::instance()->getLog(t)->getLevel() <= \
+        sails::log::Logger::LOG_LEVEL_INFO) {                           \
+      sails::log::LoggerFactory::instance()->getLog(t)->info(__VA_ARGS__); \
     }                                                                   \
 }
-#define WARN_LOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
-      sails::log::LoggerFactory::getLog(t)->warn(__VA_ARGS__);          \
+#define WARN_LOG(t, ...) {                                              \
+    if (sails::log::LoggerFactory::instance()->getLog(t)->getLevel() <= \
+        sails::log::Logger::LOG_LEVEL_WARN) {                           \
+      sails::log::LoggerFactory::instance()->getLog(t)->warn(__VA_ARGS__); \
     }                                                                   \
 }
-#define ERROR_LOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLog(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
-      sails::log::LoggerFactory::getLog(t)->error(__VA_ARGS__);         \
+#define ERROR_LOG(t, ...) {                                             \
+    if (sails::log::LoggerFactory::instance()->getLog(t)->getLevel() <= \
+        sails::log::Logger::LOG_LEVEL_ERROR) {                          \
+      sails::log::LoggerFactory::instance()->getLog(t)->error(__VA_ARGS__); \
     }                                                                   \
 }
-#define DEBUG_HLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
-      sails::log::LoggerFactory::getLogH(t)->debug(__VA_ARGS__);        \
-    }                                                                   \
-  }
-#define INFO_HLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
-      sails::log::LoggerFactory::getLogH(t)->info(__VA_ARGS__);         \
-    }                                                                   \
-}
-#define WARN_HLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
-      sails::log::LoggerFactory::getLogH(t)->warn(__VA_ARGS__);         \
-    }                                                                   \
-}
-#define ERROR_HLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogH(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
-      sails::log::LoggerFactory::getLogH(t)->error(__VA_ARGS__);        \
-    }                                                                   \
-}
-#define DEBUG_DLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
-      sails::log::LoggerFactory::getLogD(t)->debug(__VA_ARGS__);        \
-    }                                                                   \
-  }
-#define INFO_DLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
-      sails::log::LoggerFactory::getLogD(t)->info(__VA_ARGS__);         \
-    }                                                                   \
-}
-#define WARN_DLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
-      sails::log::LoggerFactory::getLogD(t)->warn(__VA_ARGS__);         \
-    }                                                                   \
-}
-#define ERROR_DLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogD(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
-      sails::log::LoggerFactory::getLogD(t)->error(__VA_ARGS__);        \
-    }                                                                   \
-}
-#define DEBUG_MLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_DEBUG) { \
-      sails::log::LoggerFactory::getLogM(t)->debug(__VA_ARGS__);        \
-    }                                                                   \
-  }
-#define INFO_MLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_INFO) { \
-      sails::log::LoggerFactory::getLogM(t)->info(__VA_ARGS__);         \
-    }                                                                   \
-}
-#define WARN_MLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_WARN) { \
-      sails::log::LoggerFactory::getLogM(t)->warn(__VA_ARGS__);         \
-    }                                                                   \
-}
-#define ERROR_MLOG(t, ...) { \
-    if (sails::log::LoggerFactory::getLogM(t)->getLevel() <= sails::log::Logger::LOG_LEVEL_ERROR) { \
-      sails::log::LoggerFactory::getLogM(t)->error(__VA_ARGS__);        \
-    }                                                                   \
-}
-
-
 
 
 namespace sails {
@@ -131,36 +73,55 @@ class Logger {
     SPLIT_HOUR
   };
 
-  explicit Logger(LogLevel level);
-  Logger(LogLevel level, const char *name);
-  Logger(LogLevel level, const char *name, SAVEMODE mode);
+  enum LogType {
+    LOG_FILE = 1,
+    LOG_CONSOLE = 2,
+  };
+
+  // 默认应该是直接输出到控制台，参数顺序按照这个定
+  explicit Logger(const char* name = "default",
+                  LogLevel level = LOG_LEVEL_DEBUG,
+                  int type = LogType::LOG_CONSOLE,
+                  SAVEMODE mode = SAVEMODE::SPLIT_NONE,
+                  const char* path = "./log/");
 
   void debug(const char* format, ...);
   void info(const char* format, ...);
   void warn(const char* format, ...);
   void error(const char* format, ...);
 
+  void setMode(SAVEMODE mode) {
+    this->save_mode = mode;
+  }
+  void setLevel(LogLevel level) {
+    this->level = level;
+  }
   LogLevel getLevel() {
-    check_loginfo();
     return level;
   }
+  void setLogType(int logType) {
+    this->logType = logType;
+  }
+  void setLogPath(const char* path) {
+    snprintf(this->path, sizeof(this->path), "%s", path);
+    ensure_directory_exist();
+  }
+
  private:
   void output(Logger::LogLevel level, const char* format, va_list ap);
   void set_msg_prefix(Logger::LogLevel level, char *msg);
   void set_filename_by_savemode(char* filename, int len);
-  void check_loginfo();
-  Logger::LogLevel get_level_by_name(const char *name);
-  void set_file_path();
   bool ensure_directory_exist();
 
   LogLevel level;
+  int logType;
   char name[MAX_FILENAME_LEN];
   char path[MAX_FILENAME_LEN];
   SAVEMODE save_mode;
-  static char log_config_file[100];
-  time_t update_loginfo_time;
   std::mutex writeMutex;
 };
+
+
 
 
 // 以单例模式
@@ -170,17 +131,23 @@ class LoggerFactory {
   ~LoggerFactory();
 
  public:
-  static Logger* getLog(std::string log_name);  // SPLIT_NONE
-  static Logger* getLogD(std::string log_name);  // SPLIT_DAY
-  static Logger* getLogH(std::string log_name);  // SPLIT_HOUR
-  static Logger* getLogM(std::string log_name);  // SPLIT_MONTH
+  static LoggerFactory* instance();
+  Logger* getLog(std::string log_name);
+
+
+  // 全局配置
+  struct LogConfig {
+    std::string path;
+    Logger::LogLevel level;
+    int logType;  // 可以是stdout和file两种1,2,3
+    Logger::SAVEMODE split;
+  };
 
  private:
-  Logger* getLog(std::string log_name, Logger::SAVEMODE save_mode);
-  static LoggerFactory* instance();
   static LoggerFactory* _pInstance;
   // for log
   std::string path;
+  LogConfig config;
   static std::mutex logMutex;
   std::map<std::string, Logger*> log_map;
   class CGarbo {  // 它的唯一工作就是在析构函数中删除LoggerFactory的实例

@@ -17,16 +17,11 @@
 
 
 TEST_CASE("LogTest", "[log]") {
-  INFO_LOG("test", "test log:%d", 1);
-  WARN_LOG("test", "test log:%d", 1);
-  ERROR_LOG("test", "test log:%d", 1);
-  INFO_DLOG("test_d", "test log:%d", 1);
-  WARN_DLOG("test_d", "test log:%d", 1);
-  ERROR_DLOG("test_d", "test log:%d", 1);
-  INFO_HLOG("test_h", "test log:%d", 1);
-  WARN_HLOG("test_h", "test log:%d", 1);
-  ERROR_HLOG("test_h", "test log:%d", 1);
-  INFO_MLOG("test_m", "test log:%d", 1);
-  WARN_MLOG("test_m", "test log:%d", 1);
-  ERROR_MLOG("test_m", "test log:%d", 1);
+  for (int i = 0; i < 100; i++) {
+    DEBUG_LOG("test", "test log:%d", 1);
+    INFO_LOG("test", "test log:%d", 1);
+    WARN_LOG("test", "test log:%d", 1);
+    ERROR_LOG("test", "test log:%d", 1);
+    sleep(1);
+  }
 }

@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef __linux__
+#if (defined __linux__) || (defined __APPLE__)
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -35,7 +35,7 @@ bool make_directory(const char* path) {
   int len = strlen(path_name);
   if (path_name[len-1] != '/') {
     // strcat(path_name, "/");
-    snprintf(path_name, 2, "%s", "/");  // NOLINT'
+    snprintf(path_name+len, 2, "%s", "/");  // NOLINT'
   }
 
   len = strlen(path_name);
@@ -43,7 +43,7 @@ bool make_directory(const char* path) {
     if (path_name[i] == '/') {
       memset(dir_name, '\0', 1000);
       strncpy(dir_name, path, i+1);
-#ifdef __linux__
+#if (defined __linux__) || (defined __APPLE__)
       if (access(dir_name, R_OK) != 0) {
         if (mkdir(dir_name, 0766) != 0) {
           return false;

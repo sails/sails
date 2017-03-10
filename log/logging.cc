@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
-#ifdef __linux__
+#if (defined __linux__) || (defined __APPLE__)
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -30,43 +30,23 @@ namespace sails {
 namespace log {
 
 
-char Logger::log_config_file[100] = "./log.conf";
-
-Logger::Logger(Logger::LogLevel level) {
-  this->level = level;
-  this->save_mode = Logger::SPLIT_NONE;
-  memset(name, '\0', MAX_FILENAME_LEN);
-  update_loginfo_time = 0;
-}
-
-Logger::Logger(LogLevel level, const char *name) {
+Logger::Logger(const char* name,
+               LogLevel level,
+               int type,
+               SAVEMODE mode,
+               const char* path) {
   assert(name);
 
-  this->level = level;
-  this->save_mode = Logger::SPLIT_NONE;
   memset(this->name, '\0', MAX_FILENAME_LEN);
-  update_loginfo_time = 0;
-
   strncpy(this->name, name, strlen(name));
-  set_file_path();
-  assert(ensure_directory_exist());
-}
-
-Logger::Logger(LogLevel level, const char *filename, SAVEMODE mode) {
-  assert(filename);
-
   this->level = level;
+  this->logType = type;
   this->save_mode = mode;
-  memset(this->name, '\0', MAX_FILENAME_LEN);
-  update_loginfo_time = 0;
-
-  strncpy(this->name, filename, strlen(filename));
-  set_file_path();
+  snprintf(this->path, sizeof(this->path), "%s", path);
   assert(ensure_directory_exist());
 }
 
 void Logger::debug(const char *format, ...) {
-  check_loginfo();
   if (LOG_LEVEL_DEBUG >= level) {
     va_list ap;
     va_start(ap, format);
@@ -76,7 +56,6 @@ void Logger::debug(const char *format, ...) {
 }
 
 void Logger::info(const char *format, ...) {
-  check_loginfo();
   if (LOG_LEVEL_INFO >= level) {
     va_list ap;
     va_start(ap, format);
@@ -86,7 +65,6 @@ void Logger::info(const char *format, ...) {
 }
 
 void Logger::warn(const char *format, ...) {
-  check_loginfo();
   if (LOG_LEVEL_WARN >= level) {
     va_list ap;
     va_start(ap, format);
@@ -96,7 +74,6 @@ void Logger::warn(const char *format, ...) {
 }
 
 void Logger::error(const char *format, ...) {
-  check_loginfo();
   if (LOG_LEVEL_ERROR >= level) {
     va_list ap;
     va_start(ap, format);
@@ -115,10 +92,16 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
   char filename[MAX_FILENAME_LEN];
   memset(filename, '\0', MAX_FILENAME_LEN);
   if (strlen(this->name) > 0) {
+    if ((logType & LogType::LOG_CONSOLE) == LogType::LOG_CONSOLE) {
+      printf("%s: %s", name, msg);
+    }
+    if ((logType & LogType::LOG_FILE) != LogType::LOG_FILE) {
+      return;
+    }
     set_filename_by_savemode(filename, MAX_FILENAME_LEN);
     // 防止多个线程同时写一个文件，fopen会失败
     std::unique_lock<std::mutex> writelocker(writeMutex);
-#ifdef __linux__
+#if (defined __linux__) || (defined __APPLE__)
 #ifdef __ANDROID__
     // ANDROID_LOG_DEBUG为3
     __android_log_print(level+2, this->name, msg);
@@ -151,7 +134,7 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
 #endif
 
   } else {
-#ifdef __linux__
+#if (defined __linux__) || (defined __APPLE__)
     write(1, msg, strlen(msg));
 #else
     printf("%s\n", msg);
@@ -162,7 +145,7 @@ void Logger::output(Logger::LogLevel level, const char *format, va_list ap) {
 void Logger::set_filename_by_savemode(char *filename, int len) {
   if (strlen(this->name) > 0
      && filename != NULL) {
-    snprintf(filename, len, "%s", this->name);
+    snprintf(filename, len, "%s/%s", this->path, this->name);
 
     char time[30];
     if (base::TimeT::time_with_millisecond(time, 30) <= 0) {
@@ -205,44 +188,17 @@ void Logger::set_msg_prefix(Logger::LogLevel level, char *msg) {
   msg[strlen(msg)] = ':';
 }
 
-
-void Logger::check_loginfo() {
-  time_t current_time = time(NULL);
-  if (current_time - update_loginfo_time > 10) {
-    FILE* file = fopen(log_config_file, "r");
-    if (file != NULL) {
-      char buf[100];
-      while (fgets(buf, 100, file) != NULL) {
-        int size = strlen(buf);
-        if (size > 0) {
-          if (buf[size-1] == '\n') {  // linux file
-            buf[size-1] = '\0';
-          } else if (buf[size-2] == '\r'
-                     && buf[size-1] == '\n')  {  // windows file
-            buf[size-2] = '\0';
-            buf[size-1] = '\0';
-          }
-          char name[31] = {'\0'};
-          char value[31] = {'\0'};
-          sscanf(buf, "%30[^=]=%30s", name, value);
-          if (strncmp(name, "LogLevel", 8) == 0) {
-            Logger::LogLevel setlevel = get_level_by_name(value);
-            if (setlevel != Logger::LOG_LEVEL_NONE) {
-              // printf("set level %d\n", setlevel);
-              this->level = setlevel;
-            }
-          }
-        }
-        memset(buf, '\0', 100);
-      }
-
-      fclose(file);
-    }
-    update_loginfo_time = current_time;
-  }
+bool Logger::ensure_directory_exist() {
+  return base::make_directory(this->path);
 }
 
-Logger::LogLevel Logger::get_level_by_name(const char *name) {
+
+
+
+///////////////////////////// log facotry /////////////////////////////////
+
+
+Logger::LogLevel get_level_by_name(const char *name) {
   if (name == NULL || strlen(name) == 0) {
     return Logger::LOG_LEVEL_NONE;
   }
@@ -269,30 +225,104 @@ Logger::LogLevel Logger::get_level_by_name(const char *name) {
   return Logger::LOG_LEVEL_NONE;
 }
 
-void Logger::set_file_path() {
-  memset(this->path, '\0', MAX_FILENAME_LEN);
-  if (strlen(name) > 0) {
-    int index = base::last_index_of(name, '/');
-    if (index > 0) {
-      strncpy(path, name, index);
+int get_type_by_name(const char *name) {
+  if (name == NULL || strlen(name) == 0) {
+    return Logger::LogType::LOG_CONSOLE;
+  }
+  // 去掉前面的空字符，第一个[a-z][A-Z]
+  int len = strlen(name);
+  const char* p = name;
+  for (int i = 0; i < len; i++) {
+    if ((p[i] >= 'a' && p[i] <= 'z')
+        || (p[i] >= 'A' && p[i] <= 'Z')) {
+      break;
     } else {
-      strncpy(path, "./log", 5);
+      p++;
     }
   }
+  int type = 0;
+  if (strstr(p, "file") != NULL) {
+    type = type | Logger::LOG_FILE;
+  }
+  if (strstr(p, "console") != NULL) {
+    type = type | Logger::LOG_CONSOLE;
+  }
+  if (type > 0) {
+    return type;
+  }
+  return Logger::LOG_CONSOLE;
 }
 
-bool Logger::ensure_directory_exist() {
-  return base::make_directory(this->path);
+
+bool check_loginfo(const char* configPath,
+                   LoggerFactory::LogConfig* config,
+                   bool rightNow = false) {
+  time_t current_time = time(NULL);
+  static int update_loginfo_time = 0;
+
+  if (!rightNow) {
+    if (current_time - update_loginfo_time < 10) {
+      return false;
+    }
+  }
+  update_loginfo_time = current_time;
+  FILE* file = fopen(configPath, "r");
+  if (file != NULL) {
+    char buf[100];
+    while (fgets(buf, 100, file) != NULL) {
+      int size = strlen(buf);
+      if (size > 0) {
+        if (buf[size-1] == '\n') {  // linux file
+          buf[size-1] = '\0';
+        } else if (buf[size-2] == '\r'
+                   && buf[size-1] == '\n')  {  // windows file
+          buf[size-2] = '\0';
+          buf[size-1] = '\0';
+        }
+        char name[31] = {'\0'};
+        char value[31] = {'\0'};
+        sscanf(buf, "%30[^=]=%30s", name, value);
+        if (strncasecmp(name, "LogLevel", 8) == 0) {
+          Logger::LogLevel setlevel = get_level_by_name(value);
+          if (setlevel != Logger::LOG_LEVEL_NONE) {
+            config->level = setlevel;
+          }
+        }
+        if (strncasecmp(name, "LogType", 7) == 0) {
+          config->logType = get_type_by_name(value);
+        }
+        if (strncasecmp(name, "LogPath", 7) == 0) {
+          char path[100] = {'\0'};
+          snprintf(path, sizeof(path), "%s", value);
+          config->path = std::string(path);
+        }
+        if (strncasecmp(name, "LogSplitMode", 8) == 0) {
+          int split_mode = Logger::SAVEMODE::SPLIT_NONE;
+          sscanf(value, "%2d", &split_mode);
+          if (split_mode >= Logger::SAVEMODE::SPLIT_NONE
+              && split_mode <= Logger::SAVEMODE::SPLIT_HOUR) {
+            config->split = Logger::SAVEMODE(split_mode);
+          }
+        }
+      }
+      memset(buf, '\0', 100);
+    }
+    fclose(file);
+    return true;
+  }
+  return false;
 }
 
-
-
-///////////////////////////// log facotry /////////////////////////////////
-
+const char* log_config = "./log.conf";
+const char* log_path = "./log/";
 LoggerFactory* LoggerFactory::_pInstance = 0;
 std::mutex LoggerFactory::logMutex;
 
-LoggerFactory::LoggerFactory() : path("./log") {
+LoggerFactory::LoggerFactory() {
+  config.path = log_path;
+  config.level = Logger::LogLevel::LOG_LEVEL_DEBUG;
+  config.logType = Logger::LogType::LOG_CONSOLE;
+  config.split = Logger::SAVEMODE::SPLIT_NONE;
 }
 
 LoggerFactory::~LoggerFactory() {
@@ -306,25 +336,33 @@ LoggerFactory::~LoggerFactory() {
 }
 
 
-Logger* LoggerFactory::getLog(std::string log_name,
-                              Logger::SAVEMODE save_mode) {
+Logger* LoggerFactory::getLog(std::string name) {
   std::unique_lock<std::mutex> locker(LoggerFactory::logMutex);
+  bool reload = check_loginfo(log_config, &config);
+  // 改变当前所有日志的情况
+  if (reload) {
+    for (auto& item : log_map) {
+      if (item.second != NULL) {
+        item.second->setMode(config.split);
+        item.second->setLevel(config.level);
+        item.second->setLogType(config.logType);
+        item.second->setLogPath(config.path.c_str());
+      }
+    }
+  }
+
   std::map<std::string, Logger*>::iterator it;
-  if ((it=log_map.find(log_name)) != log_map.end()) {
+  if ((it=log_map.find(name)) != log_map.end()) {
     return it->second;
   } else {
-    char name[200] = {'\0'};
-#ifdef __ANDROID__
-    snprintf(name, sizeof(name),
-             "%s", log_name.c_str());
-#else
-    snprintf(name, sizeof(name),
-             "%s/%s", path.c_str(), log_name.c_str());
-#endif
-    Logger* logger = new Logger(Logger::LOG_LEVEL_INFO,
-                                name, save_mode);
+    check_loginfo(log_config, &config, true);
+    Logger* logger = new Logger(name.c_str(),
+                                config.level,
+                                config.logType,
+                                config.split,
+                                config.path.c_str());
     log_map.insert(
-        std::pair<std::string, Logger*>(log_name, logger));  // NOLINT'
+        std::pair<std::string, Logger*>(name, logger));  // NOLINT'
     return logger;
   }
 }
@@ -341,25 +379,6 @@ LoggerFactory* LoggerFactory::instance() {
   return _pInstance;
 }
 
-Logger* LoggerFactory::getLog(std::string log_name) {
-  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_NONE);
-}
-
-Logger* LoggerFactory::getLogD(std::string log_name) {
-  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_DAY);
-}
-
-Logger* LoggerFactory::getLogH(std::string log_name) {
-  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_HOUR);
-}
-
-Logger* LoggerFactory::getLogM(std::string log_name) {
-  return LoggerFactory::instance()->getLog(log_name, Logger::SPLIT_MONTH);
-}
 
 }  // namespace log
 }  // namespace sails
-
-
-
-

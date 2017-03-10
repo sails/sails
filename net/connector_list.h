@@ -12,9 +12,11 @@
 #define SAILS_NET_CONNECTOR_LIST_H_
 
 #include <list>
+#include <vector>
 #include <memory>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include <map>
+#include <utility>
 #include "sails/net/connector.h"
 
 namespace sails {
@@ -33,7 +35,7 @@ class ConnectorList {
   /**
    * 析够函数
    */
-  ~ConnectorList() { if(_vConn) { delete[] _vConn; } }
+  ~ConnectorList() { if (_vConn) { delete[] _vConn; } }
 
   /**
    * 初始化大小
