@@ -35,13 +35,13 @@ class ConnectorList {
   /**
    * 析够函数
    */
-  ~ConnectorList() { if (_vConn) { delete[] _vConn; } }
+  ~ConnectorList();
 
   /**
    * 初始化大小
    * @param size
    */
-  void init(uint32_t size, uint32_t iIndex = 0);
+  void init();
 
   /**
    * 获取惟一ID
@@ -49,6 +49,11 @@ class ConnectorList {
    * @return unsigned int
    */
   uint32_t getUniqId();
+
+  /**
+   * 确保在空的ID可用
+   */
+  void ensure_free_not_empty();
 
   /**
    * 添加连接
@@ -107,12 +112,7 @@ class ConnectorList {
 
  protected:
   /**
-   * 总计连接数
-   */
-  uint32_t _total;
-
-  /**
-   * 空闲链表
+   * 空闲链表，当free快满的时候，他们再次分配1000个uid
    */
   std::list<uint32_t> _free;
 
@@ -122,9 +122,20 @@ class ConnectorList {
   size_t _free_size;
 
   /**
-   * 链接
+   * 链接，为了优化内存，使用二维列表，这样当连接少的时候不用分配后面的空间
+   * 10k个数组，每个1000个连接，这样最大可以分配到1000w个，对于单台服务器
+   * 已经是极限了
    */
-  list_data *_vConn;
+  // 每个block的大小
+  const int blockCapacity = 1000;
+
+  // 当前分到第几个block
+  int blockUsedNum = 0;
+
+  // 一共有多少个block
+  static const int blockNum = 10000;
+
+  list_data *_vConn[blockNum];
 
   /**
    * 超时链表

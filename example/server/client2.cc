@@ -49,13 +49,13 @@ class TestClient : public sails::net::EpollServer<EchoStruct> {
   }
 
   void connect() {
-    for (int i = 0; i < 6000; i++) {
+    for (int i = 0; i < 10000; i++) {
       std::shared_ptr<sails::net::Connector> connector(
           new sails::net::Connector());
       if (connector->connect("127.0.0.1", 8000, true)) {
         this->AddConnector(connector, connector->get_connector_fd());
         connectorlist.push_back(connector);
-        usleep(10000);
+        usleep(10000);  // 10ms
       }
     }
   }
@@ -69,7 +69,7 @@ class TestClient : public sails::net::EpollServer<EchoStruct> {
       if (connector != NULL) {
         connector->write(reinterpret_cast<char*>(&data), sizeof(data));
         connector->send();
-        sleep(1000);
+        usleep(10000);  // 10ms，1w个连接，全部发一次就100s
       }
     }
   }
@@ -104,7 +104,7 @@ int main(int, char *[]) {
   }
 
   TestClient client;
-  client.Init(8001, 2, 10000, 1, true);
+  client.Init(8001, 1, 10000, 1);
 
   sleep(2);
   // 开始测试连接

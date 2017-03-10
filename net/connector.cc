@@ -25,6 +25,7 @@ Connector::Connector(int conn_fd) {
   this->port = 0;
   this->ip = "";
   this->listen_fd = 0;
+  this->lastRefreshTime = 0;
   is_closed = false;
   is_timeout = false;
   timeoutCB = NULL;

@@ -221,7 +221,7 @@ NetThread<T>::NetThread(EpollServer<T> *ser, uint32_t index) {
   shutdown = 0;
   notify = 0;
   ev_loop = NULL;
-  connector_list.init(1000000, index);
+  connector_list.init();
   tick_timer = NULL;
 #ifdef __linux__
   notify = socket(AF_INET, SOCK_STREAM, 0);

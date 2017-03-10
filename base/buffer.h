@@ -17,6 +17,7 @@
 // #include <endian.h>
 #include <vector>
 #include <algorithm>
+#include <utility>
 #include "sails/base/uncopyable.h"
 
 
@@ -26,8 +27,10 @@ namespace base {
 class Buffer : public Uncopyable {
  public:
   Buffer():data(init_size), read_index(0), write_index(0) {
-    assert(readable() == 0);
-    assert(writeable() == init_size);
+    int readab = readable();
+    int writeab = writeable();
+    assert(readab == 0);
+    assert(writeab == init_size);
   }
 
  public:
@@ -42,7 +45,8 @@ class Buffer : public Uncopyable {
     if (writeable() < len) {
       make_space(len);
     }
-    assert(writeable() >= len);
+    size_t writeab = writeable();
+    assert(writeab >= len);
   }
 
   void make_space(size_t len) {
@@ -54,7 +58,8 @@ class Buffer : public Uncopyable {
       std::copy(begin()+read_index, begin()+write_index, begin());
       read_index = 0;
       write_index = read_index+readablesize;
-      assert(readablesize == readable());
+      size_t readab = readable();
+      assert(readablesize == readab);
     }
   }
 
@@ -71,7 +76,8 @@ class Buffer : public Uncopyable {
   const char* peek() { return begin() + read_index; }
 
   int32_t peek_int32() {
-    assert(readable() >= sizeof(int32_t));
+    size_t readab = readable();
+    assert(readab >= sizeof(int32_t));
     int32_t be32 = 0;
     memcpy(&be32, peek(), sizeof(int32_t));
     return ntohl(be32);
